@@ -33,6 +33,13 @@ SBAY/
 
 วิธีที่ง่ายที่สุดในการรันระบบทั้งหมดคือใช้สคริปต์ PowerShell ที่เตรียมไว้ให้:
 
+### 1. Clone โปรเจค
+```bash
+git clone https://github.com/chonlajit/SBAY-demo.git
+cd SBAY-demo
+```
+
+### 2. รันโปรแกรม
 ```powershell
 ./start_fast.ps1
 ```
