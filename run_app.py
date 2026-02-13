@@ -5,30 +5,22 @@ import sys
 import platform
 import shutil
 
-def check_docker_running():
-    """Check if Docker is running (Desktop or WSL)."""
-    print("Checking Docker status...")
-    try:
-        # Check standard docker command
-        subprocess.run(["docker", "info"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print("Docker is running.")
-        return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
-
-def start_docker_desktop():
-    """Attempt to start Docker Desktop."""
-    print("Attempting to start Docker Desktop...")
-    docker_path = r"C:\Program Files\Docker\Docker\Docker Desktop.exe"
+def check_docker_wsl(silent=False):
+    """Check if Docker is running in WSL (Ubuntu)."""
+    if not silent:
+        print("Checking Docker status in WSL...", end="", flush=True)
     
-    if os.path.exists(docker_path):
-        try:
-            subprocess.Popen(docker_path)
-            print("Waiting for Docker Desktop to initialize...")
+    try:
+        # Check if docker is running inside Ubuntu
+        result = subprocess.run(["wsl", "-d", "Ubuntu", "docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        if result.returncode == 0:
+            if not silent: print(" Found.")
             return True
-        except Exception as e:
-            print(f"Failed to start Docker Desktop: {e}")
-            return False
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+        
+    if not silent: print(" Not running.")
     return False
 
 def start_docker_wsl():
@@ -38,45 +30,33 @@ def start_docker_wsl():
         # Check if WSL Ubuntu exists
         subprocess.run(["wsl", "-d", "Ubuntu", "true"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
-        # Try to start service (might ask for password if not configured sudo-less)
-        print("Run 'wsl -d Ubuntu sudo service docker start'...")
-        subprocess.run(["wsl", "-d", "Ubuntu", "sudo", "service", "docker", "start"], check=True)
+        # Try to start service using the password-less sudo rule we set up
+        print("Starting Docker service...")
+        # Redirect output to null to keep it clean
+        subprocess.run(["wsl", "-d", "Ubuntu", "sudo", "service", "docker", "start"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
     except subprocess.CalledProcessError:
         print("Failed to start Docker in WSL.")
         return False
 
 def ensure_docker_ready():
-    """Ensure Docker is running, trying to start it if needed."""
-    if check_docker_running():
+    """Ensure Docker is running in WSL."""
+    if check_docker_wsl():
         return True
 
-    print("Docker is not running.")
-    
-    # Try WSL first (as requested preferred method)
-    started_wsl = start_docker_wsl()
+    # Try to start
+    start_docker_wsl()
     
     # Wait loop
-    print("Waiting for Docker to become ready...")
-    for _ in range(30):
-        if check_docker_running():
-            print("Docker started successfully!")
+    print("Waiting for Docker to become ready...", end="", flush=True)
+    for _ in range(40):
+        if check_docker_wsl(silent=True):
+            print("\nDocker started successfully!")
             return True
         time.sleep(2)
         print(".", end="", flush=True)
     
-    # If still not running, try Desktop as fallback
-    if not started_wsl:
-        print("\nWSL start failed or timed out. Trying Docker Desktop...")
-        if start_docker_desktop():
-            for _ in range(40):
-                if check_docker_running():
-                    print("Docker Desktop started!")
-                    return True
-                time.sleep(3)
-                print(".", end="", flush=True)
-    
-    print("\n[Error] Could not start Docker. Please start it manually.")
+    print("\n[Error] Could not start Docker in WSL. Please check your installation.")
     return False
 
 def run_command_in_new_window(command, title="Command"):
@@ -85,23 +65,30 @@ def run_command_in_new_window(command, title="Command"):
     subprocess.run(full_cmd, shell=True)
 
 def main():
-    print("=== SBAY Application Launcher ===\n")
+    print("=== SBAY Application Launcher (WSL Edition) ===\n")
 
-    # 1. Ensure Docker is ready
+    # 1. Ensure Docker is ready (WSL only)
     if not ensure_docker_ready():
         sys.exit(1)
 
     # 2. Start Docker Containers
     print("Starting Docker Containers (Backend & DB)...")
     try:
-        subprocess.run("docker-compose up -d backend mongodb", shell=True, check=True)
+        # We must use 'wsl' to invoke docker-compose inside Ubuntu
+        cmd = ["wsl", "-d", "Ubuntu", "docker", "compose", "up", "-d", "backend", "mongodb"]
+        subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError:
-        print("Failed to start docker-compose services.")
-        sys.exit(1)
+        print("Failed to start docker-compose services. Attempting fallback command...")
+        try:
+             # Fallback for older compose v1
+            subprocess.run(["wsl", "-d", "Ubuntu", "docker-compose", "up", "-d", "backend", "mongodb"], check=True)
+        except subprocess.CalledProcessError:
+            print("[Error] Failed to start Docker containers.")
+            sys.exit(1)
 
-    # 3. Wait for Backend
-    print("Waiting for Backend to initialize (5s)...")
-    time.sleep(5)
+    # 3. Wait for Backend (Increased to 8s for safety)
+    print("Waiting for Backend to initialize (8s)...")
+    time.sleep(8)
 
     # 4. Start Frontend (npm run dev)
     print("Starting Frontend (npm run dev)...")

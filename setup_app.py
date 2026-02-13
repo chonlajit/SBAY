@@ -74,8 +74,9 @@ def setup_docker_wsl():
         choice = input("\nDo you want to try starting Docker service in WSL? (y/n): ")
         if choice.lower() == 'y':
             try:
+                # Try to use password-less sudo first (if configured) or fallback to interactive
                 subprocess.run(["wsl", "-d", "Ubuntu", "sudo", "service", "docker", "start"], shell=True, check=True)
-                print("Service start command sent.")
+                print("Service start command sent. Please check if it started.")
             except subprocess.CalledProcessError:
                 print("Failed to start Docker service.")
 

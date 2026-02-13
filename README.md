@@ -8,7 +8,7 @@ SBAY คือระบบรีไซเคิลอัจฉริยะที
 - **Backend**: Java Spring Boot
 - **Database**: MongoDB
 - **AI / IoT**: Python (YOLOv8 Object Detection)
-- **Infrastructure**: Docker & Docker Compose
+- **Infrastructure**: Docker on WSL2
 
 ## 📂 โครงสร้างโปรเจค (Project Structure)
 
@@ -18,55 +18,68 @@ SBAY/
 ├── frontend/         # Next.js Dashboard & User Interface (หน้าเว็บ)
 ├── iot-device/       # Python scripts for webcam & AI detection (สคริปต์กล้องและ AI)
 ├── docker-compose.yml # Container orchestration (จัดการ Docker)
-├── setup_app.py      # สคริปต์ติดตั้งครั้งแรก (First-time setup)
-├── run_app.py        # สคริปต์รันโปรแกรมประจำวัน (Daily launcher)
-├── setup_docker.sh   # สคริปต์ช่วยติดตั้ง Docker บน Ubuntu WSL (Optional)
+├── setup_app.py      # สคริปต์ตรวจสอบและ setup environment
+├── run_app.py        # สคริปต์รันโปรแกรม (Launcher)
+├── setup_docker.sh   # สคริปต์ติดตั้ง Docker ใน Ubuntu (ใช้คู่กับ setup_app.py)
 └── run_app.ps1       # (Legacy) PowerShell launcher
 ```
 
-## 🛠️ สิ่งที่ต้องติดตั้ง (Prerequisites)
+## 🛠️ คู่มือการติดตั้งสำหรับเครื่องใหม่ (Full Installation Guide)
 
-เพื่อให้ระบบทำงานได้ครบทุกส่วน คุณต้องเตรียมสภาพแวดล้อมดังนี้:
+หากคุณนำโปรเจคนี้ไปรันบนคอมพิวเตอร์เครื่องใหม่ ให้ทำตามขั้นตอนละเอียดดังนี้:
 
-1.  **[Python 3.9+](https://www.python.org/downloads/)**: ใช้รันสคริปต์ควบคุมและ AI
-2.  **[Node.js](https://nodejs.org/)** (LTS): ใช้สำหรับ Frontend
-3.  **Docker Engine**: เลือกติดตั้งได้ 2 แบบ
-    *   **Option A (ง่ายสุด):** ติดตั้ง [Docker Desktop](https://www.docker.com/products/docker-desktop/) บน Windows
-    *   **Option B (เบาเครื่อง/Advance):** ติดตั้ง Docker บน WSL2 (Ubuntu) *มีสคริปต์ช่วยติดตั้งให้ในโปรเจค*
+### ส่วนที่ 1: เตรียมโปรแกรมพื้นฐาน (One-time Setup)
+ต้องติดตั้งโปรแกรมเหล่านี้ก่อน (ทำแค่ครั้งแรกครั้งเดียว):
 
-## ⚡ เริ่มต้นใช้งาน (Quick Start)
+1.  **ติดตั้ง Python**
+    *   ดาวน์โหลด [Python 3.9+](https://www.python.org/downloads/)
+    *   **สำคัญ:** ตอนติดตั้ง ต้องติ๊กถูกช่อง **"Add Python to PATH"** ด้านล่างสุดก่อนกด Install
 
-### 1. ติดตั้งครั้งแรก (First-time Setup)
-รันไฟล์นี้เพื่อติดตั้ง dependencies ของ Frontend/Backend และเตรียม Docker
-```bash
-python setup_app.py
-```
-> ระบบจะตรวจสอบว่ามี Docker หรือยัง ถ้ายังไม่มีบน WSL จะแนะนำขั้นตอนติดตั้งให้
+2.  **ติดตั้ง Node.js**
+    *   ดาวน์โหลด [Node.js (LTS Version)](https://nodejs.org/)
+    *   ติดตั้งตามปกติ (Next ไปเรื่อยๆ)
 
-### 2. รันโปรแกรม (Daily Run)
-เมื่อต้องการใช้งาน ให้รันไฟล์นี้:
-```bash
-python run_app.py
-```
+3.  **ติดตั้ง WSL (Windows Subsystem for Linux)**
+    *   กดปุ่ม Start พิมพ์ค้นหา **"PowerShell"** -> คลิกขวาเลือก **Run as Administrator**
+    *   พิมพ์คำสั่งนี้แล้วกด Enter:
+        ```powershell
+        wsl --install -d Ubuntu
+        ```
+    *   รอจนเสร็จ แล้ว **Restart เครื่อง 1 ครั้ง**
+    *   หลังจากเปิดเครื่องมาใหม่ หน้าต่าง Ubuntu จะเด้งขึ้นมาให้ตั้งชื่อ Username และ Password
+        *   *ตั้งชื่ออะไรก็ได้ (เช่น admin)*
+        *   *Password ตอนพิมพ์จะไม่เห็นตัวอักษร ให้พิมพ์แล้วกด Enter*
 
-สคริปต์นี้จะจัดการทุกอย่างให้อัตโนมัติ:
-1.  **Auto-Start Docker**: ตรวจสอบและเปิด Docker ให้ (ทั้งแบบ Desktop หรือ WSL)
-2.  **Start Services**: รัน Backend และ MongoDB ผ่าน Docker
-3.  **Launcher**: เปิดหน้าต่าง Frontend และ Webcam Detector ขึ้นมาพร้อมใช้งาน
+---
 
-### ช่องทางการเข้าถึง (Access Points)
-- **Frontend Dashboard**: [http://localhost:3000](http://localhost:3000)
-- **Admin QR Code**: [http://localhost:3000/admin/qr](http://localhost:3000/admin/qr)
-- **Backend API**: [http://localhost:8080](http://localhost:8080)
-
-## 🔧 Docker บน WSL2 (Optional)
-หากต้องการใช้ Docker บน WSL2 เพื่อประหยัดทรัพยากรเครื่อง (ไม่ต้องเปิด Docker Desktop):
-1.  ติดตั้ง Ubuntu ใน WSL (`wsl --install -d Ubuntu`)
-2.  รันคำสั่งติดตั้ง Docker ภายใน Ubuntu:
+### ส่วนที่ 2: ตั้งค่า Docker และโปรเจค (Project Setup)
+1.  **เปิด Terminal** ในโฟลเดอร์โปรเจค SBAY
+2.  รันคำสั่งเพื่อเริ่มตั้งค่า:
     ```bash
-    wsl -d Ubuntu -e bash setup_docker.sh
+    python setup_app.py
     ```
-3.  หลังจากนั้น `run_app.py` จะเรียกใช้ Docker ใน WSL ให้อัตโนมัติ
+3.  **ทำตามคำแนะนำบนหน้าจอ:**
+    *   สคริปต์จะเช็คว่าใน Ubuntu มี Docker หรือยัง
+    *   ถ้ายังไม่มี: มันจะบอกให้รันคำสั่งติดตั้ง (ซึ่งคือ `wsl -d Ubuntu -e bash setup_docker.sh`)
+    *   *เทคนิค: ตอนมันให้ใส่รหัสผ่าน Ubuntu ให้พิมพ์รหัสเดียวกับที่คุณตั้งในขั้นตอนที่ 1*
+4.  เมื่อติดตั้ง Docker เสร็จ ให้รัน `python setup_app.py` ซ้ำอีกรอบเพื่อลงโปรแกรมส่วนที่เหลือจนครบ
+
+---
+
+### ส่วนที่ 3: เริ่มใช้งาน (Daily Usage)
+เมื่อติดตั้งทุกอย่างครบแล้ว ทุกครั้งที่จะเปิดระบบ ให้ทำแค่นี้:
+
+1.  เปิด Terminal ในโฟลเดอร์โปรเจค
+2.  พิมพ์คำสั่ง:
+    ```bash
+    python run_app.py
+    ```
+3.  ระบบจะทำงานอัตโนมัติ:
+    *   ✅ เปิด Docker ใน Ubuntu ให้เอง
+    *   ✅ รัน Backend & Database
+    *   ✅ เปิดหน้าเว็บและกล้องตรวจจับขยะ
+
+---
 
 ## 👥 ผู้จัดทำ
 
