@@ -1,0 +1,27 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { SmartBinProvider } from "./context/SmartBinContext";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "Sorting Bottle with AI and Yield",
+  description: "Ai detection for sorting bottle",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        <SmartBinProvider>
+          {children}
+        </SmartBinProvider>
+      </body>
+    </html>
+  );
+}
