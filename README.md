@@ -23,11 +23,14 @@ SBAY/
 
 ## 🛠️ สิ่งที่ต้องติดตั้ง (Prerequisites)
 
-ตรวจสอบให้แน่ใจว่าคุณได้ติดตั้งโปรแกรมเหล่านี้แล้ว:
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [Node.js](https://nodejs.org/) (แนะนำเวอร์ชัน LTS)
-- [Java JDK 17+](https://adoptium.net/)
-- [Python 3.9+](https://www.python.org/)
+เพื่อให้ระบบทำงานได้ครบทุกส่วน คุณต้องติดตั้งโปรแกรมต่อไปนี้:
+
+1.  **[Git](https://git-scm.com/downloads)**: สำหรับดาวน์โหลด (Clone) โปรเจค
+2.  **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**: สำหรับรัน Backend และ Database (ไม่ต้องลง Java/Maven เองเพราะ Docker จัดการให้)
+3.  **[Node.js](https://nodejs.org/)** (แนะนำเวอร์ชัน LTS): สำหรับรัน Frontend (หน้าเว็บ)
+4.  **[Python 3.9+](https://www.python.org/downloads/)**: สำหรับรันระบบ AI ตรวจจับขยะผ่านกล้อง
+
+> **หมายเหตุ**: หากคุณจะรัน Backend แบบ Manual (ไม่ผ่าน Docker) จำเป็นต้องติดตั้ง **Java JDK 17+** ด้วย
 
 ## ⚡ เริ่มต้นใช้งานด่วน (Quick Start - Windows)
 
@@ -41,10 +44,10 @@ cd SBAY-demo
 
 ### 2. รันโปรแกรม
 ```powershell
-./start_fast.ps1
+./run_app.ps1
 ```
 
-สคริปต์นี้จะทำงานอัตโนมัติ:
+สคริปต์นี้จะจัดการติดตั้ง dependencies (ถ้ายังไม่มี) และเริ่มทำงานอัตโนมัติ:
 1. เริ่ม **Backend** และ **MongoDB** ผ่าน Docker
 2. เปิด **Frontend** (Next.js) development server
 3. เริ่ม **Python Webcam Detector** เพื่อตรวจจับวัตถุ
