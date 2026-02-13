@@ -77,7 +77,5 @@ python webcam_detector.py
 
 ## 👥 ผู้จัดทำ
 
-- **ทีมจ๊าบ (SBAY Team)**
+- **ทีมสบาย (SBAY Team)**
 
----
-*สร้างโดย Antigravity*
