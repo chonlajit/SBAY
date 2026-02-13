@@ -7,6 +7,7 @@ tmp/
 .idea/
 *.swp
 *.swo
+*.pem
 
 # Node.js (Root & Frontend)
 node_modules/
