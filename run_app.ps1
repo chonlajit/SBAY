@@ -2,7 +2,7 @@
 if (-not (Test-Path "frontend/node_modules")) {
     Write-Host "Frontend dependencies not found. Installing..." -ForegroundColor Yellow
     Push-Location frontend
-    npm install
+    npm install --legacy-peer-deps
     Pop-Location
 }
 else {
