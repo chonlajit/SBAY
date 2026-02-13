@@ -71,10 +71,6 @@ pip install -r requirements.txt
 python webcam_detector.py
 ```
 
-## 📝 การตั้งค่า Git (Git Configuration)
-
-โปรเจคนี้ได้รับการตั้งค่าด้วย `.gitignore` ที่ root directory เพื่อจัดการ sub-projects ทั้งหมด โฟลเดอร์ `frontend` จะถูกรวมเป็นส่วนหนึ่งของ repository หลัก (monorepo structure)
-
 ## 👥 ผู้จัดทำ
 
 - **ทีมสบาย (SBAY Team)**
