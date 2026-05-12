@@ -11,10 +11,10 @@
 - **Windows 10/11** พร้อมติดตั้ง **WSL2 (Ubuntu)**
 - **Docker Desktop** (ตั้งค่าให้ใช้ WSL2 Backend) หรือติดตั้ง Docker ภายใน Ubuntu 直接
 
-### 2. การ Clone โปรเจกต์ (Cloning)
-เปิด Terminal (PowerShell หรือ Ubuntu) แล้วรันคำสั่ง:
+### 2. การ Clone โปรเจกต์ (Cloning via SSH)
+ตรวจสอบให้แน่ใจว่าคุณได้เพิ่ม [SSH Key](https://github.com/settings/keys) ในบัญชี GitHub/GitLab ของคุณแล้ว:
 ```bash
-git clone <URL_ของ_REPO_คุณ>
+git clone git@github.com:<username>/SBAY.git
 cd SBAY
 ```
 
@@ -63,6 +63,14 @@ wsl -d Ubuntu bash promote.sh
 ---
 
 ## 🐧 การติดตั้งบน Server จริง (Ubuntu Server)
+
+### 0. การเชื่อมต่อเข้า Server (SSH)
+ใช้คำสั่งนี้เพื่อรีโมทเข้าไปยังเครื่อง Server ของคุณ:
+```bash
+ssh -i <path_to_your_key> root@<SERVER_IP>
+# หรือหากใช้รหัสผ่าน
+ssh username@<SERVER_IP>
+```
 
 หากต้องการนำไปรันบน Ubuntu Server ให้ทำตามขั้นตอนดังนี้:
 
