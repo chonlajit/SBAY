@@ -59,5 +59,15 @@ services:
     depends_on:
       - mongodb
 
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: sbay-tunnel
+    restart: always
+    environment:
+      - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
+    command: tunnel run
+    depends_on:
+      - nginx
+
 volumes:
   mongodb_data:

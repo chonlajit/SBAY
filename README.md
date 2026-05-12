@@ -94,4 +94,21 @@ ssh username@<SERVER_IP>
 - ข้อมูลในฐานข้อมูลจะไม่หายไปแม้จะปิดเครื่อง เนื่องจากมีการใช้ `volumes: mongodb_data`
 
 ---
-**พัฒนาโดย:** ทีม SBAY
+
+## 🌐 การตั้งค่า Cloudflare Tunnel (Online ทั่วโลก)
+
+หากต้องการให้โปรเจกต์ออนไลน์ผ่านอินเทอร์เน็ตโดยไม่ต้อง Forward Port:
+
+1. **สร้าง Tunnel**: ไปที่ [Cloudflare Zero Trust](https://one.dash.cloudflare.com/) > Networks > Tunnels
+2. **เลือก Connector**: เลือกแบบ Docker และคัดลอก **Token** ที่ได้มา
+3. **ตั้งค่าในโปรเจกต์**:
+   - สร้างไฟล์ชื่อ `.env` ในโฟลเดอร์หลัก
+   - ใส่ Token ของคุณ: `CF_TUNNEL_TOKEN=เลข_token_ของคุณ`
+4. **ตั้งค่า Public Hostname**: ในหน้าเว็บ Cloudflare (ในส่วนของ Public Hostname) ให้ตั้งค่า:
+   - **Service Type**: `HTTP`
+   - **URL**: `sbay-nginx:80`
+5. **เริ่มรัน**:
+   ```bash
+   docker compose up -d
+   ```
+   ระบบจะออนไลน์ทันทีผ่านโดเมนที่คุณตั้งไว้ใน Cloudflare ครับ!
