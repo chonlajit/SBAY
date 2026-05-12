@@ -1,160 +1,89 @@
-# SBAY Recycling Project Deployment Guide
+# ♻️ SBAY - Smart Bin Asset Management System
 
-คู่มือนี้จัดทำขึ้นเพื่อเตรียมความพร้อมสำหรับการนำโปรเจกต์ SBAY (เว็บแอปพลิเคชัน ฐานข้อมูล และระบบ Backend) ไปติดตั้งหรือ Deploy ขึ้น Server จริงหรือใช้งานผ่าน Docker
-
-## โครงสร้างระบบ (System Architecture)
-
-ระบบประกอบไปด้วย 3 ส่วนหลัก:
-1. **Frontend (Next.js)**: พอร์ต 3000
-2. **Backend (Spring Boot)**: พอร์ต 8070
-3. **Database (MongoDB)**: พอร์ต 27017
+ระบบจัดการถังขยะอัจฉริยะแบบครบวงจร (Next.js + Spring Boot + MongoDB + Nginx)
 
 ---
 
-## 🚀 การ Deploy ด้วย Docker Compose (แนะนำ)
+## 🚀 ขั้นตอนการติดตั้งและเริ่มใช้งาน (Quick Start)
 
-วิธีที่สะดวกและง่ายที่สุดสำหรับการ Deploy ระบบคือการใช้ **Docker Compose** ซึ่งได้มีการเตรียมไฟล์ `docker-compose.yml` ให้พร้อมแล้ว
+### 1. การเตรียมเครื่อง (Prerequisites)
+ก่อนเริ่มติดตั้ง ตรวจสอบให้แน่ใจว่าเครื่องของคุณมี:
+- **Windows 10/11** พร้อมติดตั้ง **WSL2 (Ubuntu)**
+- **Docker Desktop** (ตั้งค่าให้ใช้ WSL2 Backend) หรือติดตั้ง Docker ภายใน Ubuntu 直接
 
-### ข้อกำหนดเบื้องต้น (Prerequisites)
-- สำหรับ **Linux Server**: จะต้องติดตั้ง [Docker](https://docs.docker.com/get-docker/) และ [Docker Compose](https://docs.docker.com/compose/install/)
-- สำหรับ **Windows Server / Local PC**: แนะนำให้รันผ่าน WSL (Windows Subsystem for Linux) โดยมีวิธีติดตั้งดังนี้:
-  1. เปิด PowerShell (Run as Administrator)
-  2. รันคำสั่งติดตั้ง WSL และ Ubuntu:
-     ```bash
-     wsl --install -d Ubuntu
-     ```
-  3. หลังจากติดตั้งเสร็จ ให้ทำการ Restart เครื่อง 1 ครั้ง
-  4. เปิด PowerShell ขึ้นมาใหม่ เข้าไปที่โฟลเดอร์โปรเจกต์ จากนั้นรันสคริปต์ติดตั้ง Docker ใน WSL ที่มีอยู่ในโปรเจกต์:
-     ```bash
-     wsl -d Ubuntu -e bash setup_docker.sh
-     ```
-
-### ขั้นตอนการรัน
-1. เข้าไปที่โฟลเดอร์หลักของโปรเจกต์ (SBAY)
-2. รันคำสั่งต่อไปนี้เพื่อสั่ง Build และ Start Services ทั้งหมด:
-
-   **กรณีใช้งานบนเซิร์ฟเวอร์ Linux ทั่วไป หรือใช้ Windows ร่วมกับ Docker Desktop:**
-   ```bash
-   docker-compose up -d --build
-   ```
-
-   **กรณีใช้งานบน Windows ผ่านระบบ WSL (Ubuntu) ตามที่มีการตั้งค่าในโปรเจกต์:**
-   ```bash
-   wsl -d Ubuntu docker compose up -d --build
-   ```
-3. รอจนกว่าระบบจะ Build เสร็จและรันขึ้นมา สามารถเช็คสถานะการทำงานได้ด้วย:
-   ```bash
-   docker-compose ps
-   ```
-4. ทดสอบเข้าใช้งาน:
-   - **Frontend**: http://localhost:3000 หรือ `http://<IP_ของ_Server>:3000`
-   - **Backend API**: http://localhost:8070 หรือ `http://<IP_ของ_Server>:8070`
-   - **Admin QR**: http://localhost:3000/admin/qr
-
-### การจัดการคอนเทนเนอร์
-- **ดู Log การทำงาน**:
-  ```bash
-  docker-compose logs -f
-  ```
-- **ปิดการทำงาน**:
-  ```bash
-  docker-compose down
-  ```
-
----
-
-## 🛠 ข้อมูลสำหรับการ Deploy แยกระบบ (Manual Deployment)
-
-หากคุณไม่ต้องการใช้ Docker Compose และต้องการนำไปรันบน Server แบบ Manual สามารถทำตามขั้นตอนต่อไปนี้:
-
-### 1. ฐานข้อมูล MongoDB
-- ติดตั้ง MongoDB บนเครื่อง Server
-- ให้แน่ใจว่า Service MongoDB ทำงานอยู่ที่พอร์ต `27017`
-- ฐานข้อมูลจะถูกสร้างและใช้งานชื่อ `iotdb` โดยอัตโนมัติ
-
-### 2. Backend (Spring Boot)
-ระบบ Spring Boot สามารถ Build เป็นไฟล์ `.jar` นำไปรันได้ทุกที่ที่มี Java 17
-
-- **วิธี Build**:
-  ```bash
-  cd backend
-  mvn clean package -DskipTests
-  ```
-- **วิธี Run**:
-  หลังจาก Build จะได้ไฟล์ `.jar` ในโฟลเดอร์ `target` ให้นำไฟล์ไปรันโดยสามารถส่งค่า Environment Variables กำหนดที่อยู่ของ MongoDB ได้:
-  ```bash
-  export MONGODB_HOST=localhost
-  java -jar target/iot-backend-0.0.1-SNAPSHOT.jar
-  ```
-  *(ถ้าใช้ชื่อไฟล์ต่างไป ให้เปลี่ยนชื่อไฟล์ `.jar` ให้ตรงกัน)*
-
-### 3. Frontend (Next.js)
-ฝั่ง Frontend จำเป็นต้องใช้ Node.js 18+
-
-- **วิธี Build**:
-  ```bash
-  cd frontend
-  npm install
-  npm run build
-  ```
-- **วิธี Run**:
-  รันด้วยโหมด Production:
-  ```bash
-  npm start
-  ```
-- คุณสามารถรันด้วยเครื่องมืออย่าง `PM2` (สำหรับจัดการ Process บนเซิร์ฟเวอร์) ได้เช่นกัน:
-  ```bash
-  pm2 start npm --name "sbay-frontend" -- start
-  ```
-
-## 🌍 การตั้งค่าเพื่อเชื่อมต่อ Domain Name (Production Ready)
-
-ระบบได้รับการออกแบบโครงสร้างแบบ **Reverse Proxy (Nginx)** ไว้ให้พร้อมแล้ว หากคุณต้องการใช้ชื่อ Domain จริงๆ ทำได้ง่ายมากครับ:
-
-1. ซื้อและตั้งค่าจดโดเมน (เช่น `sbay.com`)
-2. ไปตั้งค่า **DNS A Record** ของโดเมนคุณ ให้ชี้เลข **Public IP** มาที่เครื่อง Server นี้ (ระบุช่อง Host เป็น `@` หรือ `www`)
-3. เสร็จแล้ว!
-4. เมื่อมีคนเข้าเว็บ `http://sbay.com` 
-   - ระบบ **Nginx** จะรับหน้าที่ชี้คนเข้าเว็บไปที่ Frontend ให้โดยอัตโนมัติ 
-   - และถ้ามีการกดแอป ระบบจะชี้เส้นทาง API ไปที่ Backend ให้อัตโนมัติ (ผ่านพาธ `/api`)
-
-> **หมายเหตุ:** 
-> - ระบบนี้ไม่ต้องพึ่งพาพอร์ต `3000` หรือ `8070` ในการเข้าใช้งานอีกต่อไป (แต่ต้องแน่ใจว่าเครื่อง Server ของคุณเปิดอนุญาตพอร์ต 80 จากภายนอกแล้ว)
-> - ข้อมูลฐานข้อมูลทั้งหมด จะถูกเก็บถาวรด้วย `volumes` ของ Docker ข้อมูลจะไม่หายเมื่อสั่งปิดเครื่อง
-
----
-
-## 🐧 Deployment on Ubuntu Server (Production)
-
-ขั้นตอนสำหรับการนำไปติดตั้งบน Server จริง (Ubuntu 22.04/24.04):
-
-### 1. ติดตั้ง Docker & Docker Compose
-รันคำสั่งเหล่านี้เพื่อติดตั้ง Docker บน Server:
-```bash
-sudo apt update
-sudo apt install -y docker.io docker-compose-v2
-sudo usermod -aG docker $USER
-# จากนั้นให้ Logout และ Login ใหม่เพื่อให้สิทธิ์ Docker ทำงาน
-```
-
-### 2. Clone โปรเจกต์
+### 2. การ Clone โปรเจกต์ (Cloning)
+เปิด Terminal (PowerShell หรือ Ubuntu) แล้วรันคำสั่ง:
 ```bash
 git clone <URL_ของ_REPO_คุณ>
 cd SBAY
 ```
 
-### 3. รันระบบด้วย Docker Compose
-```bash
-# รันแบบ Background
-docker compose up -d --build
+### 3. การเริ่มใช้งานระบบ (Running the App)
+ใช้คำสั่ง Docker Compose เพื่อสร้างและเริ่มทำงานทุกส่วน (Frontend, Backend, Database, Proxy):
+```powershell
+# รันผ่าน WSL Ubuntu
+wsl -d Ubuntu docker compose up -d --build
 ```
+*หมายเหตุ: การรันครั้งแรกอาจใช้เวลา 3-5 นาที เนื่องจากการ Build Frontend (Next.js) และ Backend (Java)*
 
-### 4. การเข้าใช้งาน
-- **Web App**: `http://<SERVER_IP>:8080` (หรือพอร์ตที่ตั้งไว้)
-- **Database GUI**: `http://<SERVER_IP>:8081`
+---
 
-### 💡 ข้อแนะนำสำหรับการขึ้น Production จริง:
-1. **เปลี่ยนพอร์ตกลับเป็น 80**: หากไม่มีโปรแกรมอื่นใน Server แย่งใช้พอร์ต 80 แนะนำให้แก้ `docker-compose.yml` กลับไปเป็น `- "80:80"` เพื่อให้ผู้ใช้เข้าผ่าน URL ปกติได้โดยไม่ต้องพิมพ์พอร์ต
-2. **การตั้งค่า Domain**: ชี้ A Record ของโดเมนคุณมาที่ IP ของ Server จากนั้นระบบ Nginx จะจัดการที่เหลือให้เองครับ
-3. **ความปลอดภัย**: หากใช้บน Server จริง ควรตั้งรหัสผ่านให้ Mongo Express ใน `docker-compose.yml` ด้วยครับ
+## 🌐 ช่องทางการเข้าใช้งาน (Access URLs)
 
+เมื่อระบบสถานะขึ้นว่า **Running** ทั้งหมดแล้ว คุณสามารถเข้าใช้งานได้ดังนี้:
+
+| ส่วนงาน | URL | หมายเหตุ |
+| :--- | :--- | :--- |
+| **หน้าเว็บหลัก (User)** | [http://localhost:8080](http://localhost:8080) | สำหรับผู้ใช้ทั่วไป / ลงทะเบียน |
+| **หน้าจัดการ (Admin)** | [http://localhost:8080/admin](http://localhost:8080/admin) | ต้องใช้สิทธิ์ ADMIN เท่านั้น |
+| **จัดการฐานข้อมูล GUI** | [http://localhost:8081](http://localhost:8081) | User: `admin` / Pass: `pass` |
+
+---
+
+## 🛠️ โครงสร้างระบบ (Architecture)
+
+ระบบถูกออกแบบด้วยสถาปัตยกรรม Microservices ย่อยๆ ทำงานร่วมกันผ่าน Nginx Reverse Proxy:
+- **Frontend**: Next.js 15 (รันที่พอร์ต 3000 ภายใน)
+- **Backend**: Spring Boot (รันที่พอร์ต 8070 ภายใน)
+- **Database**: MongoDB (เก็บข้อมูลถาวรใน Docker Volume)
+- **Proxy**: Nginx (รับงานที่พอร์ต 8080 และกระจายงานไปส่วนต่างๆ)
+
+---
+
+## 🔑 คู่มือสำหรับ Admin
+
+### วิธีการตั้งค่าสิทธิ์ ADMIN (Promote User)
+หากคุณต้องการตั้งสิทธิ์ให้เบอร์โทรศัพท์ใดเป็น Admin ให้ใช้สคริปต์ที่เตรียมไว้:
+```powershell
+# รันผ่าน Bash ใน WSL
+wsl -d Ubuntu bash promote.sh
+```
+*(ในสคริปต์มีการตั้งค่าเบอร์พื้นฐานไว้แล้ว คุณสามารถแก้ไขเบอร์ในไฟล์ `promote.sh` ได้)*
+
+---
+
+## 🐧 การติดตั้งบน Server จริง (Ubuntu Server)
+
+หากต้องการนำไปรันบน Ubuntu Server ให้ทำตามขั้นตอนดังนี้:
+
+1. **ติดตั้ง Docker**:
+   ```bash
+   sudo apt update && sudo apt install -y docker.io docker-compose-v2
+   sudo usermod -aG docker $USER
+   ```
+2. **Clone & Run**:
+   ```bash
+   git clone <REPO_URL>
+   cd SBAY
+   docker compose up -d --build
+   ```
+3. **การเปลี่ยนพอร์ต**: หากต้องการใช้พอร์ต 80 (พอร์ตมาตรฐานเว็บ) ให้แก้ไขไฟล์ `docker-compose.yml` ในส่วน `nginx` จาก `"8080:80"` เป็น `"80:80"`
+
+---
+
+## 📝 หมายเหตุการพัฒนา
+- หากมีการแก้ไขโค้ดในโฟลเดอร์ `frontend` หรือ `backend` ต้องรันคำสั่ง `docker compose up -d --build` ใหม่เสมอเพื่อให้ Docker อัปเดตโค้ดล่าสุด
+- ข้อมูลในฐานข้อมูลจะไม่หายไปแม้จะปิดเครื่อง เนื่องจากมีการใช้ `volumes: mongodb_data`
+
+---
+**พัฒนาโดย:** ทีม SBAY
