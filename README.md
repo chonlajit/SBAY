@@ -123,3 +123,38 @@
 > - ข้อมูลฐานข้อมูลทั้งหมด จะถูกเก็บถาวรด้วย `volumes` ของ Docker ข้อมูลจะไม่หายเมื่อสั่งปิดเครื่อง
 
 ---
+
+## 🐧 Deployment on Ubuntu Server (Production)
+
+ขั้นตอนสำหรับการนำไปติดตั้งบน Server จริง (Ubuntu 22.04/24.04):
+
+### 1. ติดตั้ง Docker & Docker Compose
+รันคำสั่งเหล่านี้เพื่อติดตั้ง Docker บน Server:
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker $USER
+# จากนั้นให้ Logout และ Login ใหม่เพื่อให้สิทธิ์ Docker ทำงาน
+```
+
+### 2. Clone โปรเจกต์
+```bash
+git clone <URL_ของ_REPO_คุณ>
+cd SBAY
+```
+
+### 3. รันระบบด้วย Docker Compose
+```bash
+# รันแบบ Background
+docker compose up -d --build
+```
+
+### 4. การเข้าใช้งาน
+- **Web App**: `http://<SERVER_IP>:8080` (หรือพอร์ตที่ตั้งไว้)
+- **Database GUI**: `http://<SERVER_IP>:8081`
+
+### 💡 ข้อแนะนำสำหรับการขึ้น Production จริง:
+1. **เปลี่ยนพอร์ตกลับเป็น 80**: หากไม่มีโปรแกรมอื่นใน Server แย่งใช้พอร์ต 80 แนะนำให้แก้ `docker-compose.yml` กลับไปเป็น `- "80:80"` เพื่อให้ผู้ใช้เข้าผ่าน URL ปกติได้โดยไม่ต้องพิมพ์พอร์ต
+2. **การตั้งค่า Domain**: ชี้ A Record ของโดเมนคุณมาที่ IP ของ Server จากนั้นระบบ Nginx จะจัดการที่เหลือให้เองครับ
+3. **ความปลอดภัย**: หากใช้บน Server จริง ควรตั้งรหัสผ่านให้ Mongo Express ใน `docker-compose.yml` ด้วยครับ
+

@@ -33,7 +33,7 @@ export default function RegisterPage() {
 
         const success = await register(form, machineId);
         if (success) {
-            router.push(`/operation/${machineId}`);
+            router.push('/dashboard');
         } else {
             alert('Registration Failed');
         }

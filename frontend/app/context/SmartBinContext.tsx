@@ -75,12 +75,16 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
             const port = window.location.port;
-            // If port is empty (80/443) or 80, we are behind Nginx proxy
-            const isProxied = !port || port === '80' || port === '443';
-            const apiPortStr = isProxied ? '' : ':8070';
-            
-            setApiBase(`http://${hostname}${apiPortStr}/api`);
-            setWsBase(`ws://${hostname}${apiPortStr}/ws-native`);
+            // If port is 3000, we are in direct frontend dev mode, so backend is at 8070
+            // Otherwise, we use the current port (80, 8080, etc.) which is handled by Nginx
+            if (port === '3000') {
+                setApiBase(`http://${hostname}:8070/api`);
+                setWsBase(`ws://${hostname}:8070/ws-native`);
+            } else {
+                const portStr = port ? `:${port}` : '';
+                setApiBase(`http://${hostname}${portStr}/api`);
+                setWsBase(`ws://${hostname}${portStr}/ws-native`);
+            }
 
             // Restore session
             const savedUser = localStorage.getItem('sbay_user');

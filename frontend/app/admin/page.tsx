@@ -19,8 +19,7 @@ export default function AdminPage() {
         try {
             const hostname = window.location.hostname;
             const port = window.location.port;
-            const isProxied = !port || port === '80' || port === '443';
-            const apiBase = `http://${hostname}${isProxied ? '' : ':8070'}/api`;
+            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
 
             const headers = { 'Authorization': `Bearer ${token}` };
 
@@ -53,8 +52,8 @@ export default function AdminPage() {
         try {
             const hostname = window.location.hostname;
             const port = window.location.port;
-            const isProxied = !port || port === '80' || port === '443';
-            const res = await fetch(`http://${hostname}${isProxied ? '' : ':8070'}/api/admin/user/${userId}`, {
+            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
+            const res = await fetch(`${apiBase}/admin/user/${userId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -76,8 +75,8 @@ export default function AdminPage() {
         try {
             const hostname = window.location.hostname;
             const port = window.location.port;
-            const isProxied = !port || port === '80' || port === '443';
-            const res = await fetch(`http://${hostname}${isProxied ? '' : ':8070'}/api/admin/reset`, {
+            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
+            const res = await fetch(`${apiBase}/admin/reset`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
