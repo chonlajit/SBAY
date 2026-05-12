@@ -16,7 +16,18 @@
 วิธีที่สะดวกและง่ายที่สุดสำหรับการ Deploy ระบบคือการใช้ **Docker Compose** ซึ่งได้มีการเตรียมไฟล์ `docker-compose.yml` ให้พร้อมแล้ว
 
 ### ข้อกำหนดเบื้องต้น (Prerequisites)
-- Server จะต้องติดตั้ง [Docker](https://docs.docker.com/get-docker/) และ [Docker Compose](https://docs.docker.com/compose/install/)
+- สำหรับ **Linux Server**: จะต้องติดตั้ง [Docker](https://docs.docker.com/get-docker/) และ [Docker Compose](https://docs.docker.com/compose/install/)
+- สำหรับ **Windows Server / Local PC**: แนะนำให้รันผ่าน WSL (Windows Subsystem for Linux) โดยมีวิธีติดตั้งดังนี้:
+  1. เปิด PowerShell (Run as Administrator)
+  2. รันคำสั่งติดตั้ง WSL และ Ubuntu:
+     ```bash
+     wsl --install -d Ubuntu
+     ```
+  3. หลังจากติดตั้งเสร็จ ให้ทำการ Restart เครื่อง 1 ครั้ง
+  4. เปิด PowerShell ขึ้นมาใหม่ เข้าไปที่โฟลเดอร์โปรเจกต์ จากนั้นรันสคริปต์ติดตั้ง Docker ใน WSL ที่มีอยู่ในโปรเจกต์:
+     ```bash
+     wsl -d Ubuntu -e bash setup_docker.sh
+     ```
 
 ### ขั้นตอนการรัน
 1. เข้าไปที่โฟลเดอร์หลักของโปรเจกต์ (SBAY)
