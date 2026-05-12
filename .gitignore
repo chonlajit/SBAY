@@ -40,6 +40,7 @@ mvnw.cmd
 .mvn/
 
 # Python (IoT Device)
+iot-device/
 __pycache__/
 *.py[cod]
 *$py.class
