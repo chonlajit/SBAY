@@ -70,3 +70,4 @@ yolov8n.pt
 # Setup scripts
 setup_app.py
 setup_docker.sh
+run_app.py
