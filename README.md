@@ -107,13 +107,19 @@
   pm2 start npm --name "sbay-frontend" -- start
   ```
 
+## 🌍 การตั้งค่าเพื่อเชื่อมต่อ Domain Name (Production Ready)
+
+ระบบได้รับการออกแบบโครงสร้างแบบ **Reverse Proxy (Nginx)** ไว้ให้พร้อมแล้ว หากคุณต้องการใช้ชื่อ Domain จริงๆ ทำได้ง่ายมากครับ:
+
+1. ซื้อและตั้งค่าจดโดเมน (เช่น `sbay.com`)
+2. ไปตั้งค่า **DNS A Record** ของโดเมนคุณ ให้ชี้เลข **Public IP** มาที่เครื่อง Server นี้ (ระบุช่อง Host เป็น `@` หรือ `www`)
+3. เสร็จแล้ว!
+4. เมื่อมีคนเข้าเว็บ `http://sbay.com` 
+   - ระบบ **Nginx** จะรับหน้าที่ชี้คนเข้าเว็บไปที่ Frontend ให้โดยอัตโนมัติ 
+   - และถ้ามีการกดแอป ระบบจะชี้เส้นทาง API ไปที่ Backend ให้อัตโนมัติ (ผ่านพาธ `/api`)
+
+> **หมายเหตุ:** 
+> - ระบบนี้ไม่ต้องพึ่งพาพอร์ต `3000` หรือ `8070` ในการเข้าใช้งานอีกต่อไป (แต่ต้องแน่ใจว่าเครื่อง Server ของคุณเปิดอนุญาตพอร์ต 80 จากภายนอกแล้ว)
+> - ข้อมูลฐานข้อมูลทั้งหมด จะถูกเก็บถาวรด้วย `volumes` ของ Docker ข้อมูลจะไม่หายเมื่อสั่งปิดเครื่อง
+
 ---
-
-## หมายเหตุ / ข้อควรระวังในการ Deploy
-
-1. **Environment Variables**:
-   ใน `docker-compose.yml` ได้จัดการการเชื่อมต่อกันระหว่าง Frontend และ Backend ไว้แล้ว แต่หากนำไป Deploy ใน Server จริงที่แยก Domain (เช่น `api.sbay.com` และ `www.sbay.com`) คุณต้องกำหนด `NEXT_PUBLIC_API_URL` ในฝั่ง Frontend ใหม่ให้ชี้ไปยัง Domain ของ Backend (ตั้งค่าในตอน Build หรือส่งเป็น Environment Variable เข้าไป)
-2. **CORS Configuration**:
-   หาก Frontend มีการเรียก API ไปยัง Backend ข้าม Domain, ตรวจสอบการตั้งค่า CORS (Cross-Origin Resource Sharing) ในโปรเจกต์ Backend ให้รองรับ Domain ของ Frontend ด้วย. (ปัจจุบันอนุญาตสำหรับ `http://localhost:3000` และทั้งหมดตามที่ตั้งค่าใน `WebConfig.java`)
-3. **Data Persistence**:
-   ใน `docker-compose.yml` ได้ตั้งค่า `volumes: mongodb_data:/data/db` ไว้แล้ว ทำให้ข้อมูลจะไม่หายเมื่อสั่งลบ Container ข้อมูลของ MongoDB จะถูกจัดเก็บไว้ใน Host Machine
