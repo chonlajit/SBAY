@@ -21,7 +21,9 @@ export default function RedeemPage() {
 
         try {
             const hostname = window.location.hostname;
-            const apiBase = `http://${hostname}:8070/api`;
+            const port = window.location.port;
+            const isProxied = !port || port === '80' || port === '443';
+            const apiBase = `http://${hostname}${isProxied ? '' : ':8070'}/api`;
 
             const res = await fetch(`${apiBase}/redeem`, {
                 method: 'POST',

@@ -74,8 +74,13 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            setApiBase(`http://${hostname}:8070/api`);
-            setWsBase(`ws://${hostname}:8070/ws-native`);
+            const port = window.location.port;
+            // If port is empty (80/443) or 80, we are behind Nginx proxy
+            const isProxied = !port || port === '80' || port === '443';
+            const apiPortStr = isProxied ? '' : ':8070';
+            
+            setApiBase(`http://${hostname}${apiPortStr}/api`);
+            setWsBase(`ws://${hostname}${apiPortStr}/ws-native`);
 
             // Restore session
             const savedUser = localStorage.getItem('sbay_user');
