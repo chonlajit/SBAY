@@ -21,7 +21,7 @@ export default function RedeemPage() {
 
         try {
             const hostname = window.location.hostname;
-            const apiBase = `http://${hostname}:8080/api`;
+            const apiBase = `http://${hostname}:8070/api`;
 
             const res = await fetch(`${apiBase}/redeem`, {
                 method: 'POST',
@@ -52,9 +52,9 @@ export default function RedeemPage() {
                 <h1 className="font-bold text-lg">แลกของรางวัล</h1>
             </div>
 
-            <div className="p-6 pb-20">
+            <div className="p-6 pb-20 max-w-md md:max-w-5xl mx-auto">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-3 gap-2 mb-6">
+                <div className="grid grid-cols-3 gap-2 md:gap-6 mb-6">
                     <div className="bg-green-50 p-3 rounded-xl border border-green-100 text-center">
                         <div className="text-green-800 text-xs mb-1">แต้มสะสม</div>
                         <div className="font-bold text-lg text-green-700">{user.points}</div>
@@ -69,7 +69,7 @@ export default function RedeemPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                     {REWARDS.map(r => (
                         <div key={r.id} className="border rounded-xl p-4 flex items-center hover:shadow-md transition">
                             <div className="text-4xl mr-4">{r.icon}</div>

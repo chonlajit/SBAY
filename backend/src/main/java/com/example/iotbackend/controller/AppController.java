@@ -65,9 +65,11 @@ public class AppController {
         
         User newUser = new User();
         newUser.setPhoneNumber((String) payload.get("phoneNumber"));
+        newUser.setTitle((String) payload.get("title"));
         String firstName = (String) payload.get("firstName");
         newUser.setFirstName(firstName);
         newUser.setLastName((String) payload.get("lastName"));
+        newUser.setEmail((String) payload.get("email"));
         newUser.setStudentId((String) payload.get("studentId"));
         newUser.setPoints(0);
         
@@ -102,10 +104,36 @@ public class AppController {
 
     // Called by IoT Device
     @PostMapping("/machine/recycle")
-    public void receiveRecycleItem(@RequestBody Map<String, String> payload) {
-        String type = payload.get("type"); 
-        String machineId = payload.getOrDefault("machineId", "default-machine");
-        recycleService.processRecycleItem(machineId, type);
+    public void receiveRecycleItem(@RequestBody Map<String, Object> payload) {
+        String type = (String) payload.get("type"); 
+        String machineId = (String) payload.getOrDefault("machineId", "default-machine");
+        
+        // Map IoT label to Backend label (Legacy mapping)
+        if ("plastic_clear".equalsIgnoreCase(type)) {
+            type = "CLEAR_BOTTLES";
+        } else if ("plastic_cloudy".equalsIgnoreCase(type)) {
+            type = "OPAQUE_BOTTLES";
+        } else if ("steel".equalsIgnoreCase(type)) {
+            type = "STEEL_CAN";
+        } else if ("aluminum".equalsIgnoreCase(type)) {
+            type = "ALUMINUM_CANS";
+        } else if ("glass".equalsIgnoreCase(type)) {
+            type = "GLASSES_BOTTLES";
+        }
+        
+        int points = 0;
+        Object scoreObj = payload.get("score");
+        if (scoreObj == null) scoreObj = payload.get("points"); // Fallback
+        
+        if (scoreObj != null) {
+            try {
+                points = (int) Math.round(Double.parseDouble(String.valueOf(scoreObj)));
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid score/points value from IoT: " + scoreObj);
+            }
+        }
+        
+        recycleService.processRecycleItem(machineId, type, points);
     }
     
     @GetMapping("/transactions/user/{userId}")

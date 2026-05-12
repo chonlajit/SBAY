@@ -18,6 +18,6 @@ Write-Host "Promoting User with Phone: $PhoneNumber to ADMIN..." -ForegroundColo
 
 $cmd = "db.users.updateOne({phoneNumber: '$PhoneNumber'}, {`$set: {role: 'ADMIN'}})"
 
-docker exec sbay-mongodb-1 mongosh iotdb --eval "$cmd"
+mongosh iotdb --eval "$cmd"
 
 Write-Host "Done! Please try logging in again." -ForegroundColor Green

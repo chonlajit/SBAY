@@ -8,8 +8,10 @@ import { useRouter } from 'next/navigation';
 export interface User {
     id: string;
     phoneNumber: string;
+    title?: string;
     firstName: string;
     lastName: string;
+    email?: string;
     studentId: string;
     points: number;
     volunteerHours?: number;
@@ -47,10 +49,11 @@ export const MACHINES = [
 ];
 
 export const WASTE_TYPES = [
-    { type: 'CLEAR_BOTTLE', label: 'ขวดใส', points: 1 },
-    { type: 'OPAQUE_BOTTLE', label: 'ขวดขุ่น', points: 2 },
+    { type: 'CLEAR_BOTTLES', label: 'ขวดพลาสติกใส', points: 1 },
+    { type: 'OPAQUE_BOTTLES', label: 'ขวดพลาสติกขุ่น', points: 2 },
+    { type: 'GLASSES_BOTTLES', label: 'ขวดแก้ว', points: 5 },
     { type: 'STEEL_CAN', label: 'กระป๋องเหล็ก', points: 2 },
-    { type: 'ALUMINUM_CAN', label: 'กระป๋องอลูมิเนียม', points: 3 },
+    { type: 'ALUMINUM_CANS', label: 'กระป๋องอลูมิเนียม', points: 3 },
 ];
 
 export function SmartBinProvider({ children }: { children: React.ReactNode }) {
@@ -61,8 +64,8 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
     const [wsConnected, setWsConnected] = useState(false);
 
     // Config
-    const [apiBase, setApiBase] = useState('http://localhost:8080/api');
-    const [wsBase, setWsBase] = useState('ws://localhost:8080/ws-native');
+    const [apiBase, setApiBase] = useState('http://localhost:8070/api');
+    const [wsBase, setWsBase] = useState('ws://localhost:8070/ws-native');
 
     const clientRef = useRef<Client | null>(null);
     const router = useRouter();
@@ -71,8 +74,8 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            setApiBase(`http://${hostname}:8080/api`);
-            setWsBase(`ws://${hostname}:8080/ws-native`);
+            setApiBase(`http://${hostname}:8070/api`);
+            setWsBase(`ws://${hostname}:8070/ws-native`);
 
             // Restore session
             const savedUser = localStorage.getItem('sbay_user');

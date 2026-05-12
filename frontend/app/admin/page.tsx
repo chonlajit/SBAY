@@ -18,7 +18,7 @@ export default function AdminPage() {
 
         try {
             const hostname = window.location.hostname;
-            const apiBase = `http://${hostname}:8080/api`;
+            const apiBase = `http://${hostname}:8070/api`;
 
             const headers = { 'Authorization': `Bearer ${token}` };
 
@@ -50,7 +50,7 @@ export default function AdminPage() {
 
         try {
             const hostname = window.location.hostname;
-            const res = await fetch(`http://${hostname}:8080/api/admin/user/${userId}`, {
+            const res = await fetch(`http://${hostname}:8070/api/admin/user/${userId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -63,6 +63,28 @@ export default function AdminPage() {
             }
         } catch (e) {
             console.error("Delete failed", e);
+        }
+    };
+
+    const handleResetSystem = async () => {
+        if (!confirm("Are you SURE you want to reset all transactions and user points? This action CANNOT be undone!")) return;
+        
+        try {
+            const hostname = window.location.hostname;
+            const res = await fetch(`http://${hostname}:8070/api/admin/reset`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                alert("System data reset successfully!");
+                fetchData(); // Refresh list
+            } else {
+                alert("Failed to reset system data");
+            }
+        } catch (e) {
+            console.error("Reset failed", e);
+            alert("Error connecting to server.");
         }
     };
 
@@ -94,12 +116,18 @@ export default function AdminPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 font-sans text-black p-6">
-            <div className="flex justify-between items-center mb-6">
+        <div className="min-h-screen bg-gray-100 font-sans text-black p-6 md:p-12">
+            <div className="max-w-7xl mx-auto">
+                <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-                <button onClick={() => router.push('/')} className="bg-gray-200 px-4 py-2 rounded text-sm">
-                    Back to Home
-                </button>
+                <div className="flex space-x-3">
+                    <button onClick={handleResetSystem} className="bg-red-500 hover:bg-red-600 text-white font-bold px-4 py-2 rounded shadow-sm transition">
+                        ⚠️ Reset System Data
+                    </button>
+                    <button onClick={() => router.push('/')} className="bg-gray-200 hover:bg-gray-300 font-bold px-4 py-2 rounded shadow-sm transition">
+                        Back to Home
+                    </button>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -221,6 +249,7 @@ export default function AdminPage() {
                         </tbody>
                     </table>
                 </div>
+            </div>
             </div>
         </div>
     );

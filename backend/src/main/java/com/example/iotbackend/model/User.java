@@ -14,8 +14,10 @@ public class User {
     @Indexed(unique = true)
     private String phoneNumber;
     
+    private String title;
     private String firstName;
     private String lastName;
+    private String email;
     private String studentId;
     
     private int points;

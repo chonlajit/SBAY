@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSmartBin } from '../context/SmartBinContext';
 
-export default function LoginPage() {
+function LoginContent() {
     const [phoneInput, setPhoneInput] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -59,8 +59,6 @@ export default function LoginPage() {
         }
     };
 
-    // if (!machineId) return null; // We allow no machineId now
-
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-green-500 font-sans p-4">
             <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-md">
@@ -73,7 +71,7 @@ export default function LoginPage() {
                         </div>
                     ) : (
                         <div className="mt-2 text-xs bg-white/20 inline-block px-2 py-1 rounded text-white">
-                            เช็คยอดเงิน / สมาชิก
+                            เช็คยอดคะแนนสะสม / แลกคะแนนสะสม
                         </div>
                     )}
                 </div>
@@ -82,10 +80,17 @@ export default function LoginPage() {
                     <div className="w-full bg-gray-100 rounded-xl p-4 mb-6 text-center relative">
                         <input
                             type="text"
-                            className="bg-transparent text-3xl font-bold text-gray-800 text-center w-full outline-none tracking-widest"
+                            className="bg-transparent text-2xl font-bold text-gray-800 text-center w-full outline-none tracking-widest"
                             value={phoneInput}
-                            readOnly
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '');
+                                if (val.length <= 10) setPhoneInput(val);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleConfirm();
+                            }}
                             placeholder="0XX-XXX-XXXX"
+                            autoFocus
                         />
                         {error && <div className="absolute -bottom-6 left-0 right-0 text-red-500 text-xs">{error}</div>}
                     </div>
@@ -95,18 +100,18 @@ export default function LoginPage() {
                             <button
                                 key={num}
                                 onClick={() => handleNumClick(num.toString())}
-                                className="bg-gray-50 hover:bg-green-50 text-green-600 font-bold text-2xl py-4 rounded-xl shadow-sm transition active:scale-95 border border-gray-100"
+                                className="bg-gray-50 hover:bg-green-50 text-green-600 font-bold text-2xl py-2 rounded-xl shadow-sm transition active:scale-95 border border-gray-100"
                             >
                                 {num}
                             </button>
                         ))}
-                        <button onClick={() => setPhoneInput('')} className="bg-red-50 hover:bg-red-100 text-red-500 font-bold text-lg py-4 rounded-xl shadow-sm transition active:scale-95">
+                        <button onClick={() => setPhoneInput('')} className="bg-red-50 hover:bg-red-100 text-red-500 font-bold text-xl py-2 rounded-xl shadow-sm transition active:scale-95">
                             C
                         </button>
-                        <button onClick={() => handleNumClick('0')} className="bg-gray-50 hover:bg-green-50 text-green-600 font-bold text-2xl py-4 rounded-xl shadow-sm transition active:scale-95 border border-gray-100">
+                        <button onClick={() => handleNumClick('0')} className="bg-gray-50 hover:bg-green-50 text-green-600 font-bold text-2xl py-2 rounded-xl shadow-sm transition active:scale-95 border border-gray-100">
                             0
                         </button>
-                        <button onClick={handleBackspace} className="bg-orange-50 hover:bg-orange-100 text-orange-500 font-bold text-xl py-4 rounded-xl shadow-sm transition active:scale-95">
+                        <button onClick={handleBackspace} className="bg-orange-50 hover:bg-orange-100 text-orange-500 font-bold text-xl py-2 rounded-xl shadow-sm transition active:scale-95">
                             ⌫
                         </button>
                     </div>
@@ -129,5 +134,13 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <React.Suspense fallback={<div className="flex flex-col items-center justify-center min-h-screen bg-green-500 font-sans p-4 text-white">กำลังโหลด...</div>}>
+            <LoginContent />
+        </React.Suspense>
     );
 }

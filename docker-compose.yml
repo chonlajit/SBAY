@@ -1,20 +1,41 @@
+version: '3.8'
+
 services:
   mongodb:
     image: mongo:latest
+    container_name: sbay-mongodb
     ports:
-      - "27018:27017"
+      - "27017:27017"
     volumes:
-      - mongo-data:/data/db
+      - mongodb_data:/data/db
+    restart: always
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sbay-backend
     ports:
-      - "8080:8080"
+      - "8070:8070"
     environment:
-      - SPRING_DATA_MONGODB_HOST=mongodb
-      - SPRING_DATA_MONGODB_PORT=27017
+      - MONGODB_HOST=mongodb
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/iotdb
     depends_on:
       - mongodb
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sbay-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8070
+    depends_on:
+      - backend
+    restart: always
 
 volumes:
-  mongo-data:
+  mongodb_data:

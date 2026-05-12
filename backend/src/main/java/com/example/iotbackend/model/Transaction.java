@@ -11,7 +11,7 @@ public class Transaction {
     @Id
     private String id;
     private String userId;
-    private String wasteType; // CLEAR_BOTTLE, OPAQUE_BOTTLE, CAN, ALUMINUM
+    private String wasteType; // CLEAR_BOTTLES, OPAQUE_BOTTLES, GLASSES_BOTTLES, STEEL_CAN, ALUMINUM_CANS
     private int pointsEarned;
     private LocalDateTime timestamp;
 }

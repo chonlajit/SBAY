@@ -16,13 +16,15 @@ export default function RegisterPage() {
     const machineId = 'BIN-001';
 
     const [form, setForm] = useState({
+        title: 'นาย',
         firstName: '',
         lastName: '',
         studentId: '',
-        phoneNumber: ''
+        phoneNumber: '',
+        email: ''
     });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
@@ -50,7 +52,19 @@ export default function RegisterPage() {
                         <label className="block text-gray-700 text-sm font-bold mb-2">เบอร์โทรศัพท์</label>
                         <input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} className="w-full bg-gray-100 rounded-lg p-3 text-gray-800" placeholder="0XX-XXX-XXXX" />
                     </div>
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">อีเมล</label>
+                        <input type="email" name="email" value={form.email} onChange={handleChange} className="w-full bg-gray-100 rounded-lg p-3 text-gray-800" placeholder="example@email.com" />
+                    </div>
                     <div className="flex space-x-2">
+                        <div className="w-1/3">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">คำนำหน้า</label>
+                            <select name="title" value={form.title} onChange={handleChange} className="w-full bg-gray-100 rounded-lg p-3 text-gray-800 appearance-none">
+                                <option value="นาย">นาย</option>
+                                <option value="นาง">นาง</option>
+                                <option value="นางสาว">นางสาว</option>
+                            </select>
+                        </div>
                         <div className="flex-1">
                             <label className="block text-gray-700 text-sm font-bold mb-2">ชื่อ</label>
                             <input name="firstName" value={form.firstName} onChange={handleChange} className="w-full bg-gray-100 rounded-lg p-3 text-gray-800" placeholder="ชื่อจริง" />

@@ -65,11 +65,15 @@ export default function OperationPage({ params }: { params: Promise<{ machineId:
                         <div className="space-y-3">
                             {sessionHistory.map((tx, idx) => {
                                 const typeLabel = wasteTypes.find(w => w.type === tx.wasteType)?.label || tx.wasteType;
+                                const time = new Date(tx.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                                 return (
-                                    <div key={idx} className="flex justify-between items-center font-bold text-lg border-b border-gray-100 pb-2">
-                                        <span className="text-gray-800 w-1/2 truncate">{typeLabel}</span>
-                                        <span className="text-green-500 w-1/4 text-center">เสร็จสิ้น</span>
-                                        <span className="text-green-600 w-1/4 text-right">+{tx.pointsEarned}p</span>
+                                    <div key={idx} className="flex justify-between items-center border-b border-gray-100 pb-2">
+                                        <div className="w-1/2 flex flex-col">
+                                            <span className="text-gray-800 font-bold text-lg truncate">{typeLabel}</span>
+                                            <span className="text-xs text-gray-400">🕒 {time}</span>
+                                        </div>
+                                        <span className="text-green-500 w-1/4 text-center font-bold text-lg">เสร็จสิ้น</span>
+                                        <span className="text-green-600 w-1/4 text-right font-bold text-lg">+{tx.pointsEarned}p</span>
                                     </div>
                                 );
                             })}

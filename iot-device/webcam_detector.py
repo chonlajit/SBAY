@@ -26,8 +26,9 @@ model = YOLO('yolov8n.pt')
 CLASS_MAPPING = {
     39: "CLEAR_BOTTLE", 
     40: "OPAQUE_BOTTLE",
-    41: "ALUMINUM_CAN",
-    45: "STEEL_CAN"
+    41: "GLASSES_BOTTLE",
+    45: "STEEL_CAN",
+    46: "ALUMINUM_CAN"
 }
 
 def get_machine_status():

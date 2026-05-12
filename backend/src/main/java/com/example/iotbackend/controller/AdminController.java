@@ -99,4 +99,21 @@ public class AdminController {
 
         return summary;
     }
+
+    @PostMapping("/reset")
+    public Map<String, String> resetSystem(@RequestHeader("Authorization") String token) {
+        validateAdmin(token);
+        
+        // Delete all transactions
+        transactionRepository.deleteAll();
+        
+        // Reset points for all users
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            user.setPoints(0);
+        }
+        userRepository.saveAll(users);
+        
+        return Map.of("message", "System transactions and points reset successfully.");
+    }
 }

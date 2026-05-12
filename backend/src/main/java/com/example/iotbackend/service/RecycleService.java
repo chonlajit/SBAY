@@ -40,14 +40,16 @@ public class RecycleService {
         messagingTemplate.convertAndSend("/topic/status/" + machineId, "Machine Ready");
     }
 
-    public Transaction processRecycleItem(String machineId, String wasteType) {
+    public Transaction processRecycleItem(String machineId, String wasteType, int points) {
         String activeUserId = machineSessions.get(machineId);
         
         if (activeUserId == null) {
             throw new RuntimeException("No user logged in to machine " + machineId);
         }
 
-        int points = calculatePoints(wasteType);
+        if (points <= 0) {
+            points = calculatePoints(wasteType);
+        }
 
         // Update User Points
         User user = userRepository.findById(activeUserId).orElseThrow();
@@ -71,10 +73,11 @@ public class RecycleService {
 
     private int calculatePoints(String type) {
         switch (type.toUpperCase()) {
-            case "CLEAR_BOTTLE": return 1;
-            case "OPAQUE_BOTTLE": return 2;
+            case "CLEAR_BOTTLES": return 1;
+            case "OPAQUE_BOTTLES": return 2;
+            case "GLASSES_BOTTLES": return 5;
             case "STEEL_CAN": return 2;
-            case "ALUMINUM_CAN": return 3;
+            case "ALUMINUM_CANS": return 3;
             default: return 0;
         }
     }
