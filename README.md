@@ -21,10 +21,16 @@
 ### ขั้นตอนการรัน
 1. เข้าไปที่โฟลเดอร์หลักของโปรเจกต์ (SBAY)
 2. รันคำสั่งต่อไปนี้เพื่อสั่ง Build และ Start Services ทั้งหมด:
+
+   **กรณีใช้งานบนเซิร์ฟเวอร์ Linux ทั่วไป หรือใช้ Windows ร่วมกับ Docker Desktop:**
    ```bash
    docker-compose up -d --build
    ```
-   *(หรือใช้ `docker compose up -d --build` หากใช้ Docker รุ่นใหม่)*
+
+   **กรณีใช้งานบน Windows ผ่านระบบ WSL (Ubuntu) ตามที่มีการตั้งค่าในโปรเจกต์:**
+   ```bash
+   wsl -d Ubuntu docker compose up -d --build
+   ```
 3. รอจนกว่าระบบจะ Build เสร็จและรันขึ้นมา สามารถเช็คสถานะการทำงานได้ด้วย:
    ```bash
    docker-compose ps
