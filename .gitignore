@@ -63,6 +63,10 @@ build/
 *.env
 
 # Large Files / Models (Optional - uncomment if you want to ignore models)
-# *.pt
-# *.onnx
-# yolov8n.pt
+*.pt
+*.onnx
+yolov8n.pt
+
+# Setup scripts
+setup_app.py
+setup_docker.sh
