@@ -39,8 +39,7 @@ mvnw
 mvnw.cmd
 .mvn/
 
-# Python (IoT Device)
-iot-device/
+# Python (Common)
 __pycache__/
 *.py[cod]
 *$py.class
@@ -54,20 +53,16 @@ dist/
 build/
 *.spec
 
-# Environment Variables
+# Environment Variables (IMPORTANT: Never commit secrets)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 *.env
+!.env.example
 
-# Large Files / Models (Optional - uncomment if you want to ignore models)
+# Large Files / Models
 *.pt
 *.onnx
 yolov8n.pt
-
-# Setup scripts
-setup_app.py
-setup_docker.sh
-run_app.py
