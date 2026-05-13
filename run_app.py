@@ -47,7 +47,8 @@ def start_docker_service():
 
 def run_in_new_window(command, title):
     """Runs a command in a new PowerShell window."""
-    full_cmd = f'start-process powershell -ArgumentList "-NoExit", "-Command", "{command}"'
+    # Added -ExecutionPolicy Bypass to avoid the npm.ps1 error
+    full_cmd = f'start-process powershell -ArgumentList "-ExecutionPolicy", "Bypass", "-NoExit", "-Command", "{command}"'
     subprocess.run(["powershell", "-Command", full_cmd])
 
 def main():
