@@ -8,6 +8,7 @@ import shutil
 WSL_DISTRO = "Ubuntu"
 BACKEND_SERVICES = ["backend", "mongodb"]
 FRONTEND_DIR = "frontend"
+#--------------------
 
 def print_step(msg):
     print(f"\n[>>>] {msg}")
