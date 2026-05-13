@@ -39,6 +39,8 @@ def main():
         if result.returncode != 0:
             print(">> กำลังเปิด Service Docker ใน Ubuntu...")
             subprocess.run(["wsl", "-d", "Ubuntu", "sudo", "service", "docker", "start"], check=False)
+            # แก้เรื่องสิทธิ์การเข้าถึง Docker Socket
+            subprocess.run(["wsl", "-d", "Ubuntu", "sudo", "chmod", "666", "/var/run/docker.sock"], check=False)
             time.sleep(2)
         
         # รัน MongoDB และ Nginx (Nginx จะเป็นตัวกลางรวม Frontend/Backend)
