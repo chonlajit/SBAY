@@ -49,7 +49,7 @@ if (!(Get-Command "mvn" -ErrorAction SilentlyContinue)) {
 Write-Host "`n[4/4] ติดตั้ง Frontend Dependencies..." -ForegroundColor Cyan
 if (Test-Path ".\frontend\package.json") {
     Set-Location ".\frontend"
-    npm install
+    npm install --legacy-peer-deps
     Set-Location ".."
     Write-Host "ติดตั้ง Dependencies สำเร็จ" -ForegroundColor Green
 }
