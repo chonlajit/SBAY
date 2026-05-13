@@ -42,9 +42,8 @@ services:
       - "8080:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - frontend
-      - backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: always
 
   mongo-express:

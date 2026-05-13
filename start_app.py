@@ -41,10 +41,11 @@ def main():
             subprocess.run(["wsl", "-d", "Ubuntu", "sudo", "service", "docker", "start"], check=False)
             time.sleep(2)
         
-        subprocess.run(["wsl", "-d", "Ubuntu", "docker", "compose", "up", "-d", "mongodb"], check=True)
-        print(">> ฐานข้อมูลพร้อมใช้งาน!")
+        # รัน MongoDB และ Nginx (Nginx จะเป็นตัวกลางรวม Frontend/Backend)
+        subprocess.run(["wsl", "-d", "Ubuntu", "docker", "compose", "up", "-d", "mongodb", "nginx"], check=True)
+        print(">> ฐานข้อมูลและระบบจัดการ Network (Nginx) พร้อมใช้งาน!")
     except Exception as e:
-        print(f"[Warning] ข้ามการเปิด MongoDB ใน WSL (ถ้าใช้ Atlas ให้ข้ามข้อความนี้ไป)")
+        print(f"[Warning] ไม่สามารถเปิดระบบใน WSL ได้ ({e})")
 
     time.sleep(2)
 
@@ -78,8 +79,8 @@ def main():
         run_in_new_window(tunnel_cmd, "SBAY-Cloudflare-Tunnel")
     else:
         print_step("กำลังเปิด Cloudflare Tunnel (แบบชั่วคราว - Quick Tunnel)...")
-        # รันแบบ Quick Tunnel (จะได้ลิงก์ .trycloudflare.com)
-        tunnel_cmd = "cloudflared tunnel --url http://localhost:3000"
+        # ชี้ไปที่พอร์ต 8080 (Nginx) เพื่อให้เข้าถึงได้ทั้งระบบ
+        tunnel_cmd = "cloudflared tunnel --url http://localhost:8080"
         run_in_new_window(tunnel_cmd, "SBAY-Quick-Tunnel")
         print(">> กำลังสร้างลิงก์ชั่วคราว... กรุณาดู URL ในหน้าต่างใหม่ที่เด้งขึ้นมาครับ")
 
