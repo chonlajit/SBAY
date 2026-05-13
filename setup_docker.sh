@@ -27,14 +27,14 @@ echo \
 # 4. Install Docker Engine
 echo "[4/6] Installing Docker Engine..."
 sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-compose
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 # 5. User Group Configuration (Run Docker without sudo)
 echo "[5/6] Configuring user permissions..."
 sudo usermod -aG docker $USER
 
 # 6. Enable Systemd (Required for Docker service)
-echo "[6/6] checking systemd config..."
+echo "[6/6] Checking systemd config..."
 if ! grep -q "systemd=true" /etc/wsl.conf 2>/dev/null; then
     echo "Enabling systemd in /etc/wsl.conf..."
     echo -e "[boot]\nsystemd=true" | sudo tee -a /etc/wsl.conf
