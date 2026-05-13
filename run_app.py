@@ -2,110 +2,101 @@ import os
 import subprocess
 import time
 import sys
-import platform
 import shutil
 
-def check_docker_wsl(silent=False):
-    """Check if Docker is running in WSL (Ubuntu)."""
-    if not silent:
-        print("Checking Docker status in WSL...", end="", flush=True)
-    
-    try:
-        # Check if docker is running inside Ubuntu
-        result = subprocess.run(["wsl", "-d", "Ubuntu", "docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        if result.returncode == 0:
-            if not silent: print(" Found.")
-            return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        pass
-        
-    if not silent: print(" Not running.")
-    return False
+# --- Configuration ---
+WSL_DISTRO = "Ubuntu"
+BACKEND_SERVICES = ["backend", "mongodb"]
+FRONTEND_DIR = "frontend"
+WEBCAM_SCRIPT = "iot-device/webcam_detector.py"
 
-def start_docker_wsl():
-    """Attempt to start Docker service in WSL (Ubuntu)."""
-    print("Attempting to start Docker in WSL (Ubuntu)...")
+def print_step(msg):
+    print(f"\n[>>>] {msg}")
+
+def check_command(cmd):
+    """Check if a command exists on the system."""
+    return shutil.which(cmd) is not None
+
+def ensure_env_file():
+    """Ensure .env file exists."""
+    if not os.path.exists(".env"):
+        print_step("Creating .env file from .env.example...")
+        if os.path.exists(".env.example"):
+            shutil.copy(".env.example", ".env")
+        else:
+            with open(".env", "w") as f:
+                f.write("MACHINE_ID=BIN-001\nCF_TUNNEL_TOKEN=your_token_here\n")
+
+def check_docker_wsl():
+    """Check if Docker service is running in WSL."""
     try:
-        # Check if WSL Ubuntu exists
-        subprocess.run(["wsl", "-d", "Ubuntu", "true"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        # Try to start service using the password-less sudo rule we set up
-        print("Starting Docker service...")
-        # Redirect output to null to keep it clean
-        subprocess.run(["wsl", "-d", "Ubuntu", "sudo", "service", "docker", "start"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return True
-    except subprocess.CalledProcessError:
-        print("Failed to start Docker in WSL.")
+        result = subprocess.run(["wsl", "-d", WSL_DISTRO, "docker", "info"], 
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    except:
         return False
 
-def ensure_docker_ready():
-    """Ensure Docker is running in WSL."""
-    if check_docker_wsl():
+def start_docker_service():
+    """Attempt to start Docker service in WSL."""
+    print_step("Starting Docker service in Ubuntu...")
+    try:
+        subprocess.run(["wsl", "-d", WSL_DISTRO, "sudo", "service", "docker", "start"], check=True)
         return True
+    except:
+        print("[Error] Failed to start Docker. Please make sure Ubuntu is set up correctly.")
+        return False
 
-    # Try to start
-    start_docker_wsl()
-    
-    # Wait loop
-    print("Waiting for Docker to become ready...", end="", flush=True)
-    for _ in range(40):
-        if check_docker_wsl(silent=True):
-            print("\nDocker started successfully!")
-            return True
-        time.sleep(2)
-        print(".", end="", flush=True)
-    
-    print("\n[Error] Could not start Docker in WSL. Please check your installation.")
-    return False
-
-def run_command_in_new_window(command, title="Command"):
+def run_in_new_window(command, title):
     """Runs a command in a new PowerShell window."""
-    full_cmd = f'start "{title}" powershell -NoExit -Command "{command}"'
-    subprocess.run(full_cmd, shell=True)
+    full_cmd = f'start-process powershell -ArgumentList "-NoExit", "-Command", "{command}"'
+    subprocess.run(["powershell", "-Command", full_cmd])
 
 def main():
-    print("=== SBAY Application Launcher (WSL Edition) ===\n")
+    print("==========================================")
+    print("   SBAY SMART BIN - SYSTEM LAUNCHER")
+    print("==========================================")
 
-    # 1. Ensure Docker is ready (WSL only)
-    if not ensure_docker_ready():
+    # 1. Environment Setup
+    ensure_env_file()
+
+    # 2. Check Docker in WSL
+    if not check_docker_wsl():
+        if not start_docker_service():
+            print("Please run 'sudo service docker start' inside Ubuntu first.")
+            sys.exit(1)
+        # Wait a bit for daemon to wake up
+        time.sleep(2)
+
+    # 3. Start Backend & DB via Docker Compose
+    print_step("Spinning up Containers (Backend & DB)...")
+    try:
+        compose_cmd = ["wsl", "-d", WSL_DISTRO, "docker", "compose", "up", "-d"] + BACKEND_SERVICES
+        subprocess.run(compose_cmd, check=True)
+    except subprocess.CalledProcessError:
+        print("[Error] Docker Compose failed. Check your Ubuntu setup.")
         sys.exit(1)
 
-    # 2. Start Docker Containers
-    print("Starting Docker Containers (Backend & DB)...")
-    try:
-        # We must use 'wsl' to invoke docker-compose inside Ubuntu
-        cmd = ["wsl", "-d", "Ubuntu", "docker", "compose", "up", "-d", "backend", "mongodb"]
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError:
-        print("Failed to start docker-compose services. Attempting fallback command...")
-        try:
-             # Fallback for older compose v1
-            subprocess.run(["wsl", "-d", "Ubuntu", "docker-compose", "up", "-d", "backend", "mongodb"], check=True)
-        except subprocess.CalledProcessError:
-            print("[Error] Failed to start Docker containers.")
-            sys.exit(1)
+    # 4. Frontend Setup & Run (on Windows)
+    print_step("Preparing Frontend...")
+    if not os.path.exists(os.path.join(FRONTEND_DIR, "node_modules")):
+        print("node_modules not found. Running 'npm install' (this may take a minute)...")
+        subprocess.run(["npm", "install"], cwd=FRONTEND_DIR, shell=True)
 
-    # 3. Wait for Backend (Increased to 8s for safety)
-    print("Waiting for Backend to initialize (8s)...")
-    time.sleep(8)
+    print("Starting Frontend Dev Server...")
+    frontend_cmd = f"cd {FRONTEND_DIR}; npm run dev"
+    run_in_new_window(frontend_cmd, "SBAY-Frontend")
 
-    # 4. Start Frontend (npm run dev)
-    print("Starting Frontend (npm run dev)...")
-    frontend_ps_cmd = "Set-Location frontend; $env:NODE_OPTIONS='--max-old-space-size=4096'; npm run dev"
-    run_command_in_new_window(frontend_ps_cmd, "Frontend Service")
+    print("\n" + "="*42)
+    print("  SYSTEM IS STARTING UP!")
+    print("  - Frontend: http://localhost:3000")
+    print("  - Backend API: http://localhost:8080/api")
+    print("  - DB Admin: http://localhost:8081")
+    print("="*42)
+    print("\nKeep this window open or close it if everything is running.")
 
-    # 5. Start Webcam Script
-    print("Starting Webcam Detector...")
-    webcam_ps_cmd = "python iot-device/webcam_detector.py"
-    run_command_in_new_window(webcam_ps_cmd, "Webcam Detector")
-
-    print("\nAll systems GO!")
-    print("Frontend: http://localhost:3000")
-    print("Admin QR: http://localhost:3000/admin/qr")
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\nLauncher interrupted by user.")
+        print("\nShutdown requested.")
