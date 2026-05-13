@@ -79,8 +79,8 @@ def main():
         run_in_new_window(tunnel_cmd, "SBAY-Cloudflare-Tunnel")
     else:
         print_step("กำลังเปิด Cloudflare Tunnel (แบบชั่วคราว - Quick Tunnel)...")
-        # ชี้ไปที่พอร์ต 8080 (Nginx) เพื่อให้เข้าถึงได้ทั้งระบบ
-        tunnel_cmd = "cloudflared tunnel --url http://localhost:8080"
+        # ใช้ 127.0.0.1 แทน localhost เพื่อป้องกันปัญหา IPv6
+        tunnel_cmd = "cloudflared tunnel --url http://127.0.0.1:8080"
         run_in_new_window(tunnel_cmd, "SBAY-Quick-Tunnel")
         print(">> กำลังสร้างลิงก์ชั่วคราว... กรุณาดู URL ในหน้าต่างใหม่ที่เด้งขึ้นมาครับ")
 
