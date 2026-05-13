@@ -3,12 +3,13 @@ Write-Host "========================================="
 Write-Host "   SBAY SMART BIN - ENVIRONMENT SETUP"
 Write-Host "========================================="
 
-# 1. Check/Install Node.js
+# 1. Check/Install Nodejs
 Write-Host "`n[1/4] ตรวจสอบ Node.js..." -ForegroundColor Cyan
 if (!(Get-Command "npm" -ErrorAction SilentlyContinue)) {
     Write-Host "ไม่พบ Node.js กำลังติดตั้งผ่าน Winget..." -ForegroundColor Yellow
     winget install OpenJS.NodeJS -e --accept-source-agreements --accept-package-agreements
-} else {
+}
+else {
     Write-Host "มี Node.js อยู่แล้ว" -ForegroundColor Green
 }
 
@@ -17,7 +18,8 @@ Write-Host "`n[2/4] ตรวจสอบ Java 17..." -ForegroundColor Cyan
 if (!(Get-Command "java" -ErrorAction SilentlyContinue)) {
     Write-Host "ไม่พบ Java กำลังติดตั้ง Temurin JDK 17..." -ForegroundColor Yellow
     winget install EclipseAdoptium.Temurin.17.JDK -e --accept-source-agreements --accept-package-agreements
-} else {
+}
+else {
     Write-Host "มี Java อยู่แล้ว" -ForegroundColor Green
 }
 
@@ -41,7 +43,8 @@ if (!(Get-Command "mvn" -ErrorAction SilentlyContinue)) {
     }
     Remove-Item $zipFile -Force
     Write-Host "ติดตั้ง Maven สำเร็จ (C:\Maven)" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "มี Maven อยู่แล้ว" -ForegroundColor Green
 }
 
