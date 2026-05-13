@@ -59,6 +59,21 @@ def main():
     frontend_cmd = f"cd {FRONTEND_DIR}; npm run dev"
     run_in_new_window(frontend_cmd, "SBAY-Frontend")
 
+    # 4. เริ่ม Cloudflare Tunnel (ถ้ามี Token)
+    token = ""
+    if os.path.exists(".env"):
+        with open(".env", "r") as f:
+            for line in f:
+                if line.startswith("CF_TUNNEL_TOKEN="):
+                    token = line.split("=")[1].strip()
+    
+    if token and token != "your_token_here":
+        print_step("กำลังเปิด Cloudflare Tunnel...")
+        tunnel_cmd = f"cloudflared tunnel run --token {token}"
+        run_in_new_window(tunnel_cmd, "SBAY-Cloudflare-Tunnel")
+    else:
+        print("\n[Info] ไม่พบ CF_TUNNEL_TOKEN ใน .env (ข้ามการเปิด Tunnel)")
+
     print("\n" + "="*42)
     print("  ระบบกำลังทำงานแบบ NATIVE บน WINDOWS!")
     print("  - Frontend: http://localhost:3000")
