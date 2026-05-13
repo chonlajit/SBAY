@@ -66,15 +66,18 @@ def main():
     if os.path.exists(".env"):
         with open(".env", "r") as f:
             for line in f:
-                if line.startswith("CF_TUNNEL_TOKEN="):
-                    token = line.split("=")[1].strip()
+                clean_line = line.strip()
+                if clean_line.startswith("CF_TUNNEL_TOKEN="):
+                    # แยกเอาแค่ส่วนหลังเครื่องหมาย = และตัดคอมเมนต์ (#) ออกถ้ามี
+                    val = clean_line.split("=", 1)[1].split("#")[0].strip()
+                    token = val
     
-    if token and token != "your_token_here":
+    if token and token != "your_token_here" and len(token) > 20:
         print_step("กำลังเปิด Cloudflare Tunnel...")
         tunnel_cmd = f"cloudflared tunnel run --token {token}"
         run_in_new_window(tunnel_cmd, "SBAY-Cloudflare-Tunnel")
     else:
-        print("\n[Info] ไม่พบ CF_TUNNEL_TOKEN ใน .env (ข้ามการเปิด Tunnel)")
+        print("\n[Info] ไม่พบ CF_TUNNEL_TOKEN ที่ถูกต้องใน .env (ข้ามการเปิด Tunnel)")
 
     print("\n" + "="*42)
     print("  ระบบกำลังทำงานแบบ NATIVE บน WINDOWS!")
