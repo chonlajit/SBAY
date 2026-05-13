@@ -8,7 +8,6 @@ import shutil
 WSL_DISTRO = "Ubuntu"
 BACKEND_SERVICES = ["backend", "mongodb"]
 FRONTEND_DIR = "frontend"
-WEBCAM_SCRIPT = "iot-device/webcam_detector.py"
 
 def print_step(msg):
     print(f"\n[>>>] {msg}")
