@@ -20,7 +20,9 @@ def ensure_env_file():
                 f.write("MACHINE_ID=BIN-001\nCF_TUNNEL_TOKEN=\n")
 
 def run_in_new_window(command, title):
-    full_cmd = f'start-process powershell -ArgumentList "-ExecutionPolicy", "Bypass", "-NoExit", "-Command", "$Host.UI.RawUI.WindowTitle=\'{title}\'; {command}"'
+    """Runs a command in a new PowerShell window (Windows Only)."""
+    # ตัดส่วน WindowTitle ออกเพื่อป้องกัน Error ใน PowerShell
+    full_cmd = f'start-process powershell -ArgumentList "-ExecutionPolicy", "Bypass", "-NoExit", "-Command", "{command}"'
     subprocess.run(["powershell", "-Command", full_cmd])
 
 def main():
