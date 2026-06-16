@@ -21,6 +21,9 @@ public class RecycleService {
     private TransactionRepository transactionRepository;
 
     @Autowired
+    private com.example.iotbackend.repository.RedemptionRepository redemptionRepository;
+
+    @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
     // Map<MachineId, UserId>
@@ -82,7 +85,7 @@ public class RecycleService {
         }
     }
 
-    public void redeemPoints(String userId, String rewardType, int cost, double value) {
+    public void redeemPoints(String userId, String rewardType, int cost, double value, String details) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -91,14 +94,18 @@ public class RecycleService {
         }
 
         user.setPoints(user.getPoints() - cost);
-
-        if ("VOLUNTEER".equalsIgnoreCase(rewardType)) {
-            user.setVolunteerHours(user.getVolunteerHours() + value);
-        } else if ("ACTIVITY".equalsIgnoreCase(rewardType)) {
-            user.setActivityCredits(user.getActivityCredits() + (int) value);
-        }
-
         userRepository.save(user);
+
+        // Create PENDING Redemption
+        com.example.iotbackend.model.Redemption redemption = new com.example.iotbackend.model.Redemption();
+        redemption.setUserId(userId);
+        redemption.setRewardType(rewardType);
+        redemption.setCost(cost);
+        redemption.setValue(value);
+        redemption.setDetails(details);
+        redemption.setStatus("PENDING");
+        redemption.setTimestamp(LocalDateTime.now());
+        redemptionRepository.save(redemption);
 
         // Record Transaction
         Transaction tx = new Transaction();
@@ -110,5 +117,51 @@ public class RecycleService {
 
         // Notify User Topic
         messagingTemplate.convertAndSend("/topic/user/" + userId, user);
+    }
+
+    public void approveRedemption(String redemptionId) {
+        com.example.iotbackend.model.Redemption redemption = redemptionRepository.findById(redemptionId)
+                .orElseThrow(() -> new RuntimeException("Redemption not found"));
+        
+        if (!"PENDING".equals(redemption.getStatus())) {
+            throw new RuntimeException("Redemption is not pending");
+        }
+
+        User user = userRepository.findById(redemption.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if ("VOLUNTEER".equalsIgnoreCase(redemption.getRewardType())) {
+            user.setVolunteerHours(user.getVolunteerHours() + redemption.getValue());
+        } else if ("ACTIVITY".equalsIgnoreCase(redemption.getRewardType())) {
+            user.setActivityCredits(user.getActivityCredits() + (int) redemption.getValue());
+        }
+
+        userRepository.save(user);
+        
+        redemption.setStatus("APPROVED");
+        redemptionRepository.save(redemption);
+
+        messagingTemplate.convertAndSend("/topic/user/" + user.getId(), user);
+    }
+
+    public void rejectRedemption(String redemptionId) {
+        com.example.iotbackend.model.Redemption redemption = redemptionRepository.findById(redemptionId)
+                .orElseThrow(() -> new RuntimeException("Redemption not found"));
+        
+        if (!"PENDING".equals(redemption.getStatus())) {
+            throw new RuntimeException("Redemption is not pending");
+        }
+
+        User user = userRepository.findById(redemption.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Refund points
+        user.setPoints(user.getPoints() + redemption.getCost());
+        userRepository.save(user);
+
+        redemption.setStatus("REJECTED");
+        redemptionRepository.save(redemption);
+
+        messagingTemplate.convertAndSend("/topic/user/" + user.getId(), user);
     }
 }

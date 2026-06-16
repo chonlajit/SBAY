@@ -1,145 +1,324 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSmartBin } from '../context/SmartBinContext';
+import { useGoogleLogin } from '@react-oauth/google';
+
+type LoginMethod = 'email' | 'phone';
+type Step = 'input' | 'otp';
 
 function LoginContent() {
-    const [phoneInput, setPhoneInput] = useState('');
+    const [method, setMethod] = useState<LoginMethod>('email');
+    const [step, setStep] = useState<Step>('input');
+    const [identifier, setIdentifier] = useState('');
+    const [otp, setOtp] = useState('');
+    
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [otpMsg, setOtpMsg] = useState('');
+    const [notRegistered, setNotRegistered] = useState<{ show: boolean; email: string }>({ show: false, email: '' });
 
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { login } = useSmartBin();
+    const { sendOtp, sendPhoneOtp, login, loginWithPhone, loginWithGoogle } = useSmartBin();
 
-    const machineId = searchParams.get('mech_id');
+    const machineId = searchParams.get('mech_id') || 'default-machine';
 
-    useEffect(() => {
-        // If no machine ID, it means user is logging in freely (e.g. to check dashboard)
-        // We allow this now.
-    }, [machineId, router]);
+    // ── Google Login ──
+    const handleGoogleLogin = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            setIsLoading(true);
+            setError('');
+            setNotRegistered({ show: false, email: '' });
 
-    const handleNumClick = (num: string) => {
-        if (phoneInput.length < 10) {
-            setPhoneInput(prev => prev + num);
+            try {
+                // We use access_token to fetch email to display if not registered
+                const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                });
+                const userInfo = await userInfoRes.json();
+                const email = userInfo.email;
+
+                const result = await loginWithGoogle(tokenResponse.access_token, machineId);
+                setIsLoading(false);
+
+                if (result.success) {
+                    const mech = searchParams.get('mech_id');
+                    if (mech) router.push(`/operation/${mech}`);
+                    else router.push('/dashboard');
+                } else {
+                    if (result.email) {
+                        setNotRegistered({ show: true, email: result.email });
+                    } else {
+                        setError(result.message || 'เกิดข้อผิดพลาด');
+                    }
+                }
+            } catch (e: any) {
+                setIsLoading(false);
+                setError('เกิดข้อผิดพลาดในการเชื่อมต่อ Google');
+            }
+        },
+        onError: () => setError('ยกเลิกการเข้าสู่ระบบด้วย Google'),
+        flow: 'implicit',
+    });
+
+    // ── Request OTP ──
+    const handleSendOtp = async () => {
+        if (!identifier.trim()) {
+            setError(method === 'email' ? 'กรุณากรอกอีเมล' : 'กรุณากรอกเบอร์โทรศัพท์');
+            return;
+        }
+
+        setIsLoading(true);
+        setError('');
+        setNotRegistered({ show: false, email: '' });
+
+        let result;
+        if (method === 'email') {
+            result = await sendOtp(identifier.trim().toLowerCase());
+        } else {
+            result = await sendPhoneOtp(identifier.trim());
+        }
+
+        setIsLoading(false);
+
+        if (result.success) {
+            setOtpMsg(result.message || `ส่ง OTP แล้ว`);
+            setStep('otp');
+        } else {
+            setError(result.message || 'เกิดข้อผิดพลาดในการส่ง OTP');
+            if (result.message?.includes('ไม่พบ')) {
+                setNotRegistered({ show: true, email: method === 'email' ? identifier : '' });
+            }
         }
     };
 
-    const handleBackspace = () => {
-        setPhoneInput(prev => prev.slice(0, -1));
-    };
-
-    const handleConfirm = async () => {
-        if (phoneInput.length !== 10) {
-            setError('เบอร์โทรศัพท์ต้องมี 10 หลัก');
+    // ── Verify OTP & Login ──
+    const handleVerifyOtp = async () => {
+        if (otp.length !== 6) {
+            setError('กรุณากรอก OTP 6 หลัก');
             return;
         }
 
         setIsLoading(true);
         setError('');
 
-        const result = await login(phoneInput, machineId || 'default');
-
-        // Handle boolean vs object (backward compatibility if needed, but we changed types)
-        const success = typeof result === 'object' ? result.success : result;
-        const msg = typeof result === 'object' ? result.message : '';
-
-        if (success) {
-            if (machineId) {
-                // Redirect to Dynamic Route for this machine
-                router.push(`/operation/${machineId}`);
-            } else {
-                // No Machine ID -> Go to Dashboard (Check Balance)
-                router.push('/dashboard');
-            }
+        let result;
+        if (method === 'email') {
+            result = await login(identifier.trim().toLowerCase(), otp, machineId);
         } else {
-            setError(msg || 'ไม่พบเบอร์โทรนี้ในระบบ หรือ เกิดข้อผิดพลาด');
-            setIsLoading(false);
+            result = await loginWithPhone(identifier.trim(), otp, machineId);
+        }
+
+        setIsLoading(false);
+
+        if (result.success) {
+            const mech = searchParams.get('mech_id');
+            if (mech) router.push(`/operation/${mech}`);
+            else router.push('/dashboard');
+        } else {
+            setError(result.message || 'รหัส OTP ไม่ถูกต้อง');
         }
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-green-500 font-sans p-4">
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-md">
-                <div className="bg-green-600 p-6 text-center">
-                    <h2 className="text-2xl font-bold text-white">เข้าสู่ระบบ</h2>
-                    <p className="text-green-100 text-sm">กรุณากรอกเบอร์โทรศัพท์</p>
-                    {machineId ? (
-                        <div className="mt-2 text-xs bg-white/20 inline-block px-2 py-1 rounded text-white">
-                            Machine: {machineId}
+        <div className="min-h-screen bg-gradient-to-br from-green-600 via-emerald-500 to-teal-400 flex flex-col items-center justify-center p-4">
+            {/* Logo */}
+            <div className="mb-8 text-center">
+                <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-3 shadow-2xl">
+                    <span className="text-4xl">♻️</span>
+                </div>
+                <h1 className="text-3xl font-black text-white tracking-wider drop-shadow">SBAY</h1>
+                <p className="text-white/80 text-sm mt-1">Smart Recycling Platform</p>
+            </div>
+
+            {/* Card */}
+            <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-6">
+                    <h2 className="text-xl font-bold text-white">เข้าสู่ระบบ</h2>
+                    <p className="text-green-100 text-sm mt-0.5">เลือกวิธีเข้าสู่ระบบที่คุณสะดวก</p>
+                </div>
+
+                <div className="px-6 py-7 space-y-5">
+                    {step === 'input' && (
+                        <>
+                            {/* Google Login */}
+                            <button
+                                onClick={() => handleGoogleLogin()}
+                                disabled={isLoading}
+                                className="w-full flex items-center justify-center space-x-3 bg-white border-2 border-gray-200 hover:border-green-400 hover:bg-green-50 text-gray-700 font-bold py-3.5 rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed group"
+                            >
+                                {isLoading ? (
+                                    <span className="flex items-center space-x-2">
+                                        <svg className="animate-spin w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                        </svg>
+                                        <span>กำลังดำเนินการ...</span>
+                                    </span>
+                                ) : (
+                                    <>
+                                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                        </svg>
+                                        <span className="text-base group-hover:text-green-700 transition-colors">เข้าสู่ระบบด้วย Google</span>
+                                    </>
+                                )}
+                            </button>
+
+                            <div className="flex items-center space-x-3">
+                                <div className="flex-1 h-px bg-gray-200" />
+                                <span className="text-gray-400 text-xs font-semibold">หรือใช้รหัส OTP</span>
+                                <div className="flex-1 h-px bg-gray-200" />
+                            </div>
+
+                            {/* Method Selector */}
+                            <div className="flex p-1 bg-gray-100 rounded-xl">
+                                <button
+                                    onClick={() => { setMethod('email'); setError(''); }}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${method === 'email' ? 'bg-white text-green-600 shadow' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    อีเมล
+                                </button>
+                                <button
+                                    onClick={() => { setMethod('phone'); setError(''); }}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${method === 'phone' ? 'bg-white text-green-600 shadow' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    เบอร์โทร
+                                </button>
+                            </div>
+
+                            {/* Input */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-600 mb-1.5">
+                                    {method === 'email' ? '📧 อีเมลของคุณ' : '📱 เบอร์โทรศัพท์ของคุณ'}
+                                </label>
+                                <input
+                                    type={method === 'email' ? 'email' : 'tel'}
+                                    value={identifier}
+                                    onChange={(e) => { setIdentifier(e.target.value); setError(''); }}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
+                                    placeholder={method === 'email' ? 'example@email.com' : '08X-XXX-XXXX'}
+                                    className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-4 py-3 text-gray-800 outline-none transition bg-gray-50 focus:bg-white"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleSendOtp}
+                                disabled={isLoading || !identifier.trim()}
+                                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3.5 rounded-xl hover:from-green-600 hover:to-emerald-700 transition shadow-lg disabled:opacity-50 active:scale-95"
+                            >
+                                {isLoading ? 'กำลังส่ง OTP...' : 'รับรหัส OTP →'}
+                            </button>
+                        </>
+                    )}
+
+                    {step === 'otp' && (
+                        <>
+                            {otpMsg && (
+                                <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm flex items-start space-x-2">
+                                    <span className="mt-0.5">✅</span>
+                                    <span>{otpMsg}</span>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-600 mb-1.5">
+                                    🔐 รหัส OTP (6 หลัก)
+                                </label>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    value={otp}
+                                    onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setError(''); }}
+                                    onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()}
+                                    placeholder="000000"
+                                    maxLength={6}
+                                    className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-4 py-3.5 text-gray-800 text-3xl font-bold text-center outline-none tracking-[0.5em] transition bg-gray-50 focus:bg-white"
+                                    autoFocus
+                                />
+                                <p className="text-center text-gray-400 text-xs mt-2">
+                                    ส่งไปยัง <span className="font-semibold text-gray-600">{identifier}</span>
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={handleVerifyOtp}
+                                disabled={isLoading || otp.length !== 6}
+                                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3.5 rounded-xl hover:from-green-600 hover:to-emerald-700 transition shadow-lg disabled:opacity-50 active:scale-95 text-base"
+                            >
+                                {isLoading ? 'กำลังตรวจสอบ...' : '✓ ยืนยัน & เข้าสู่ระบบ'}
+                            </button>
+
+                            <button
+                                onClick={() => { setStep('input'); setOtp(''); setError(''); setOtpMsg(''); }}
+                                className="w-full bg-gray-100 text-gray-600 font-semibold py-3 rounded-xl hover:bg-gray-200 transition active:scale-95 text-sm"
+                            >
+                                ← กลับไปแก้ไข
+                            </button>
+                        </>
+                    )}
+
+                    {notRegistered.show && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-4 space-y-3">
+                            <div className="flex items-start space-x-2">
+                                <span className="text-amber-500 mt-0.5">⚠️</span>
+                                <div>
+                                    <p className="text-amber-700 text-sm font-semibold">ยังไม่มีบัญชีในระบบ</p>
+                                    {notRegistered.email && (
+                                        <p className="text-amber-600 text-xs mt-0.5">
+                                            ข้อมูลนี้ยังไม่ได้ลงทะเบียน
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => router.push('/register')}
+                                className="w-full bg-amber-500 text-white font-bold py-2.5 rounded-lg hover:bg-amber-600 transition active:scale-95 text-sm"
+                            >
+                                📝 ลงทะเบียนสมาชิกเลย
+                            </button>
                         </div>
-                    ) : (
-                        <div className="mt-2 text-xs bg-white/20 inline-block px-2 py-1 rounded text-white">
-                            เช็คยอดคะแนนสะสม / แลกคะแนนสะสม
+                    )}
+
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm flex items-center space-x-2">
+                            <span>⚠️</span>
+                            <span>{error}</span>
+                        </div>
+                    )}
+
+                    {step === 'input' && (
+                        <div className="text-center pt-2">
+                            <span className="text-gray-500 text-sm">ยังไม่มีบัญชี? </span>
+                            <button
+                                onClick={() => router.push('/register')}
+                                className="text-green-600 font-bold text-sm hover:underline"
+                            >
+                                สมัครสมาชิก
+                            </button>
                         </div>
                     )}
                 </div>
-
-                <div className="p-8 flex flex-col items-center">
-                    <div className="w-full bg-gray-100 rounded-xl p-4 mb-6 text-center relative">
-                        <input
-                            type="text"
-                            className="bg-transparent text-2xl font-bold text-gray-800 text-center w-full outline-none tracking-widest"
-                            value={phoneInput}
-                            onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, '');
-                                if (val.length <= 10) setPhoneInput(val);
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleConfirm();
-                            }}
-                            placeholder="0XX-XXX-XXXX"
-                            autoFocus
-                        />
-                        {error && <div className="absolute -bottom-6 left-0 right-0 text-red-500 text-xs">{error}</div>}
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 w-full mb-6">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                            <button
-                                key={num}
-                                onClick={() => handleNumClick(num.toString())}
-                                className="bg-gray-50 hover:bg-green-50 text-green-600 font-bold text-2xl py-2 rounded-xl shadow-sm transition active:scale-95 border border-gray-100"
-                            >
-                                {num}
-                            </button>
-                        ))}
-                        <button onClick={() => setPhoneInput('')} className="bg-red-50 hover:bg-red-100 text-red-500 font-bold text-xl py-2 rounded-xl shadow-sm transition active:scale-95">
-                            C
-                        </button>
-                        <button onClick={() => handleNumClick('0')} className="bg-gray-50 hover:bg-green-50 text-green-600 font-bold text-2xl py-2 rounded-xl shadow-sm transition active:scale-95 border border-gray-100">
-                            0
-                        </button>
-                        <button onClick={handleBackspace} className="bg-orange-50 hover:bg-orange-100 text-orange-500 font-bold text-xl py-2 rounded-xl shadow-sm transition active:scale-95">
-                            ⌫
-                        </button>
-                    </div>
-
-                    <div className="flex space-x-4 w-full">
-                        <button
-                            onClick={() => router.push('/')}
-                            className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-full hover:bg-gray-300 transition"
-                        >
-                            ยกเลิก
-                        </button>
-                        <button
-                            onClick={handleConfirm}
-                            disabled={isLoading}
-                            className="flex-1 bg-green-500 text-white font-bold py-3 rounded-full hover:bg-green-600 transition shadow-lg disabled:opacity-50"
-                        >
-                            {isLoading ? 'กำลังเข้าสู่ระบบ...' : 'ยืนยัน'}
-                        </button>
-                    </div>
-                </div>
             </div>
+
+            <p className="text-white/60 text-xs mt-6">SBAY Smart Bin Platform © 2025</p>
         </div>
     );
 }
 
 export default function LoginPage() {
     return (
-        <React.Suspense fallback={<div className="flex flex-col items-center justify-center min-h-screen bg-green-500 font-sans p-4 text-white">กำลังโหลด...</div>}>
+        <React.Suspense fallback={
+            <div className="min-h-screen bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center">
+                <div className="text-white text-lg font-bold">กำลังโหลด...</div>
+            </div>
+        }>
             <LoginContent />
         </React.Suspense>
     );

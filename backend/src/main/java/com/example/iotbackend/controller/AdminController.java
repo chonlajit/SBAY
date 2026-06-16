@@ -6,6 +6,9 @@ import com.example.iotbackend.model.User;
 import com.example.iotbackend.repository.AlertRepository;
 import com.example.iotbackend.repository.TransactionRepository;
 import com.example.iotbackend.repository.UserRepository;
+import com.example.iotbackend.repository.RedemptionRepository;
+import com.example.iotbackend.service.RecycleService;
+import com.example.iotbackend.model.Redemption;
 import com.example.iotbackend.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,6 +33,12 @@ public class AdminController {
     @Autowired
     private AlertRepository alertRepository;
     
+    @Autowired
+    private RedemptionRepository redemptionRepository;
+
+    @Autowired
+    private RecycleService recycleService;
+
     @Autowired
     private JwtUtil jwtUtil;
     
@@ -57,6 +66,46 @@ public class AdminController {
     public void deleteUser(@RequestHeader("Authorization") String token, @PathVariable String id) {
         validateAdmin(token);
         userRepository.deleteById(id);
+    }
+
+    @PutMapping("/user/{id}/role")
+    public User changeUserRole(@RequestHeader("Authorization") String token, @PathVariable String id, @RequestBody Map<String, String> payload) {
+        validateAdmin(token);
+        User user = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        String newRole = payload.get("role");
+        if (newRole != null && (newRole.equals("ADMIN") || newRole.equals("USER"))) {
+            user.setRole(newRole);
+            return userRepository.save(user);
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role");
+    }
+    
+    @GetMapping("/redemptions/pending")
+    public List<Redemption> getPendingRedemptions(@RequestHeader("Authorization") String token) {
+        validateAdmin(token);
+        return redemptionRepository.findByStatusOrderByTimestampDesc("PENDING");
+    }
+
+    @PostMapping("/redemptions/{id}/approve")
+    public Map<String, String> approveRedemption(@RequestHeader("Authorization") String token, @PathVariable String id) {
+        validateAdmin(token);
+        try {
+            recycleService.approveRedemption(id);
+            return Map.of("success", "true", "message", "Redemption approved");
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @PostMapping("/redemptions/{id}/reject")
+    public Map<String, String> rejectRedemption(@RequestHeader("Authorization") String token, @PathVariable String id) {
+        validateAdmin(token);
+        try {
+            recycleService.rejectRedemption(id);
+            return Map.of("success", "true", "message", "Redemption rejected");
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
     }
     
     @GetMapping("/alerts")

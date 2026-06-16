@@ -1,0 +1,34 @@
+# ============================
+# SBAY Smart Bin - Systemd Service File
+# วางไว้ที่: /etc/systemd/system/smartbin.service
+#
+# วิธีใช้:
+#   sudo cp smartbin.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable smartbin
+#   sudo systemctl start smartbin
+#
+# ดู log:
+#   journalctl -u smartbin -f
+# ============================
+
+[Unit]
+Description=SBAY Smart Bin Controller
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/SBAY/iot-device/bin-device
+Environment=DEVICE_ID=BIN-001
+Environment=BACKEND_URL=http://192.168.1.100:8080
+Environment=USE_HARDWARE=true
+Environment=USE_GUI=true
+Environment=MODEL_PATH=/home/pi/SBAY/iot-device/yolov8n.pt
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/python3 main_controller.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -5,6 +5,11 @@ def print_step(msg):
     print(f"\n[>>>] {msg}")
 
 def main():
+    import sys
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
     print("==========================================")
     print("   SBAY SMART BIN - SHUTDOWN SCRIPT")
     print("==========================================")

@@ -6,10 +6,12 @@ import { useSmartBin } from '../context/SmartBinContext';
 
 export default function DashboardPage() {
     const router = useRouter();
-    const { user, wasteTypes, logout } = useSmartBin();
+    const { user, wasteTypes, apiBase, isInitialized, latestSession } = useSmartBin();
     const [history, setHistory] = useState<any[]>([]);
+    const [redemptions, setRedemptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
+    const [activeTab, setActiveTab] = useState<'recycle' | 'redeem'>('recycle');
 
     const groupedHistory = useMemo(() => {
         const groups: Record<string, any[]> = {};
@@ -18,8 +20,6 @@ export default function DashboardPage() {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
             });
             if (!groups[date]) groups[date] = [];
             groups[date].push(tx);
@@ -28,154 +28,343 @@ export default function DashboardPage() {
     }, [history]);
 
     const toggleDate = (date: string) => {
-        setExpandedDates(prev => ({
-            ...prev,
-            [date]: !prev[date]
-        }));
+        setExpandedDates(prev => ({ ...prev, [date]: !prev[date] }));
     };
 
-    // We can fetch history here locally since it's just for viewing
+    const groupedRedemptions = useMemo(() => {
+        const groups: Record<string, any[]> = {};
+        redemptions.forEach(tx => {
+            const date = new Date(tx.timestamp).toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            });
+            if (!groups[date]) groups[date] = [];
+            groups[date].push(tx);
+        });
+        return groups;
+    }, [redemptions]);
+
     useEffect(() => {
         if (user) {
-            // Re-fetch full history
-            const fetchHistory = async () => {
-                // In a real app, move this fetch to Context or a shared utility
+            const fetchData = async () => {
                 try {
-                    // We need API Base from context? 
-                    // Or just hardcode since we know it runs in browser
-                    const hostname = window.location.hostname;
-                    const port = window.location.port;
-                    const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
-
-                    const res = await fetch(`${apiBase}/transactions/user/${user.id}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        setHistory(data);
-                    }
+                    const [res1, res2] = await Promise.all([
+                        fetch(`${apiBase}/transactions/user/${user.id}`),
+                        fetch(`${apiBase}/redemptions/user/${user.id}`)
+                    ]);
+                    if (res1.ok) setHistory(await res1.json());
+                    if (res2.ok) setRedemptions(await res2.json());
                 } catch (e) {
-                    console.error("History fetch error", e);
+                    console.error("Fetch error", e);
                 } finally {
                     setLoading(false);
                 }
             };
-            fetchHistory();
-        } else {
-            // Redirect if not logged in
-            router.push('/');
+            fetchData();
+        } else if (isInitialized) {
+            router.push('/login');
         }
-    }, [user, router]);
+    }, [user, isInitialized, router, apiBase]);
 
-    if (!user) return null;
+    useEffect(() => {
+        if (latestSession && latestSession.items) {
+            // Map session items to match history format
+            const mappedItems = latestSession.items.map((item: any) => ({
+                id: Math.random().toString(),
+                wasteType: item.type,
+                pointsEarned: Math.floor(item.ml / 100), // mock calculation
+                timestamp: item.timestamp
+            }));
+            
+            setHistory(prev => [...mappedItems, ...prev]);
+        }
+    }, [latestSession]);
 
-    return (
-        <div className="min-h-screen bg-gray-50 font-sans pb-20 text-black">
-            {/* Profile Header */}
-            <div className="bg-gradient-to-r from-green-700 to-green-500  md:p-8 p-5 pb-12 shadow-lg text-white relative mb-10">
-                <button onClick={() => router.push('/')} className="absolute top-4 left-4 text-white/80 hover:text-white md:top-8 md:left-8">
-                    ← หน้าหลัก
-                </button>
-                <div >
-                    <span className='flex'>
-                        <h2 className="ml-4 mt-8 mb-14 md:mb-[30px] text-2xl font-bold text-center">{user.title} {user.firstName} {user.lastName} </h2>
-                        <div className="opacity-80 absolute right-[215px] top-[100px] md:top-10 md:right-20 text-[14px]">
-                            <dt>รหัสนักศึกษา: {user.studentId}</dt>
-                            <dt>เบอร์โทรศัพท์: {user.phoneNumber}</dt>
-                            <dt>อีเมล: {user.email}</dt>
-                        </div>
-                    </span>
-                </div>
-            </div>
-
-
-            <div className='bg-gray-100 rounded-t-[2rem] md:rounded-[3rem] m-5 p-5 pb-20'>
-                {/* Statistics Summary */}
-                <div className="max-w-md md:max-w-6xl mx-auto mb-8">
-                    <h3 className="font-bold text-green-800 mb-4 ml-2 md:text-xl">สถิติการรีไซเคิล</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
-                        <div className=" bg-green-500  rounded-2xl p-4 shadow-lg border-white border-3 ">
-                            <p className="text-white text-m text-center pb-2">คะแนนสะสม</p>
-                            <div className='bg-white rounded-xl p-1'>
-                                <div className="text-2xl md:text-4xl font-bold text-green-500 text-center">{user.points} <span className="text-sm md:text-2xl font-bold text-yellow-500">Point</span></div>
+    if (!isInitialized || !user) {
+        return (
+            <div className="min-h-full bg-gray-50 pb-6 animate-pulse">
+                {/* Profile Header Skeleton */}
+                <div className="bg-gradient-to-br from-gray-300 to-gray-200 px-5 pt-6 pb-10 relative overflow-hidden">
+                    <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full" />
+                    <div className="relative max-w-lg md:max-w-4xl mx-auto">
+                        <div className="flex items-center space-x-4">
+                            <div className="w-14 h-14 bg-gray-100 rounded-2xl"></div>
+                            <div className="flex-1 space-y-2">
+                                <div className="h-3 bg-gray-100 rounded w-20"></div>
+                                <div className="h-5 bg-gray-100 rounded w-48"></div>
+                                <div className="h-3 bg-gray-100 rounded w-32"></div>
                             </div>
                         </div>
-                        {wasteTypes.map((type) => {
-                            const typeStats = history
-                                .filter(h => h.wasteType === type.type)
-                                .reduce((acc, curr) => ({
-                                    count: acc.count + 1,
-                                    points: acc.points + curr.pointsEarned
-                                }), { count: 0, points: 0 });
-
-                            return (
-                                <div key={type.type} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-                                    <div className="text-gray-500 text-sm mb-1">{type.label}</div>
-                                    <div className="text-2xl font-bold text-yellow-500">{typeStats.count} <span className="text-xs font-normal text-gray-400">ชิ้น</span></div>
-                                    <div className="text-green-500 text-xs font-bold">+{typeStats.points} Point</div>
-                                </div>
-                            );
-                        })}
+                        {/* Fake faculty/studentId block */}
+                        <div className="mt-4 bg-white/10 rounded-xl p-3 border border-white/10 space-y-1.5 h-16"></div>
                     </div>
                 </div>
 
-                {/* History List */}
-                <div className="max-w-md md:max-w-6xl mx-auto md:px-7 px-3 bg-white rounded-3xl pb-5 shadow-lg">
-                    <h3 className="font-bold text-green-800 mb-4 ml-2 pt-5 md:text-xl">ประวัติการทำรายการล่าสุด</h3>
-                    {loading ? (
-                        <div className="text-center py-10 text-gray-400">Loading history...</div>
-                    ) : (
-                        <div className="space-y-4">
-                            {Object.entries(groupedHistory).map(([date, transactions]) => {
-                                const totalPoints = transactions.reduce((sum: number, tx: any) => sum + tx.pointsEarned, 0);
-                                return (
-                                    <div key={date} className="space-y-2">
-                                        <button
-                                            onClick={() => toggleDate(date)}
-                                            className="flex items-center justify-between text-sm text-gray-500 font-bold hover:text-green-600 transition-colors bg-green-500 rounded-xl p-1.5 md:p-2 w-full"
-                                        >
-                                            <div className="flex items-center space-x-2 md:space-x-4">
-                                                <span className="bg-white text-green-600 rounded-3xl px-4 py-1 text-xs md:text-sm">{expandedDates[date] ? 'SHOW' : 'HIDE'}</span>
-                                                <span className="text-white md:text-lg">{date}</span>
-                                                <span className="font-normal opacity-70 text-white md:text-lg hidden sm:inline">({transactions.length} รายการ)</span>
-                                            </div>
-                                            <span className="text-white font-bold bg-green-600 px-3 py-1 rounded-xl mr-1 whitespace-nowrap">
-                                                +{totalPoints} Point
-                                            </span>
-                                        </button>
-                                        <div className="text-xs mt-1"></div>
+                <div className="max-w-lg md:max-w-4xl mx-auto px-4 md:px-8 -mt-6 space-y-4 relative z-10">
+                    <div className="bg-white rounded-3xl shadow-xl p-5 border border-gray-100">
+                        <div className="flex justify-between items-center mb-3">
+                            <div className="h-4 bg-gray-200 rounded w-24"></div>
+                            <div className="h-5 bg-gray-200 rounded w-16"></div>
+                        </div>
+                        <div className="h-12 bg-gray-200 rounded w-24 mt-2"></div>
+                    </div>
+                    
+                    <div className="flex bg-gray-200 p-1 rounded-xl mb-4 h-11 mt-6"></div>
+                    
+                    <div className="space-y-3">
+                        <div className="h-24 bg-white rounded-3xl border border-gray-100"></div>
+                        <div className="h-24 bg-white rounded-3xl border border-gray-100"></div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
-                                        {expandedDates[date] && (
-                                            <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
-                                                {transactions.map((tx: any, idx: number) => {
-                                                    const typeLabel = wasteTypes.find(w => w.type === tx.wasteType)?.label || tx.wasteType;
-                                                    const time = new Date(tx.timestamp).toLocaleString('th-TH', {
-                                                        year: '2-digit', month: 'short', day: 'numeric',
-                                                        hour: '2-digit', minute: '2-digit', second: '2-digit'
-                                                    });
-                                                    return (
-                                                        <div key={idx} className="bg-white p-4 rounded-xl shadow-sm flex items-center justify-between">
-                                                            <div className="flex items-center space-x-3">
-                                                                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">
-                                                                    ♻️
-                                                                </div>
-                                                                <div>
-                                                                    <p className="font-bold text-gray-800">{typeLabel}</p>
-                                                                    <p className="text-xs text-gray-400 mt-1">🕒 {time}</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-green-600 font-bold">+{tx.pointsEarned}</div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                            {history.length === 0 && (
-                                <div className="text-center text-gray-400 py-4">ไม่มีประวัติการทำรายการ</div>
+    const totalItems = history.length;
+
+    return (
+        <div className="min-h-full bg-gray-50 pb-6">
+
+            {/* Profile Header */}
+            <div className="bg-gradient-to-br from-green-700 to-emerald-500 px-5 pt-6 pb-10 relative overflow-hidden">
+                <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full" />
+
+                <div className="relative max-w-lg md:max-w-4xl mx-auto">
+                    <div className="flex items-center space-x-4">
+                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center font-black text-green-700 text-2xl shadow-lg">
+                            {user.firstName.charAt(0)}
+                        </div>
+                        <div>
+                            <p className="text-green-200 text-xs font-medium">โปรไฟล์ของฉัน</p>
+                            <h2 className="text-white font-bold text-xl leading-tight">
+                                {user.title} {user.firstName} {user.lastName}
+                            </h2>
+                            {user.email && (
+                                <p className="text-green-200 text-xs mt-0.5 truncate max-w-[200px]">{user.email}</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {(user.studentId || user.faculty || user.major) && (
+                        <div className="mt-4 bg-white/10 rounded-xl p-3 border border-white/10 space-y-1.5 backdrop-blur-sm">
+                            {user.studentId && (
+                                <p className="text-green-50 text-xs flex items-center">
+                                    <i className="fa-solid fa-id-card w-4 opacity-70"></i>
+                                    <span className="opacity-80 mr-1">รหัสนักศึกษา:</span> <span className="font-medium">{user.studentId}</span>
+                                </p>
+                            )}
+                            {user.faculty && (
+                                <p className="text-green-50 text-xs flex items-center">
+                                    <i className="fa-solid fa-building-columns w-4 opacity-70"></i>
+                                    <span className="opacity-80 mr-1">คณะ:</span> <span className="font-medium truncate">{user.faculty}</span>
+                                </p>
+                            )}
+                            {user.major && (
+                                <p className="text-green-50 text-xs flex items-center">
+                                    <i className="fa-solid fa-graduation-cap w-4 opacity-70"></i>
+                                    <span className="opacity-80 mr-1">สาขา:</span> <span className="font-medium truncate">{user.major}</span>
+                                </p>
                             )}
                         </div>
                     )}
+                </div>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="max-w-lg md:max-w-4xl mx-auto px-4 md:px-8 -mt-6 space-y-4 relative z-10">
+                {/* Points Hero Card */}
+                <div className="bg-white rounded-3xl shadow-xl p-5 border border-green-100">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-gray-500 text-sm font-medium">แต้มสะสมทั้งหมด</span>
+                        <span className="bg-green-100 text-green-600 text-xs font-bold px-2 py-0.5 rounded-full">{totalItems} รายการ</span>
+                    </div>
+                    <div className="flex items-end space-x-2">
+                        <span className="text-5xl font-black text-green-600">{user.points}</span>
+                        <span className="text-yellow-500 font-bold text-xl pb-1">Point</span>
+                    </div>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex bg-gray-200 p-1 rounded-xl mb-4 mt-6">
+                    <button
+                        onClick={() => setActiveTab('recycle')}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition ${activeTab === 'recycle' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <i className="fa-solid fa-recycle mr-1.5"></i> การรีไซเคิล
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('redeem')}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition ${activeTab === 'redeem' ? 'bg-white text-yellow-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <i className="fa-solid fa-gift mr-1.5"></i> การแลกรางวัล
+                    </button>
+                </div>
+
+                {/* Waste Type Stats */}
+                {activeTab === 'recycle' && (
+                    <div className="mb-4">
+                        <h3 className="font-bold text-gray-700 mb-3 text-sm px-1">สถิติตามประเภทขยะ</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            {wasteTypes.map((type) => {
+                                const typeStats = history
+                                    .filter(h => h.wasteType === type.type)
+                                    .reduce((acc, curr) => ({
+                                        count: acc.count + 1,
+                                        points: acc.points + curr.pointsEarned
+                                    }), { count: 0, points: 0 });
+
+                                return (
+                                    <div key={type.type} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                                        <p className="text-gray-500 text-xs mb-1 truncate">{type.label}</p>
+                                        <div className="flex items-baseline space-x-1">
+                                            <span className="text-2xl font-black text-gray-800">{typeStats.count}</span>
+                                            <span className="text-gray-400 text-xs">ชิ้น</span>
+                                        </div>
+                                        <div className="bg-green-50 text-green-600 text-xs font-bold px-2 py-0.5 rounded-full inline-block mt-1">
+                                            +{typeStats.points} point
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Redemption Stats */}
+                {activeTab === 'redeem' && (
+                    <div className="mb-4">
+                        <h3 className="font-bold text-gray-700 mb-3 text-sm px-1">สถิติการแลกรางวัล</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                                <p className="text-gray-500 text-xs mb-1">แต้มที่ใช้ไปแล้ว</p>
+                                <div className="flex items-baseline space-x-1">
+                                    <span className="text-2xl font-black text-gray-800">
+                                        {redemptions.reduce((sum, r) => sum + r.cost, 0)}
+                                    </span>
+                                    <span className="text-gray-400 text-xs">แต้ม</span>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                                <p className="text-gray-500 text-xs mb-1">จำนวนครั้งที่แลก</p>
+                                <div className="flex items-baseline space-x-1">
+                                    <span className="text-2xl font-black text-gray-800">{redemptions.length}</span>
+                                    <span className="text-gray-400 text-xs">ครั้ง</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* History List */}
+                <div>
+                    <h3 className="font-bold text-gray-700 mb-3 text-sm px-1">
+                        {activeTab === 'recycle' ? 'ประวัติการรีไซเคิล' : 'ประวัติการแลกรางวัล'}
+                    </h3>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        {loading ? (
+                            <div className="py-12 flex flex-col items-center space-y-2">
+                                <svg className="animate-spin w-8 h-8 text-green-500" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                </svg>
+                                <span className="text-gray-400 text-sm">กำลังโหลด...</span>
+                            </div>
+                        ) : (activeTab === 'recycle' ? history.length === 0 : redemptions.length === 0) ? (
+                            <div className="py-12 text-center">
+                                <i className="fa-solid fa-inbox text-gray-400 text-5xl mb-3"></i>
+                                <p className="text-gray-500 font-medium">ยังไม่มีประวัติการทำรายการ</p>
+                                <p className="text-gray-400 text-sm mt-1">
+                                    {activeTab === 'recycle' ? 'นำขยะไปใส่ตู้ Smart Bin เพื่อเริ่มสะสมแต้ม' : 'สะสมแต้มแล้วนำมาแลกรางวัลได้เลย'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-50">
+                                {Object.entries(activeTab === 'recycle' ? groupedHistory : groupedRedemptions).map(([date, items]) => {
+                                    const isRecycle = activeTab === 'recycle';
+                                    const totalPointsOrCost = items.reduce((sum: number, tx: any) => sum + (isRecycle ? tx.pointsEarned : tx.cost), 0);
+                                    const expanded = expandedDates[date] !== false; // default expanded
+                                    return (
+                                        <div key={date}>
+                                            <button
+                                                onClick={() => toggleDate(date)}
+                                                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition"
+                                            >
+                                                <div className="flex items-center space-x-2">
+                                                    <svg
+                                                        className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+                                                    </svg>
+                                                    <span className="font-semibold text-gray-700 text-sm">{date}</span>
+                                                    <span className="text-gray-400 text-xs">({items.length} รายการ)</span>
+                                                </div>
+                                                <span className={`font-bold text-xs px-2.5 py-1 rounded-full ${isRecycle ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                                                    {isRecycle ? '+' : '-'}{totalPointsOrCost} {isRecycle ? 'pt' : 'แต้ม'}
+                                                </span>
+                                            </button>
+
+                                            {expanded && (
+                                                <div className="divide-y divide-gray-50 bg-gray-50/50">
+                                                    {items.map((tx: any, idx: number) => {
+                                                        const time = new Date(tx.timestamp).toLocaleTimeString('th-TH', {
+                                                            hour: '2-digit', minute: '2-digit'
+                                                        });
+
+                                                        if (isRecycle) {
+                                                            const typeLabel = wasteTypes.find(w => w.type === tx.wasteType)?.label || tx.wasteType;
+                                                            return (
+                                                                <div key={idx} className="flex items-center justify-between px-5 py-3">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center text-base">
+                                                                            <i className="fa-solid fa-recycle text-green-600"></i>
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="font-semibold text-gray-800 text-sm">{typeLabel}</p>
+                                                                            <p className="text-gray-400 text-xs">{time} น.</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <span className="text-green-600 font-black text-sm">+{tx.pointsEarned}</span>
+                                                                </div>
+                                                            );
+                                                        } else {
+                                                            const isPending = tx.status === 'PENDING';
+                                                            const isApproved = tx.status === 'APPROVED';
+                                                            const isRejected = tx.status === 'REJECTED';
+
+                                                            return (
+                                                                <div key={idx} className="flex items-center justify-between px-5 py-3">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base ${tx.rewardType === 'VOLUNTEER' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                                                                            <i className={`fa-solid ${tx.rewardType === 'VOLUNTEER' ? 'fa-handshake-angle' : 'fa-graduation-cap'}`}></i>
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="font-semibold text-gray-800 text-sm">{tx.details}</p>
+                                                                            <p className="text-gray-400 text-xs flex items-center space-x-1">
+                                                                                <span>{time} น.</span>
+                                                                                <span>•</span>
+                                                                                <span className={`font-semibold ${isPending ? 'text-yellow-500' : isApproved ? 'text-green-500' : 'text-red-500'}`}>
+                                                                                    {isPending ? 'รออนุมัติ' : isApproved ? 'อนุมัติแล้ว' : 'ถูกปฏิเสธ'}
+                                                                                </span>
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <span className="text-red-500 font-black text-sm">-{tx.cost}</span>
+                                                                </div>
+                                                            );
+                                                        }
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

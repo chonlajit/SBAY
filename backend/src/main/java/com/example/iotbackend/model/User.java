@@ -19,6 +19,8 @@ public class User {
     private String lastName;
     private String email;
     private String studentId;
+    private String faculty;
+    private String major;
     
     private int points;
     

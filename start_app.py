@@ -10,14 +10,37 @@ BACKEND_DIR = "backend"
 def print_step(msg):
     print(f"\n[>>>] {msg}")
 
-def ensure_env_file():
-    if not os.path.exists(".env"):
-        print_step("Creating .env file from .env.example...")
-        if os.path.exists(".env.example"):
-            shutil.copy(".env.example", ".env")
-        else:
-            with open(".env", "w") as f:
-                f.write("MACHINE_ID=BIN-001\nCF_TUNNEL_TOKEN=\n")
+def get_ips():
+    try:
+        wsl_ip = subprocess.run(['wsl','-d','Ubuntu','hostname','-I'], capture_output=True, text=True).stdout.split()[0]
+        win_ip = "127.0.0.1"
+        routes = subprocess.run(['wsl','-d','Ubuntu','--','ip','route'], capture_output=True, text=True).stdout.splitlines()
+        for line in routes:
+            if line.startswith('default via'):
+                win_ip = line.split()[2]
+                break
+        return wsl_ip, win_ip
+    except:
+        return "127.0.0.1", "host-gateway"
+
+def ensure_env_file(win_ip):
+    env_content = ""
+    if os.path.exists(".env"):
+        with open(".env", "r") as f:
+            env_content = f.read()
+    
+    if "MACHINE_ID" not in env_content:
+        env_content += "\nMACHINE_ID=BIN-001\n"
+    if "CF_TUNNEL_TOKEN" not in env_content:
+        env_content += "CF_TUNNEL_TOKEN=your_token_here\n"
+        
+    # Update or add WINDOWS_IP
+    lines = env_content.splitlines()
+    new_lines = [line for line in lines if not line.startswith("WINDOWS_IP=")]
+    new_lines.append(f"WINDOWS_IP={win_ip}")
+    
+    with open(".env", "w") as f:
+        f.write("\n".join(new_lines) + "\n")
 
 def run_in_new_window(command, title):
     """Runs a command in a new PowerShell window (Windows Only)."""
@@ -26,11 +49,17 @@ def run_in_new_window(command, title):
     subprocess.run(["powershell", "-Command", full_cmd])
 
 def main():
+    import sys
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
     print("==========================================")
     print("   SBAY SMART BIN - STARTUP SCRIPT")
     print("==========================================")
 
-    ensure_env_file()
+    wsl_ip, win_ip = get_ips()
+    ensure_env_file(win_ip)
 
     # 1. ฐานข้อมูล (MongoDB ใน Docker WSL)
     print_step("กำลังเปิดฐานข้อมูล (MongoDB ใน Docker/WSL)...")
@@ -81,8 +110,7 @@ def main():
         run_in_new_window(tunnel_cmd, "SBAY-Cloudflare-Tunnel")
     else:
         print_step("กำลังเปิด Cloudflare Tunnel (แบบชั่วคราว - Quick Tunnel)...")
-        # ใช้ 127.0.0.1 แทน localhost เพื่อป้องกันปัญหา IPv6
-        tunnel_cmd = "cloudflared tunnel --url http://127.0.0.1:8080"
+        tunnel_cmd = f"cloudflared tunnel --url http://{wsl_ip}:8080"
         run_in_new_window(tunnel_cmd, "SBAY-Quick-Tunnel")
         print(">> กำลังสร้างลิงก์ชั่วคราว... กรุณาดู URL ในหน้าต่างใหม่ที่เด้งขึ้นมาครับ")
 

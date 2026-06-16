@@ -13,6 +13,8 @@ export interface User {
     lastName: string;
     email?: string;
     studentId: string;
+    faculty?: string;
+    major?: string;
     points: number;
     volunteerHours?: number;
     activityCredits?: number;
@@ -29,24 +31,30 @@ interface SmartBinContextType {
     user: User | null;
     sessionPoints: number;
     sessionHistory: any[];
-    machines: { id: string, name: string }[];
+    latestSession: any;
     wasteTypes: WasteType[];
-    login: (phone: string, machineId: string) => Promise<{ success: boolean; message?: string }>;
-    register: (form: any, machineId: string) => Promise<boolean>;
+    // OTP: Email Login
+    sendOtp: (email: string) => Promise<{ success: boolean; message?: string }>;
+    login: (email: string, otp: string, machineId: string) => Promise<{ success: boolean; message?: string }>;
+    // OTP: Phone Login
+    sendPhoneOtp: (phone: string) => Promise<{ success: boolean; message?: string }>;
+    loginWithPhone: (phone: string, otp: string, machineId: string) => Promise<{ success: boolean; message?: string }>;
+    // Google Login
+    loginWithGoogle: (accessToken: string, machineId: string) => Promise<{ success: boolean; message?: string; email?: string }>;
+    // Register: Manual (Email OTP)
+    sendRegisterOtp: (email: string) => Promise<{ success: boolean; message?: string }>;
+    register: (form: any) => Promise<{ success: boolean; message?: string }>;
+    // Register: Google
+    registerWithGoogle: (accessToken: string, extraInfo: any) => Promise<{ success: boolean; message?: string; email?: string }>;
     logout: (machineId?: string) => void;
     releaseMachine: (machineId: string) => Promise<void>;
-    simulateDrop: (type: string, machineId: string) => Promise<void>;
     wsConnected: boolean;
     token: string | null;
+    apiBase: string;
+    isInitialized: boolean;
 }
 
 const SmartBinContext = createContext<SmartBinContextType | null>(null);
-
-export const MACHINES = [
-    { id: 'BIN-001', name: 'Machine 1 (Front)' },
-    { id: 'BIN-002', name: 'Machine 2 (Back)' },
-    { id: 'BIN-003', name: 'Machine 3 (Cafeteria)' },
-];
 
 export const WASTE_TYPES = [
     { type: 'CLEAR_BOTTLES', label: 'ขวดพลาสติกใส', points: 1 },
@@ -61,71 +69,50 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
     const [token, setToken] = useState<string | null>(null);
     const [sessionPoints, setSessionPoints] = useState(0);
     const [sessionHistory, setSessionHistory] = useState<any[]>([]);
+    const [latestSession, setLatestSession] = useState<any>(null);
     const [wsConnected, setWsConnected] = useState(false);
-
-    // Config
     const [apiBase, setApiBase] = useState('http://localhost:8070/api');
     const [wsBase, setWsBase] = useState('ws://localhost:8070/ws-native');
+    const [isInitialized, setIsInitialized] = useState(false);
 
     const clientRef = useRef<Client | null>(null);
     const router = useRouter();
 
-    // 1. Init Config & Load Session
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
             const port = window.location.port;
-            // If port is 3000, we are in direct frontend dev mode, so backend is at 8070
-            // Otherwise, we use the current port (80, 8080, etc.) which is handled by Nginx
+            const protocol = window.location.protocol;
+            const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
             if (port === '3000') {
                 setApiBase(`http://${hostname}:8070/api`);
                 setWsBase(`ws://${hostname}:8070/ws-native`);
             } else {
                 const portStr = port ? `:${port}` : '';
-                setApiBase(`http://${hostname}${portStr}/api`);
-                setWsBase(`ws://${hostname}${portStr}/ws-native`);
+                setApiBase(`${protocol}//${hostname}${portStr}/api`);
+                setWsBase(`${wsProtocol}//${hostname}${portStr}/ws-native`);
             }
-
-            // Restore session
             const savedUser = localStorage.getItem('sbay_user');
             const savedToken = localStorage.getItem('sbay_token');
             if (savedUser && savedToken) {
                 setUser(JSON.parse(savedUser));
                 setToken(savedToken);
             }
+            setIsInitialized(true);
         }
     }, []);
 
-    // 2. WebSocket Connection Logic (Auto-connect if user exists)
-    // We need to know the CURRENT machine ID to login effectively on refresh.
-    // For now, we will rely on the page passing the machine ID or URL params.
-    // BUT, the context itself doesn't know the machine ID unless we store it.
-    // Let's create a specific "connect" function that pages call.
-
     const connectWebSocket = (userId: string, machineId: string) => {
         if (clientRef.current && clientRef.current.active) {
-            // If already connected, just ensure we send the login signal again (for refresh safety)
-            clientRef.current.publish({
-                destination: `/app/login/${machineId}`,
-                body: userId
-            });
+            clientRef.current.publish({ destination: `/app/login/${machineId}`, body: userId });
             return;
         }
-
         const client = new Client({
             brokerURL: wsBase,
             reconnectDelay: 5000,
             onConnect: () => {
-                console.log('WS Connected');
                 setWsConnected(true);
-
-                // Notify backend of Login
-                client.publish({
-                    destination: `/app/login/${machineId}`,
-                    body: userId
-                });
-
-                // Listen for Machine Updates (Current Session)
+                client.publish({ destination: `/app/login/${machineId}`, body: userId });
                 client.subscribe(`/topic/machine/${machineId}`, (msg) => {
                     if (msg.body) {
                         const tx = JSON.parse(msg.body);
@@ -133,171 +120,186 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
                         setSessionHistory(prev => [tx, ...prev]);
                     }
                 });
-
-                // Listen for User Updates (Total Points)
+                client.subscribe(`/topic/sessions`, (msg) => {
+                    if (msg.body) {
+                        const sessionData = JSON.parse(msg.body);
+                        if (sessionData.userId === userId) {
+                            setLatestSession(sessionData);
+                        }
+                    }
+                });
                 client.subscribe(`/topic/user/${userId}`, (msg) => {
                     if (msg.body) {
                         const updatedUser = JSON.parse(msg.body);
                         setUser(updatedUser);
-                        // Update LocalStorage to keep points in sync
                         localStorage.setItem('sbay_user', JSON.stringify(updatedUser));
                     }
                 });
             },
-            onStompError: (frame) => {
-                console.error('WS Error:', frame.headers['message']);
-            },
-            onWebSocketClose: () => {
-                setWsConnected(false);
-            }
+            onStompError: (frame) => console.error('WS Error:', frame.headers['message']),
+            onWebSocketClose: () => setWsConnected(false),
         });
-
         client.activate();
         clientRef.current = client;
     };
 
-    const login = async (phoneNumber: string, machineId: string): Promise<{ success: boolean; message?: string }> => {
-        try {
-            const res = await fetch(`${apiBase}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phoneNumber, machineId })
-            });
-
-            if (!res.ok) {
-                // Try to get error text
-                try {
-                    const errData = await res.json();
-                    return { success: false, message: errData.error || 'Login Server Error' };
-                } catch {
-                    return { success: false, message: `Server Error: ${res.status}` };
-                }
-            }
-
-            const data = await res.json();
-
-            if (data.error) {
-                return { success: false, message: data.error };
-            }
-
-            if (data.user && data.token) {
-                setUser(data.user);
-                setToken(data.token);
-                localStorage.setItem('sbay_user', JSON.stringify(data.user));
-                localStorage.setItem('sbay_token', data.token);
-
-                // Clear previous session data
-                setSessionPoints(0);
-                setSessionHistory([]);
-
-                // Connect WS
-                connectWebSocket(data.user.id, machineId);
-                return { success: true };
-            }
-            return { success: false, message: 'Invalid server response' };
-        } catch (e: any) {
-            console.error("Login IO Error", e);
-            return { success: false, message: `Network Error: ${e.message}` };
-        }
+    const saveSession = (userData: User, tokenData: string, machineId: string) => {
+        setUser(userData);
+        setToken(tokenData);
+        localStorage.setItem('sbay_user', JSON.stringify(userData));
+        localStorage.setItem('sbay_token', tokenData);
+        setSessionPoints(0);
+        setSessionHistory([]);
+        connectWebSocket(userData.id, machineId);
     };
 
-    const register = async (form: any, machineId: string): Promise<boolean> => {
+    // Email OTP
+    const sendOtp = async (email: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/otp/send`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+            return data.error ? { success: false, message: data.error } : { success: true, message: data.message };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
+    const login = async (email: string, otp: string, machineId: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/otp/verify`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp, machineId })
+            });
+            const data = await res.json();
+            if (data.error) return { success: false, message: data.error };
+            if (data.user && data.token) { saveSession(data.user, data.token, machineId); return { success: true }; }
+            return { success: false, message: 'Invalid server response' };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
+    // Phone OTP
+    const sendPhoneOtp = async (phone: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/otp/send-phone`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phoneNumber: phone })
+            });
+            const data = await res.json();
+            return data.error ? { success: false, message: data.error } : { success: true, message: data.message };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
+    const loginWithPhone = async (phone: string, otp: string, machineId: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/otp/verify-phone`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phoneNumber: phone, otp, machineId })
+            });
+            const data = await res.json();
+            if (data.error) return { success: false, message: data.error };
+            if (data.user && data.token) { saveSession(data.user, data.token, machineId); return { success: true }; }
+            return { success: false, message: 'Invalid server response' };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
+    // Google Login
+    const loginWithGoogle = async (accessToken: string, machineId: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/google`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: accessToken, machineId })
+            });
+            const data = await res.json();
+            if (data.error) return { success: false, message: data.error, email: data.email };
+            if (data.user && data.token) { saveSession(data.user, data.token, machineId); return { success: true }; }
+            return { success: false, message: 'Invalid server response' };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
+    // Register: Email OTP
+    const sendRegisterOtp = async (email: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/otp/send-register`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+            return data.error ? { success: false, message: data.error } : { success: true, message: data.message };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
+    const register = async (form: any): Promise<{ success: boolean; message?: string }> => {
         try {
             const res = await fetch(`${apiBase}/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...form, machineId })
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...form, machineId: 'default-machine' })
             });
-
-            if (res.ok) {
-                const { user: newUser, token: newToken } = await res.json();
-                setUser(newUser);
-                setToken(newToken);
-                localStorage.setItem('sbay_user', JSON.stringify(newUser));
-                localStorage.setItem('sbay_token', newToken);
-
-                setSessionPoints(0);
-                setSessionHistory([]);
-                connectWebSocket(newUser.id, machineId);
-                return true;
+            const data = await res.json();
+            if (data.error) return { success: false, message: data.error };
+            if (data.user && data.token) {
+                setUser(data.user); setToken(data.token);
+                localStorage.setItem('sbay_user', JSON.stringify(data.user));
+                localStorage.setItem('sbay_token', data.token);
+                setSessionPoints(0); setSessionHistory([]);
+                return { success: true };
             }
-            return false;
-        } catch (e) {
-            console.error("Register Error", e);
-            return false;
-        }
+            return { success: false, message: 'เกิดข้อผิดพลาด' };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
+    // Register: Google
+    const registerWithGoogle = async (accessToken: string, extraInfo: any): Promise<{ success: boolean; message?: string; email?: string }> => {
+        try {
+            const res = await fetch(`${apiBase}/auth/register-google`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: accessToken, ...extraInfo, machineId: 'default-machine' })
+            });
+            const data = await res.json();
+            if (data.error) return { success: false, message: data.error, email: data.email };
+            if (data.user && data.token) {
+                setUser(data.user); setToken(data.token);
+                localStorage.setItem('sbay_user', JSON.stringify(data.user));
+                localStorage.setItem('sbay_token', data.token);
+                setSessionPoints(0); setSessionHistory([]);
+                return { success: true };
+            }
+            return { success: false, message: 'เกิดข้อผิดพลาด' };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
 
     const releaseMachine = async (machineId: string) => {
-        console.log("Releasing machine...", machineId);
         try {
             await fetch(`${apiBase}/auth/logout`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ machineId })
             });
-        } catch (e) {
-            console.error("Release Machine Error", e);
-        }
+        } catch (e) { console.error('Release Machine Error', e); }
     };
 
     const logout = (machineId = 'default') => {
         if (user) {
-            // Notify backend
             fetch(`${apiBase}/auth/logout`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ machineId })
             }).catch(console.error);
         }
-
-        if (clientRef.current) {
-            clientRef.current.deactivate();
-            clientRef.current = null;
-        }
-
-        setUser(null);
-        setToken(null);
-        setSessionPoints(0);
-        setSessionHistory([]);
-        localStorage.removeItem('sbay_user');
-        localStorage.removeItem('sbay_token');
-
-        // Redirect to Home
+        if (clientRef.current) { clientRef.current.deactivate(); clientRef.current = null; }
+        setUser(null); setToken(null); setSessionPoints(0); setSessionHistory([]);
+        localStorage.removeItem('sbay_user'); localStorage.removeItem('sbay_token');
         router.push('/');
-    };
-
-    const simulateDrop = async (type: string, machineId: string) => {
-        await fetch(`${apiBase}/machine/recycle`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, machineId })
-        });
-    };
-
-    // Auto-reconnect if we are on a machine page and have a user
-    // This helper is exposed so the Page can call it with the machine ID from the URL
-    // We attach it to the context 'login' effectively does this, but for refreshing:
-    const ensureConnection = (machineId: string) => {
-        if (user && (!clientRef.current || !clientRef.current.active)) {
-            connectWebSocket(user.id, machineId);
-        }
     };
 
     return (
         <SmartBinContext.Provider value={{
-            user,
-            sessionPoints,
-            sessionHistory,
-            machines: MACHINES,
-            wasteTypes: WASTE_TYPES,
-            login,
-            register,
-            logout,
-            releaseMachine,
-            simulateDrop,
-            wsConnected,
-            token
+            user, sessionPoints, sessionHistory, latestSession, wasteTypes: WASTE_TYPES,
+            sendOtp, login,
+            sendPhoneOtp, loginWithPhone,
+            loginWithGoogle,
+            sendRegisterOtp, register,
+            registerWithGoogle,
+            logout, releaseMachine,
+            wsConnected, token, apiBase, isInitialized
         }}>
             {children}
         </SmartBinContext.Provider>

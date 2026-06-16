@@ -6,10 +6,11 @@ import { useSmartBin } from '../context/SmartBinContext';
 
 export default function AdminPage() {
     const router = useRouter();
-    const { user, token } = useSmartBin();
+    const { user, token, isInitialized } = useSmartBin();
     const [summary, setSummary] = useState<any>(null);
     const [users, setUsers] = useState<any[]>([]);
     const [alerts, setAlerts] = useState<any[]>([]);
+    const [pendingRedemptions, setPendingRedemptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
@@ -23,19 +24,21 @@ export default function AdminPage() {
 
             const headers = { 'Authorization': `Bearer ${token}` };
 
-            const [summaryRes, usersRes, alertsRes] = await Promise.all([
+            const [summaryRes, usersRes, alertsRes, redemptionsRes] = await Promise.all([
                 fetch(`${apiBase}/admin/summary`, { headers }),
                 fetch(`${apiBase}/admin/users`, { headers }),
-                fetch(`${apiBase}/admin/alerts`, { headers })
+                fetch(`${apiBase}/admin/alerts`, { headers }),
+                fetch(`${apiBase}/admin/redemptions/pending`, { headers })
             ]);
 
             if (summaryRes.ok && usersRes.ok) {
                 setSummary(await summaryRes.json());
                 setUsers(await usersRes.json());
                 if (alertsRes.ok) setAlerts(await alertsRes.json());
+                if (redemptionsRes.ok) setPendingRedemptions(await redemptionsRes.json());
             } else {
                 if (summaryRes.status === 403 || summaryRes.status === 401) {
-                    setError("Access Denied: Admin Role Required");
+                    setError("Access Denied: คุณไม่มีสิทธิ์เข้าถึงหน้าผู้ดูแลระบบ");
                 }
             }
         } catch (e) {
@@ -46,7 +49,7 @@ export default function AdminPage() {
     };
 
     const handleDeleteUser = async (userId: string) => {
-        if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
+        if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้นี้? การกระทำนี้ไม่สามารถย้อนกลับได้")) return;
         if (!token) return;
 
         try {
@@ -59,18 +62,94 @@ export default function AdminPage() {
             });
 
             if (res.ok) {
-                alert("User deleted successfully");
+                alert("ลบผู้ใช้สำเร็จ");
                 fetchData(); // Refresh list
             } else {
-                alert("Failed to delete user");
+                alert("ไม่สามารถลบผู้ใช้ได้");
             }
         } catch (e) {
             console.error("Delete failed", e);
         }
     };
 
+    const handleChangeRole = async (userId: string, newRole: string) => {
+        if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการเปลี่ยนสิทธิ์ผู้ใช้นี้เป็น ${newRole}?`)) return;
+        if (!token) return;
+
+        try {
+            const hostname = window.location.hostname;
+            const port = window.location.port;
+            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
+            const res = await fetch(`${apiBase}/admin/user/${userId}/role`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ role: newRole })
+            });
+
+            if (res.ok) {
+                alert(`เปลี่ยนสิทธิ์เป็น ${newRole} สำเร็จ`);
+                fetchData(); // Refresh list
+            } else {
+                alert("ไม่สามารถเปลี่ยนสิทธิ์ผู้ใช้ได้");
+            }
+        } catch (e) {
+            console.error("Change role failed", e);
+        }
+    };
+
+    const handleApproveRedemption = async (redemptionId: string) => {
+        if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการอนุมัติการแลกคะแนนนี้?")) return;
+        if (!token) return;
+
+        try {
+            const hostname = window.location.hostname;
+            const port = window.location.port;
+            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
+            const res = await fetch(`${apiBase}/admin/redemptions/${redemptionId}/approve`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                alert("อนุมัติสำเร็จ!");
+                fetchData(); // Refresh lists
+            } else {
+                alert("ไม่สามารถอนุมัติได้");
+            }
+        } catch (e) {
+            console.error("Approve failed", e);
+        }
+    };
+
+    const handleRejectRedemption = async (redemptionId: string) => {
+        if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการปฏิเสธการแลกคะแนนนี้? (คะแนนจะถูกคืนให้ผู้ใช้)")) return;
+        if (!token) return;
+
+        try {
+            const hostname = window.location.hostname;
+            const port = window.location.port;
+            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
+            const res = await fetch(`${apiBase}/admin/redemptions/${redemptionId}/reject`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                alert("ปฏิเสธการแลกคะแนนสำเร็จ ระบบได้คืนคะแนนให้ผู้ใช้แล้ว");
+                fetchData(); // Refresh lists
+            } else {
+                alert("ไม่สามารถปฏิเสธได้");
+            }
+        } catch (e) {
+            console.error("Reject failed", e);
+        }
+    };
+
     const handleResetSystem = async () => {
-        if (!confirm("Are you SURE you want to reset all transactions and user points? This action CANNOT be undone!")) return;
+        if (!confirm("⚠️ คำเตือน: คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตข้อมูลระบบและแต้มทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้!")) return;
         
         try {
             const hostname = window.location.hostname;
@@ -82,20 +161,22 @@ export default function AdminPage() {
             });
 
             if (res.ok) {
-                alert("System data reset successfully!");
+                alert("รีเซ็ตระบบสำเร็จ!");
                 fetchData(); // Refresh list
             } else {
-                alert("Failed to reset system data");
+                alert("ไม่สามารถรีเซ็ตระบบได้");
             }
         } catch (e) {
             console.error("Reset failed", e);
-            alert("Error connecting to server.");
+            alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         }
     };
 
     useEffect(() => {
+        if (!isInitialized) return;
+        
         if (!user || user.role !== 'ADMIN') {
-            setError("Access Denied. You are not an Admin.");
+            setError("Access Denied. คุณไม่ใช่ผู้ดูแลระบบ");
             setLoading(false);
             return;
         }
@@ -103,158 +184,343 @@ export default function AdminPage() {
         fetchData();
         const interval = setInterval(fetchData, 10000);
         return () => clearInterval(interval);
-    }, [user, token]);
+    }, [user, token, isInitialized]);
 
-    if (loading) return <div className="p-10 text-center">Loading Admin Dashboard...</div>;
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-50 font-sans pb-10 animate-pulse">
+                <div className="bg-gradient-to-br from-slate-800 to-slate-700 px-6 pt-8 pb-14 relative overflow-hidden">
+                    <div className="max-w-6xl mx-auto relative z-10 flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0">
+                        <div className="space-y-3">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-slate-600 rounded-xl"></div>
+                                <div className="h-4 bg-slate-600 rounded w-40"></div>
+                            </div>
+                            <div className="h-8 bg-slate-600 rounded w-64"></div>
+                        </div>
+                        <div className="flex space-x-3">
+                            <div className="w-32 h-11 bg-slate-600 rounded-xl"></div>
+                            <div className="w-32 h-11 bg-slate-600 rounded-xl"></div>
+                        </div>
+                    </div>
+                </div>
+                <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-10 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="bg-white rounded-2xl shadow-lg p-5 border border-slate-100">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-12 h-12 bg-slate-200 rounded-xl"></div>
+                                    <div className="w-10 h-10 bg-slate-100 rounded-full"></div>
+                                </div>
+                                <div className="h-6 bg-slate-200 rounded w-20 mb-2"></div>
+                                <div className="h-4 bg-slate-100 rounded w-32"></div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-6">
+                        <div className="h-6 bg-slate-200 rounded w-48 mb-6"></div>
+                        <div className="space-y-4">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="h-16 bg-slate-100 rounded-2xl"></div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (error) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-                <div className="bg-white p-8 rounded-xl shadow-lg text-center">
-                    <h1 className="text-2xl font-bold text-red-600 mb-4">{error}</h1>
-                    <button onClick={() => router.push('/')} className="bg-blue-600 text-white px-6 py-2 rounded-full">
-                        Back to Home
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
+                <div className="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full">
+                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-4xl">⛔</span>
+                    </div>
+                    <h1 className="text-xl font-bold text-gray-800 mb-2">ปฏิเสธการเข้าถึง</h1>
+                    <p className="text-gray-500 text-sm mb-6">{error}</p>
+                    <button onClick={() => router.push('/')} className="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl hover:bg-slate-900 transition active:scale-95">
+                        กลับสู่หน้าหลัก
                     </button>
                 </div>
             </div>
         );
     }
 
+    // Helper to get user's full name by ID
+    const getUserData = (userId: string) => {
+        return users.find(u => u.id === userId) || {};
+    };
+
     return (
-        <div className="min-h-screen bg-gray-100 font-sans text-black p-6 md:p-12">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-                <div className="flex space-x-3">
-                    <button onClick={handleResetSystem} className="bg-red-500 hover:bg-red-600 text-white font-bold px-4 py-2 rounded shadow-sm transition">
-                        ⚠️ Reset System Data
-                    </button>
-                    <button onClick={() => router.push('/')} className="bg-gray-200 hover:bg-gray-300 font-bold px-4 py-2 rounded shadow-sm transition">
-                        Back to Home
-                    </button>
-                </div>
-            </div>
-
-            {/* Stats Cards */}
-            {summary && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                        <div className="text-gray-500 text-sm">Total Users</div>
-                        <div className="text-2xl font-bold">{summary.totalUsers}</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-green-200">
-                        <div className="text-green-600 text-sm">Total Points</div>
-                        <div className="text-2xl font-bold text-green-700">{summary.totalPoints}</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-blue-200">
-                        <div className="text-blue-600 text-sm">Total Volunteer Hours</div>
-                        <div className="text-2xl font-bold text-blue-700">{summary.totalVolunteerHours}</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-orange-200">
-                        <div className="text-orange-600 text-sm">Total Activity Credits</div>
-                        <div className="text-2xl font-bold text-orange-700">{summary.totalActivityCredits}</div>
-                    </div>
-                </div>
-            )}
-
-            {/* Total Items Banner */}
-            {summary && (
-                <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-6 mb-8 text-white flex items-center justify-between">
+        <div className="min-h-screen bg-slate-50 font-sans pb-10">
+            {/* Admin Header */}
+            <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white px-6 pt-8 pb-14 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/20 rounded-full blur-2xl -ml-10 -mb-10" />
+                
+                <div className="max-w-6xl mx-auto relative z-10 flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0">
                     <div>
-                        <h2 className="text-lg font-bold opacity-90">Total Items Recycled</h2>
-                        <p className="text-sm opacity-75">All time collection across all machines</p>
-                    </div>
-                    <div className="text-4xl font-bold">{summary.totalRecycledItems || 0} <span className="text-lg font-normal opacity-80">items</span></div>
-                </div>
-            )}
-
-            {/* Waste Stats */}
-            {summary && summary.wasteStats && (
-                <div className="bg-white p-6 rounded-xl shadow-sm mb-8">
-                    <h2 className="text-lg font-bold mb-4 text-gray-700">Waste Collection Stats</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {Object.entries(summary.wasteStats).map(([key, value]) => (
-                            <div key={key} className="bg-gray-50 p-3 rounded-lg border border-gray-100 text-center">
-                                <div className="text-xs text-gray-500 uppercase">{key.replace('_', ' ')}</div>
-                                <div className="text-xl font-bold text-gray-800">{String(value)}</div>
+                        <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center border border-blue-400/30">
+                                <span className="text-xl">🛡️</span>
                             </div>
-                        ))}
+                            <span className="text-blue-300 font-bold tracking-wider text-sm uppercase">Admin Control Panel</span>
+                        </div>
+                        <h1 className="text-3xl font-black text-white">ระบบจัดการ <span className="text-blue-400">SBAY</span></h1>
+                    </div>
+                    <div className="flex space-x-3">
+                        <button onClick={handleResetSystem} className="flex items-center space-x-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-bold px-4 py-2.5 rounded-xl transition backdrop-blur-sm">
+                            <span>⚠️</span><span>รีเซ็ตระบบ</span>
+                        </button>
+                        <button onClick={() => router.push('/')} className="flex items-center space-x-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold px-4 py-2.5 rounded-xl transition backdrop-blur-sm">
+                            <span>🏠</span><span>หน้าหลัก</span>
+                        </button>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* System Alerts */}
-            <div className="bg-white rounded-xl shadow-sm mb-8 overflow-hidden">
-                <div className="p-4 border-b bg-red-50 flex items-center space-x-2">
-                    <span className="text-xl">🚨</span>
-                    <h2 className="text-lg font-bold text-red-700">System Alerts</h2>
-                </div>
-                <div className="max-h-60 overflow-y-auto p-4">
-                    {alerts.length === 0 ? (
-                        <p className="text-gray-400 text-center">No alerts found</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {alerts.map((alert: any) => (
-                                <div key={alert.id} className="flex items-start bg-red-50 p-3 rounded-lg border border-red-100">
-                                    <div className="flex-1">
-                                        <div className="flex items-center space-x-2">
-                                            <span className="font-bold text-red-800 text-sm">[{alert.type}]</span>
-                                            <span className="text-gray-600 text-xs">{new Date(alert.timestamp).toLocaleString()}</span>
-                                        </div>
-                                        <p className="text-red-900 mt-1 text-sm font-medium">{alert.message}</p>
-                                        <p className="text-xs text-gray-500 mt-1">Machine: {alert.machineId}</p>
-                                    </div>
-                                </div>
-                            ))}
+            {/* Main Content */}
+            <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-10 space-y-6">
+                
+                {/* Stats Cards */}
+                {summary && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col">
+                            <div className="text-slate-500 text-xs font-semibold mb-1 uppercase">ผู้ใช้งานทั้งหมด</div>
+                            <div className="text-3xl font-black text-slate-800">{summary.totalUsers}</div>
                         </div>
-                    )}
-                </div>
-            </div>
+                        <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col">
+                            <div className="text-slate-500 text-xs font-semibold mb-1 uppercase">แต้มสะสมในระบบ</div>
+                            <div className="text-3xl font-black text-blue-600">{summary.totalPoints}</div>
+                        </div>
+                        <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col">
+                            <div className="text-slate-500 text-xs font-semibold mb-1 uppercase">ชั่วโมงจิตอาสา</div>
+                            <div className="text-3xl font-black text-indigo-600">{summary.totalVolunteerHours}</div>
+                        </div>
+                        <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col">
+                            <div className="text-slate-500 text-xs font-semibold mb-1 uppercase">หน่วยกิตกิจกรรม</div>
+                            <div className="text-3xl font-black text-purple-600">{summary.totalActivityCredits}</div>
+                        </div>
+                    </div>
+                )}
 
-            {/* User Table */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="p-4 border-b bg-gray-50">
-                    <h2 className="text-lg font-bold text-gray-700">All Users</h2>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
-                            <tr>
-                                <th className="p-3">Phone</th>
-                                <th className="p-3">Name</th>
-                                <th className="p-3 text-right">Points</th>
-                                <th className="p-3 text-right">Vol. Hours</th>
-                                <th className="p-3 text-right">Act. Credits</th>
-                                <th className="p-3 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {users.map((u: any) => (
-                                <tr key={u.id} className="hover:bg-gray-50">
-                                    <td className="p-3 font-medium">{u.phoneNumber}</td>
-                                    <td className="p-3">{u.firstName} {u.lastName}</td>
-                                    <td className="p-3 text-right text-green-600 font-bold">{u.points}</td>
-                                    <td className="p-3 text-right">{u.volunteerHours || 0}</td>
-                                    <td className="p-3 text-right">{u.activityCredits || 0}</td>
-                                    <td className="p-3 text-right">
-                                        <button
-                                            onClick={() => handleDeleteUser(u.id)}
-                                            className="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1 rounded text-xs font-bold transition"
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {users.length === 0 && (
+                {/* Pending Redemptions Section */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col mt-8">
+                    <div className="px-5 py-4 border-b border-orange-100 bg-orange-50/50 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <span className="text-lg">⏳</span>
+                            <h2 className="font-bold text-orange-800">รออนุมัติการแลกคะแนน</h2>
+                        </div>
+                        {pendingRedemptions.length > 0 && (
+                            <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                {pendingRedemptions.length} รายการ
+                            </span>
+                        )}
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold sticky top-0 border-b border-slate-100">
                                 <tr>
-                                    <td colSpan={6} className="p-4 text-center text-gray-500">No users found</td>
+                                    <th className="px-5 py-3">เวลา</th>
+                                    <th className="px-5 py-3">ID การแลก</th>
+                                    <th className="px-5 py-3">รหัสนักศึกษา</th>
+                                    <th className="px-5 py-3">ชื่อ-นามสกุล</th>
+                                    <th className="px-5 py-3">คณะและสาขา</th>
+                                    <th className="px-5 py-3">สิ่งที่ขอแลก</th>
+                                    <th className="px-5 py-3 text-center">จัดการ</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {pendingRedemptions.map((r: any) => {
+                                    const u = getUserData(r.userId);
+                                    return (
+                                        <tr key={r.id} className="hover:bg-slate-50/80 transition">
+                                            <td className="px-5 py-3 text-xs text-slate-500">
+                                                {new Date(r.timestamp).toLocaleString('th-TH')}
+                                            </td>
+                                            <td className="px-5 py-3">
+                                                <span className="font-mono text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">{r.id.substring(0, 8)}</span>
+                                            </td>
+                                            <td className="px-5 py-3 font-mono text-slate-600">
+                                                {u.studentId || '-'}
+                                            </td>
+                                            <td className="px-5 py-3 font-bold text-slate-700">
+                                                {u.title} {u.firstName} {u.lastName}
+                                            </td>
+                                            <td className="px-5 py-3">
+                                                <div className="text-sm font-semibold text-slate-800">{u.faculty || '-'}</div>
+                                                <div className="text-xs text-slate-500">{u.major || '-'}</div>
+                                            </td>
+                                            <td className="px-5 py-3">
+                                                <div className="font-bold text-slate-800">
+                                                    {r.rewardType === 'VOLUNTEER' 
+                                                        ? `จิตอาสา ${r.value} ชั่วโมง` 
+                                                        : `${r.details} ${r.value} หน่วย`}
+                                                </div>
+                                                <div className="text-[10px] text-orange-600 mt-0.5">
+                                                    ใช้ {r.cost} แต้ม
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-3 text-center">
+                                                <div className="flex items-center justify-center space-x-2">
+                                                    <button
+                                                        onClick={() => handleApproveRedemption(r.id)}
+                                                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm shadow-emerald-200"
+                                                    >
+                                                        อนุมัติ
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRejectRedemption(r.id)}
+                                                        className="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                                                    >
+                                                        ปฏิเสธ
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {pendingRedemptions.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="px-5 py-8 text-center">
+                                            <span className="text-3xl mb-2 block opacity-50">✨</span>
+                                            <div className="text-slate-400 font-medium">ไม่มีรายการรออนุมัติ</div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+                    {/* Left Column: Waste Stats & Alerts */}
+                    <div className="space-y-6">
+                        {/* Waste Stats */}
+                        {summary && summary.wasteStats && (
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                                <div className="px-5 py-4 border-b border-slate-50 bg-slate-50/50">
+                                    <h2 className="font-bold text-slate-800">สถิติแยกตามประเภทขยะ</h2>
+                                </div>
+                                <div className="p-5 grid grid-cols-2 gap-3">
+                                    {Object.entries(summary.wasteStats).map(([key, value]) => (
+                                        <div key={key} className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col items-center text-center">
+                                            <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">{key.replace('_', ' ')}</div>
+                                            <div className="text-xl font-black text-slate-700">{String(value)}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* System Alerts */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-[400px]">
+                            <div className="px-5 py-4 border-b border-red-100 bg-red-50 flex items-center space-x-2">
+                                <span className="text-lg">🚨</span>
+                                <h2 className="font-bold text-red-700">การแจ้งเตือนระบบ (Alerts)</h2>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                {alerts.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-center">
+                                        <span className="text-3xl mb-2">✅</span>
+                                        <p className="text-slate-400 font-medium text-sm">ระบบทำงานปกติ ไม่มีแจ้งเตือน</p>
+                                    </div>
+                                ) : (
+                                    alerts.map((alert: any) => (
+                                        <div key={alert.id} className="bg-red-50/50 p-3 rounded-xl border border-red-100/50">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="font-bold text-red-700 text-xs px-2 py-0.5 bg-red-100 rounded-md">
+                                                    {alert.type}
+                                                </span>
+                                                <span className="text-slate-400 text-[10px]">
+                                                    {new Date(alert.timestamp).toLocaleTimeString('th-TH')}
+                                                </span>
+                                            </div>
+                                            <p className="text-slate-700 text-sm font-medium leading-snug">{alert.message}</p>
+                                            <p className="text-[10px] text-slate-500 mt-1.5">Machine: <span className="font-mono bg-white px-1 py-0.5 rounded border border-slate-200">{alert.machineId}</span></p>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column: User Table */}
+                    <div className="lg:col-span-2">
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full">
+                            <div className="px-5 py-4 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+                                <h2 className="font-bold text-slate-800">จัดการรายชื่อผู้ใช้ & สิทธิ์</h2>
+                                <span className="text-xs font-semibold text-slate-500 bg-white px-2 py-1 rounded-md border border-slate-200">
+                                    {users.length} คน
+                                </span>
+                            </div>
+                            <div className="overflow-x-auto flex-1">
+                                <table className="w-full text-left text-sm whitespace-nowrap">
+                                    <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold sticky top-0 border-b border-slate-100">
+                                        <tr>
+                                            <th className="px-5 py-3">ข้อมูลผู้ใช้</th>
+                                            <th className="px-5 py-3 text-right">แต้มสะสม</th>
+                                            <th className="px-5 py-3 text-center">สิทธิ์ (Role)</th>
+                                            <th className="px-5 py-3 text-right">การจัดการ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {users.map((u: any) => (
+                                            <tr key={u.id} className="hover:bg-slate-50/80 transition group">
+                                                <td className="px-5 py-3">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-700 font-bold text-xs shrink-0">
+                                                            {u.firstName?.charAt(0) || '?'}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-slate-700">{u.title} {u.firstName} {u.lastName}</div>
+                                                            <div className="text-[10px] text-slate-400">
+                                                                {u.phoneNumber}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3 text-right">
+                                                    <span className="font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
+                                                        {u.points}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-3 text-center">
+                                                    <select 
+                                                        value={u.role || 'USER'}
+                                                        onChange={(e) => handleChangeRole(u.id, e.target.value)}
+                                                        className={`text-xs font-bold px-2 py-1 rounded-lg outline-none cursor-pointer border ${u.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+                                                    >
+                                                        <option value="USER">USER</option>
+                                                        <option value="ADMIN">ADMIN</option>
+                                                    </select>
+                                                </td>
+                                                <td className="px-5 py-3 text-right">
+                                                    <button
+                                                        onClick={() => handleDeleteUser(u.id)}
+                                                        className="text-red-500 hover:text-white hover:bg-red-500 border border-red-200 hover:border-red-500 px-3 py-1 rounded-lg text-xs font-bold transition opacity-50 group-hover:opacity-100"
+                                                    >
+                                                        ลบ
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {users.length === 0 && (
+                                            <tr>
+                                                <td colSpan={4} className="px-5 py-12 text-center">
+                                                    <span className="text-3xl mb-2 block">👥</span>
+                                                    <div className="text-slate-400 font-medium">ไม่พบผู้ใช้งานในระบบ</div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     );
