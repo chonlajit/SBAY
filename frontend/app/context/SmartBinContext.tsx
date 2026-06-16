@@ -39,6 +39,8 @@ interface SmartBinContextType {
     // OTP: Phone Login
     sendPhoneOtp: (phone: string) => Promise<{ success: boolean; message?: string }>;
     loginWithPhone: (phone: string, otp: string, machineId: string) => Promise<{ success: boolean; message?: string }>;
+    // Password Login
+    loginWithPassword: (identifier: string, password: string, machineId: string) => Promise<{ success: boolean; message?: string }>;
     // Google Login
     loginWithGoogle: (accessToken: string, machineId: string) => Promise<{ success: boolean; message?: string; email?: string }>;
     // Register: Manual (Email OTP)
@@ -203,6 +205,20 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
         } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
 
+    // Password Login
+    const loginWithPassword = async (identifier: string, password: string, machineId: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/login-password`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier, password, machineId })
+            });
+            const data = await res.json();
+            if (data.error) return { success: false, message: data.error };
+            if (data.user && data.token) { saveSession(data.user, data.token, machineId); return { success: true }; }
+            return { success: false, message: 'Invalid server response' };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
     // Google Login
     const loginWithGoogle = async (accessToken: string, machineId: string) => {
         try {
@@ -295,6 +311,7 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             user, sessionPoints, sessionHistory, latestSession, wasteTypes: WASTE_TYPES,
             sendOtp, login,
             sendPhoneOtp, loginWithPhone,
+            loginWithPassword,
             loginWithGoogle,
             sendRegisterOtp, register,
             registerWithGoogle,

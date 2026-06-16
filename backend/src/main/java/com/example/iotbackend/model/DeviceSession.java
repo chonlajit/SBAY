@@ -24,4 +24,5 @@ public class DeviceSession {
     
     private Integer totalItems;
     private Double totalMl;
+    private Double totalScore;
 }

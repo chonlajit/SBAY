@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSmartBin } from '../context/SmartBinContext';
 import { useGoogleLogin } from '@react-oauth/google';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
 type Step = 'choose' | 'form' | 'otp';
 type RegisterMethod = 'google' | 'manual';
@@ -20,6 +22,8 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     const [otp, setOtp] = useState('');
     const [otpMsg, setOtpMsg] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [form, setForm] = useState({
         title: 'นาย',
@@ -28,9 +32,20 @@ export default function RegisterPage() {
         studentId: '',
         phoneNumber: '',
         email: '',
+        password: '',
+        confirmPassword: '',
         faculty: 'วิศวกรรมศาสตร์',
         major: ''
     });
+
+    const [cooldown, setCooldown] = useState(0);
+
+    React.useEffect(() => {
+        if (cooldown > 0) {
+            const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [cooldown]);
 
     const faculties = {
         'วิศวกรรมศาสตร์': [
@@ -87,10 +102,13 @@ export default function RegisterPage() {
         flow: 'implicit',
     });
 
-    // ── Submit Form ──
     const handleFormSubmit = async () => {
-        if (!form.email || !form.firstName || !form.lastName || !form.phoneNumber || !form.faculty || !form.major) {
-            setError('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน (ชื่อ, นามสกุล, เบอร์โทร, อีเมล, คณะ, สาขา)');
+        if (!form.email || !form.firstName || !form.lastName || !form.phoneNumber || !form.faculty || !form.major || (!form.password && method !== 'google')) {
+            setError('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน (ชื่อ, นามสกุล, เบอร์โทร, อีเมล, รหัสผ่าน, คณะ, สาขา)');
+            return;
+        }
+        if (method !== 'google' && form.password !== form.confirmPassword) {
+            setError('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
             return;
         }
         if (!form.email.includes('@')) {
@@ -118,9 +136,24 @@ export default function RegisterPage() {
             if (result.success) {
                 setOtpMsg(result.message || `ส่ง OTP ไปยัง ${form.email} แล้ว`);
                 setStep('otp');
+                setCooldown(30);
             } else {
                 setError(result.message || 'เกิดข้อผิดพลาดในการส่ง OTP');
             }
+        }
+    };
+
+    const handleResendOtp = async () => {
+        if (cooldown > 0) return;
+        setIsLoading(true);
+        setError('');
+        const result = await sendRegisterOtp(form.email.trim().toLowerCase());
+        setIsLoading(false);
+        if (result.success) {
+            setOtpMsg(result.message || `ส่ง OTP ใหม่ไปที่ ${form.email} แล้ว`);
+            setCooldown(30);
+        } else {
+            setError(result.message || 'เกิดข้อผิดพลาดในการส่ง OTP');
         }
     };
 
@@ -289,6 +322,55 @@ export default function RegisterPage() {
                                 />
                             </div>
 
+                            {method !== 'google' && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-600 mb-1">
+                                            🔑 รหัสผ่าน (สำหรับเข้าสู่ระบบ) <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                value={form.password}
+                                                onChange={handleChange}
+                                                placeholder="ตั้งรหัสผ่าน 6 ตัวขึ้นไป"
+                                                className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-3 py-2.5 pr-10 text-gray-800 outline-none transition bg-gray-50 focus:bg-white"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-green-500 transition"
+                                            >
+                                                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-600 mb-1">
+                                            🔐 ยืนยันรหัสผ่าน <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                name="confirmPassword"
+                                                value={form.confirmPassword}
+                                                onChange={handleChange}
+                                                placeholder="กรอกรหัสผ่านอีกครั้ง"
+                                                className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-3 py-2.5 pr-10 text-gray-800 outline-none transition bg-gray-50 focus:bg-white"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-green-500 transition"
+                                            >
+                                                <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-semibold text-gray-600 mb-1">
                                     🎓 รหัสนักศึกษา (ถ้ามี)
@@ -408,11 +490,21 @@ export default function RegisterPage() {
                                 {isLoading ? 'กำลังลงทะเบียน...' : '✓ ยืนยัน & ลงทะเบียน'}
                             </button>
 
+                            <div className="text-center pt-1">
+                                <button
+                                    onClick={handleResendOtp}
+                                    disabled={cooldown > 0 || isLoading}
+                                    className={`text-sm font-bold ${cooldown > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:underline'}`}
+                                >
+                                    {cooldown > 0 ? `ส่งรหัสใหม่ได้ในอีก ${cooldown} วินาที` : 'ส่งรหัส OTP อีกครั้ง'}
+                                </button>
+                            </div>
+
                             <button
                                 onClick={() => { setStep('form'); setOtp(''); setError(''); setOtpMsg(''); }}
                                 className="w-full bg-gray-100 text-gray-600 font-semibold py-3 rounded-xl hover:bg-gray-200 transition active:scale-95 text-sm"
                             >
-                                ← แก้ไขข้อมูล / ส่ง OTP ใหม่
+                                ← กลับไปแก้ไขข้อมูล
                             </button>
                         </div>
                     )}

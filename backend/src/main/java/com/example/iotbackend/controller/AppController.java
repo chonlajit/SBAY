@@ -254,6 +254,11 @@ public class AppController {
         newUser.setPoints(0);
         newUser.setRole("USER");
 
+        String password = (String) payload.get("password");
+        if (password != null && !password.isBlank()) {
+            newUser.setPassword(hashPassword(password));
+        }
+
         userRepository.save(newUser);
         recycleService.bindUserToMachine(machineId, newUser.getId());
 
@@ -294,6 +299,67 @@ public class AppController {
             return response;
         }
         return Map.of("error", "User not found", "status", 404);
+    }
+
+    // ─── Password Login ───────────────────────────────────────────────────────
+    @PostMapping("/auth/login-password")
+    public Object loginWithPassword(@RequestBody Map<String, String> payload) {
+        String identifier = payload.get("identifier");
+        String password = payload.get("password");
+        String machineId = payload.getOrDefault("machineId", "default-machine");
+
+        if (identifier == null || identifier.isBlank() || password == null || password.isBlank()) {
+            return Map.of("error", "Email/Phone and Password are required");
+        }
+
+        identifier = identifier.trim().toLowerCase();
+        Optional<User> userOpt = userRepository.findByEmail(identifier);
+        if (userOpt.isEmpty()) {
+            String phone = identifier.replaceAll("[^0-9]", "");
+            if (!phone.isEmpty()) {
+                userOpt = userRepository.findByPhoneNumber(phone);
+            }
+        }
+
+        if (userOpt.isEmpty()) {
+            return Map.of("error", "ไม่พบผู้ใช้นี้ในระบบ");
+        }
+
+        User user = userOpt.get();
+        if (user.getPassword() == null) {
+            return Map.of("error", "บัญชีนี้ไม่ได้ตั้งรหัสผ่าน กรุณาเข้าสู่ระบบด้วย Google");
+        }
+
+        String hashedAttempt = hashPassword(password);
+        if (!user.getPassword().equals(hashedAttempt)) {
+            return Map.of("error", "รหัสผ่านไม่ถูกต้อง");
+        }
+
+        recycleService.bindUserToMachine(machineId, user.getId());
+        String token = jwtUtil.generateToken(user);
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("user", user);
+        response.put("token", token);
+        return response;
+    }
+
+    // ─── Helper: hash password (SHA-256) ───────────────────────────────────────
+    private String hashPassword(String password) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] encodedhash = digest.digest(password.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder(2 * encodedhash.length);
+            for (byte b : encodedhash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Error hashing password", e);
+        }
     }
 
     // ─── Helper: fetch Google userinfo via access token ────────────────────────

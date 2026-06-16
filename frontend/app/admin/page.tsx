@@ -6,7 +6,7 @@ import { useSmartBin } from '../context/SmartBinContext';
 
 export default function AdminPage() {
     const router = useRouter();
-    const { user, token, isInitialized } = useSmartBin();
+    const { user, token, isInitialized, apiBase } = useSmartBin();
     const [summary, setSummary] = useState<any>(null);
     const [users, setUsers] = useState<any[]>([]);
     const [alerts, setAlerts] = useState<any[]>([]);
@@ -18,10 +18,6 @@ export default function AdminPage() {
         if (!token) return;
 
         try {
-            const hostname = window.location.hostname;
-            const port = window.location.port;
-            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
-
             const headers = { 'Authorization': `Bearer ${token}` };
 
             const [summaryRes, usersRes, alertsRes, redemptionsRes] = await Promise.all([
@@ -53,9 +49,6 @@ export default function AdminPage() {
         if (!token) return;
 
         try {
-            const hostname = window.location.hostname;
-            const port = window.location.port;
-            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
             const res = await fetch(`${apiBase}/admin/user/${userId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -77,9 +70,6 @@ export default function AdminPage() {
         if (!token) return;
 
         try {
-            const hostname = window.location.hostname;
-            const port = window.location.port;
-            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
             const res = await fetch(`${apiBase}/admin/user/${userId}/role`, {
                 method: 'PUT',
                 headers: { 
@@ -105,9 +95,6 @@ export default function AdminPage() {
         if (!token) return;
 
         try {
-            const hostname = window.location.hostname;
-            const port = window.location.port;
-            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
             const res = await fetch(`${apiBase}/admin/redemptions/${redemptionId}/approve`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -129,9 +116,6 @@ export default function AdminPage() {
         if (!token) return;
 
         try {
-            const hostname = window.location.hostname;
-            const port = window.location.port;
-            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
             const res = await fetch(`${apiBase}/admin/redemptions/${redemptionId}/reject`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -152,9 +136,6 @@ export default function AdminPage() {
         if (!confirm("⚠️ คำเตือน: คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตข้อมูลระบบและแต้มทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้!")) return;
         
         try {
-            const hostname = window.location.hostname;
-            const port = window.location.port;
-            const apiBase = port === '3000' ? `http://${hostname}:8070/api` : `http://${hostname}${port ? ':' + port : ''}/api`;
             const res = await fetch(`${apiBase}/admin/reset`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }

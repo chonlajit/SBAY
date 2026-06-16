@@ -8,7 +8,7 @@ import os
 DEVICE_ID = os.getenv("DEVICE_ID", "BIN-001")
 
 # --- Backend Server ---
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8070")
 API_BASE = f"{BACKEND_URL}/api"
 
 # --- Mode ---

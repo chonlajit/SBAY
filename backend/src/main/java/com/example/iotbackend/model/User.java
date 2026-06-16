@@ -22,6 +22,8 @@ public class User {
     private String faculty;
     private String major;
     
+    private String password; // Added for password login
+    
     private int points;
     
     private double volunteerHours;

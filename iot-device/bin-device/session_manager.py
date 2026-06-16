@@ -67,7 +67,8 @@ class SessionManager:
             "endTime": datetime.now().isoformat(),
             "items": self.items,
             "totalItems": summary["totalItems"],
-            "totalMl": summary["totalMl"]
+            "totalMl": summary["totalMl"],
+            "totalScore": summary["totalScore"]
         }
 
     def has_items(self):

@@ -30,9 +30,19 @@ def ensure_env_file(win_ip):
             env_content = f.read()
     
     if "MACHINE_ID" not in env_content:
-        env_content += "\nMACHINE_ID=BIN-001\n"
-    if "CF_TUNNEL_TOKEN" not in env_content:
-        env_content += "CF_TUNNEL_TOKEN=your_token_here\n"
+        with open(".env", "a") as f:
+            f.write("\nMACHINE_ID=BIN-001\n")
+    if "WINDOWS_IP" not in env_content:
+        with open(".env", "a") as f:
+            f.write(f"WINDOWS_IP={win_ip}\n")
+            
+    # Load .env into os.environ so backend can access SMTP variables
+    with open(".env", "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
+                os.environ[key.strip()] = val.strip()
         
     # Update or add WINDOWS_IP
     lines = env_content.splitlines()
@@ -85,7 +95,12 @@ def main():
     if not os.path.exists(os.path.join(BACKEND_DIR, "pom.xml")):
         print("[Error] ไม่พบโฟลเดอร์ Backend")
     else:
-        backend_cmd = f"cd {BACKEND_DIR}; mvn spring-boot:run"
+        java_home = r"C:\Users\Admin\AppData\Roaming\Antigravity\User\globalStorage\pleiades.java-extension-pack-jdk\java\17"
+        os.environ["JAVA_HOME"] = java_home
+        os.environ["PATH"] = java_home + r"\bin;" + os.environ.get("PATH", "")
+        smtp_user = os.environ.get("SMTP_USERNAME", "")
+        smtp_pass = os.environ.get("SMTP_PASSWORD", "")
+        backend_cmd = f"$env:SMTP_USERNAME='{smtp_user}'; $env:SMTP_PASSWORD='{smtp_pass}'; cd {BACKEND_DIR}; mvn spring-boot:run"
         run_in_new_window(backend_cmd, "SBAY-Backend")
 
     # 3. เริ่ม Frontend (Native Windows)
@@ -110,7 +125,7 @@ def main():
         run_in_new_window(tunnel_cmd, "SBAY-Cloudflare-Tunnel")
     else:
         print_step("กำลังเปิด Cloudflare Tunnel (แบบชั่วคราว - Quick Tunnel)...")
-        tunnel_cmd = f"cloudflared tunnel --url http://{wsl_ip}:8080"
+        tunnel_cmd = f"wsl -d Ubuntu docker run --rm --network sbay_default cloudflare/cloudflared:latest tunnel --url http://nginx:80"
         run_in_new_window(tunnel_cmd, "SBAY-Quick-Tunnel")
         print(">> กำลังสร้างลิงก์ชั่วคราว... กรุณาดู URL ในหน้าต่างใหม่ที่เด้งขึ้นมาครับ")
 
