@@ -86,14 +86,21 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             const port = window.location.port;
             const protocol = window.location.protocol;
             const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+            let currentApiBase = '';
+            let currentWsBase = '';
+            
             if (port === '3000') {
-                setApiBase(`http://${hostname}:8070/api`);
-                setWsBase(`ws://${hostname}:8070/ws-native`);
+                currentApiBase = `http://${hostname}:8070/api`;
+                currentWsBase = `ws://${hostname}:8070/ws-native`;
             } else {
                 const portStr = port ? `:${port}` : '';
-                setApiBase(`${protocol}//${hostname}${portStr}/api`);
-                setWsBase(`${wsProtocol}//${hostname}${portStr}/ws-native`);
+                currentApiBase = `${protocol}//${hostname}${portStr}/api`;
+                currentWsBase = `${wsProtocol}//${hostname}${portStr}/ws-native`;
             }
+            
+            setApiBase(currentApiBase);
+            setWsBase(currentWsBase);
+
             const savedUser = localStorage.getItem('sbay_user');
             const savedToken = localStorage.getItem('sbay_token');
             if (savedUser && savedToken) {
@@ -101,19 +108,21 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
                 setUser(parsedUser);
                 setToken(savedToken);
                 
-                // Connect global WebSocket to listen for live point updates
-                connectWebSocket(parsedUser.id);
-                
-                // Fetch fresh user data to update points
-                fetch(`${apiBase}/user/${parsedUser.id}`)
-                    .then(res => res.json())
+                // Fetch fresh user data from backend
+                fetch(`${currentApiBase}/user/${parsedUser.id}`)
+                    .then(res => res.ok ? res.json() : null)
                     .then(freshUser => {
                         if (freshUser && !freshUser.error) {
                             setUser(freshUser);
                             localStorage.setItem('sbay_user', JSON.stringify(freshUser));
                         }
                     })
-                    .catch(e => console.error("Failed to refresh user", e));
+                    .catch(e => console.error(e));
+                
+                // Keep WS connected for global user updates
+                setTimeout(() => {
+                    connectWebSocket(parsedUser.id, 'background');
+                }, 500);
             }
             setIsInitialized(true);
         }
