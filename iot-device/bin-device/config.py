@@ -28,7 +28,7 @@ SERVO_SORT_PIN = 18
 SERVO_RELEASE_PIN = 19
 
 # --- AI Detection ---
-MODEL_PATH = os.getenv("MODEL_PATH", "bottle.pt")
+MODEL_PATH = os.getenv("MODEL_PATH", "bottle-v1-3.pt")
 CONF_THRESHOLD = 0.7
 STABLE_FRAMES = 5       # ต้อง detect ซ้ำกี่เฟรมถึงจะยืนยัน
 COOLDOWN = 3             # วินาที ระหว่างการ detect แต่ละชิ้น

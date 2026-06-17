@@ -33,7 +33,7 @@ else:
 # =========================
 # INIT
 # =========================
-detector = Detector("bottle.pt")
+detector = Detector("bottle-v1-3.pt")
 size_estimator = SizeEstimator()
 calculator = ScoreCalculator()
 

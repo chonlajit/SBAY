@@ -14,7 +14,7 @@ CONSECUTIVE_FRAMES_REQUIRED = 5  # Must detect same item X times in a row
 
 # Load YOLOv8n model
 print("Loading YOLOv8n model...")
-model = YOLO('bottle.pt')
+model = YOLO('bottle-v1-3.pt')
 
 # Waste Mapping (COCO classes) to System Types
 # Note: Standard YOLOv8n only knows 'bottle', 'cup', etc.
