@@ -1,5 +1,0 @@
-# SBAY Smart Bin - Pi Requirements
-requests
-opencv-python
-ultralytics
-python-dotenv
