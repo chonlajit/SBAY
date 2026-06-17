@@ -14,7 +14,7 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import DEVICE_ID, USE_GUI
+from config import DEVICE_ID, USE_GUI, USE_IR
 from api_client import ApiClient
 from heartbeat_service import HeartbeatService
 from session_manager import SessionManager
@@ -145,13 +145,15 @@ class SmartBinController:
                     
                     self.detection.stop_camera()
                     if self.gui:
-                        self.gui.schedule(self.gui.update_status, "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)", "#94a3b8")
+                        status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
+                        self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
                     time.sleep(2.0) # Wait for item to drop and IR to clear
             else:
                 if self.detection.running:
                     self.detection.stop_camera()
                     if self.gui:
-                        self.gui.schedule(self.gui.update_status, "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)", "#94a3b8")
+                        status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
+                        self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
 
             time.sleep(0.1)  # Prevent CPU spike
 

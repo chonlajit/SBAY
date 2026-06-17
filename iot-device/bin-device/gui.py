@@ -8,7 +8,7 @@ from tkinter import font as tkfont
 import threading
 import logging
 
-from config import WASTE_LABELS
+from config import WASTE_LABELS, USE_IR
 
 logger = logging.getLogger("gui")
 
@@ -233,8 +233,9 @@ class SmartBinGUI:
         self.items_canvas.create_window((0, 0), window=self.items_inner, anchor="nw")
 
         # Status label
+        status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
         self.status_label = tk.Label(
-            mid, text="สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)",
+            mid, text=status_msg,
             font=self.font_small, fg=self.GRAY, bg=self.BG
         )
         self.status_label.pack(pady=5)
