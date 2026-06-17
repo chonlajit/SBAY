@@ -117,8 +117,7 @@ class DetectionService:
 
     def detect_once(self):
         """อ่านภาพ 1 เฟรมและส่งเข้า YOLO (ถ้าพ้น Cooldown)"""
-        if not self.use_hardware:
-            return None, 0
+
 
         frame = None
         if self.picam and self.running:
