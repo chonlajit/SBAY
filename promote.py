@@ -10,7 +10,7 @@ def main():
 
     if len(sys.argv) != 3:
         print("Usage: python promote.py <FirstName> <LastName>")
-        print("Example: python promote.py ชลสิทธิ์ จิตมาตย์")
+        print("Example: python promote.py สมชาย ใจดี")
         sys.exit(1)
 
     first = sys.argv[1]

@@ -14,16 +14,38 @@ export default function DashboardPage() {
     const [activeTab, setActiveTab] = useState<'recycle' | 'redeem'>('recycle');
 
     const groupedHistory = useMemo(() => {
-        const groups: Record<string, any[]> = {};
-        history.forEach(tx => {
-            const date = new Date(tx.timestamp).toLocaleDateString('th-TH', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-            });
-            if (!groups[date]) groups[date] = [];
-            groups[date].push(tx);
+        // Sort history ascending (oldest first) to assign "ครั้งที่ X" chronologically
+        const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        
+        const sessions: { id: string, label: string, items: any[] }[] = [];
+        let currentSessionTime = 0;
+
+        sortedHistory.forEach(tx => {
+            const txTime = new Date(tx.timestamp).getTime();
+            
+            // If more than 10 minutes apart, start a new session group
+            if (!currentSessionTime || Math.abs(txTime - currentSessionTime) > 600000) {
+                const dateObj = new Date(tx.timestamp);
+                const dateStr = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                const timeStr = dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                
+                sessions.push({
+                    id: tx.id || txTime.toString(),
+                    label: `ครั้งที่ ${sessions.length + 1} (${dateStr} ${timeStr} น.)`,
+                    items: []
+                });
+                currentSessionTime = txTime;
+            }
+            
+            sessions[sessions.length - 1].items.unshift(tx); // Newest items first within session
         });
+        
+        // Reverse sessions to show newest first, then convert to Object for the existing render logic
+        const groups: Record<string, any[]> = {};
+        sessions.reverse().forEach(session => {
+            groups[session.label] = session.items;
+        });
+        
         return groups;
     }, [history]);
 
@@ -70,24 +92,12 @@ export default function DashboardPage() {
     useEffect(() => {
         if (latestSession && latestSession.items) {
             // Map session items to match history format
-            const mappedItems = latestSession.items.map((item: any) => {
-                let mappedType = item.type;
-                if (mappedType) {
-                    switch (mappedType) {
-                        case 'plastic_clear': case 'CLEAR_BOTTLE': mappedType = 'CLEAR_BOTTLES'; break;
-                        case 'plastic_opaque': case 'OPAQUE_BOTTLE': mappedType = 'OPAQUE_BOTTLES'; break;
-                        case 'glass': case 'GLASS_BOTTLE': case 'GLASSES_BOTTLE': mappedType = 'GLASS_BOTTLES'; break;
-                        case 'aluminum': case 'ALUMINUM_CAN': mappedType = 'ALUMINUM_CANS'; break;
-                        case 'steel': case 'STEEL_CAN': mappedType = 'STEEL_CANS'; break;
-                    }
-                }
-                return {
-                    id: Math.random().toString(),
-                    wasteType: mappedType,
-                    pointsEarned: item.score ? Math.round(item.score) : 0,
-                    timestamp: item.timestamp
-                };
-            });
+            const mappedItems = latestSession.items.map((item: any) => ({
+                id: Math.random().toString(),
+                wasteType: item.type,
+                pointsEarned: item.score ? Math.round(item.score) : 0,
+                timestamp: item.timestamp
+            }));
             
             setHistory(prev => [...mappedItems, ...prev]);
         }
@@ -222,7 +232,15 @@ export default function DashboardPage() {
                         <div className="grid grid-cols-2 gap-3">
                             {wasteTypes.map((type) => {
                                 const typeStats = history
-                                    .filter(h => h.wasteType === type.type)
+                                    .filter(h => {
+                                        let typeForLabel = h.wasteType;
+                                        if (typeForLabel === 'CLEAR_BOTTLES') typeForLabel = 'CLEAR_BOTTLE';
+                                        if (typeForLabel === 'OPAQUE_BOTTLES') typeForLabel = 'OPAQUE_BOTTLE';
+                                        if (typeForLabel === 'GLASS_BOTTLES') typeForLabel = 'GLASSES_BOTTLE';
+                                        if (typeForLabel === 'ALUMINUM_CANS') typeForLabel = 'ALUMINUM_CAN';
+                                        if (typeForLabel === 'STEEL_CANS') typeForLabel = 'STEEL_CAN';
+                                        return typeForLabel === type.type;
+                                    })
                                     .reduce((acc, curr) => ({
                                         count: acc.count + 1,
                                         points: acc.points + curr.pointsEarned
@@ -327,7 +345,15 @@ export default function DashboardPage() {
                                                         });
 
                                                         if (isRecycle) {
-                                                            const typeLabel = wasteTypes.find(w => w.type === tx.wasteType)?.label || tx.wasteType;
+                                                            // Clean up any plural forms from previous DB bug
+                                                            let typeForLabel = tx.wasteType;
+                                                            if (typeForLabel === 'CLEAR_BOTTLES') typeForLabel = 'CLEAR_BOTTLE';
+                                                            if (typeForLabel === 'OPAQUE_BOTTLES') typeForLabel = 'OPAQUE_BOTTLE';
+                                                            if (typeForLabel === 'GLASS_BOTTLES') typeForLabel = 'GLASSES_BOTTLE';
+                                                            if (typeForLabel === 'ALUMINUM_CANS') typeForLabel = 'ALUMINUM_CAN';
+                                                            if (typeForLabel === 'STEEL_CANS') typeForLabel = 'STEEL_CAN';
+
+                                                            const typeLabel = wasteTypes.find(w => w.type === typeForLabel)?.label || tx.wasteType;
                                                             return (
                                                                 <div key={idx} className="flex items-center justify-between px-5 py-3">
                                                                     <div className="flex items-center space-x-3">

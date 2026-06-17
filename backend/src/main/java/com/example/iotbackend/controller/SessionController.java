@@ -76,22 +76,9 @@ public class SessionController {
         // Create Transaction records for the Dashboard
         if (session.getItems() != null && session.getUserId() != null && !session.getUserId().isEmpty()) {
             for (SessionItem item : session.getItems()) {
-                String type = item.getType();
-                String mappedType = type;
-                if (type != null) {
-                    switch(type) {
-                        case "plastic_clear": case "CLEAR_BOTTLE": mappedType = "CLEAR_BOTTLES"; break;
-                        case "plastic_opaque": case "OPAQUE_BOTTLE": mappedType = "OPAQUE_BOTTLES"; break;
-                        case "glass": case "GLASS_BOTTLE": case "GLASSES_BOTTLE": mappedType = "GLASS_BOTTLES"; break;
-                        case "aluminum": case "ALUMINUM_CAN": mappedType = "ALUMINUM_CANS"; break;
-                        case "steel": case "STEEL_CAN": mappedType = "STEEL_CANS"; break;
-                        default: mappedType = type;
-                    }
-                }
-                
                 Transaction tx = new Transaction();
                 tx.setUserId(session.getUserId());
-                tx.setWasteType(mappedType);
+                tx.setWasteType(item.getType());
                 tx.setPointsEarned(item.getScore() != null ? (int) Math.round(item.getScore()) : 0);
                 tx.setTimestamp(item.getTimestamp() != null ? item.getTimestamp() : LocalDateTime.now());
                 transactionRepository.save(tx);
