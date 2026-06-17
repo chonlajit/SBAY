@@ -315,11 +315,12 @@ class SmartBinGUI:
             if cv2_frame is not None:
                 rgb = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(rgb)
-                # ปรับขนาดภาพให้พอดีกับ label
+                # ปรับขนาดภาพโดยรักษาสัดส่วน (Aspect Ratio) ให้พอดีกับ label
                 label_w = self.camera_label.winfo_width()
                 label_h = self.camera_label.winfo_height()
                 if label_w > 10 and label_h > 10:
-                    img = img.resize((label_w, label_h), Image.LANCZOS)
+                    img.thumbnail((label_w, label_h), Image.LANCZOS)
+                
                 imgtk = ImageTk.PhotoImage(image=img)
                 self.camera_label.imgtk = imgtk
                 self.camera_label.configure(image=imgtk)

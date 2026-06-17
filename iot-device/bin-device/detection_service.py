@@ -66,7 +66,7 @@ class DetectionService:
                 logger.info("Starting Picamera2...")
                 from picamera2 import Picamera2
                 self.picam = Picamera2()
-                cfg = self.picam.create_preview_configuration(main={"format": "BGR888", "size": (640, 480)})
+                cfg = self.picam.create_preview_configuration(main={"format": "RGB888", "size": (640, 480)})
                 self.picam.configure(cfg)
                 self.picam.start()
                 import time as _t
@@ -124,6 +124,8 @@ class DetectionService:
         if self.picam and self.running:
             try:
                 frame = self.picam.capture_array()
+                # Picamera2 is configured as RGB888, so we get RGB. Convert to BGR for YOLO and GUI standard.
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             except Exception as e:
                 logger.warning(f"Picamera frame read failed: {e}")
                 return None
