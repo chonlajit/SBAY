@@ -65,18 +65,31 @@ class DetectionService:
             if not self.picam:
                 try:
                     from picamera2 import Picamera2
+                    logger.info("Picamera2 module found, starting...")
                     self.picam = Picamera2()
                     cfg = self.picam.create_preview_configuration(main={"format": "BGR888", "size": (640, 480)})
                     self.picam.configure(cfg)
                     self.picam.start()
+                    import time as _t
+                    _t.sleep(2)  # Pi Camera needs warmup
                     self.running = True
-                    logger.info("PiCamera2 started")
+                    logger.info("PiCamera2 started successfully")
+                    return
                 except ImportError:
-                    logger.warning("Picamera2 not found, falling back to cv2")
-                    self._start_cv2_camera()
+                    logger.warning("Picamera2 module not installed, falling back to cv2")
+                except Exception as e:
+                    logger.error(f"Picamera2 failed to start: {e}")
+                    self.picam = None
+                # Fallback to cv2
+                self._start_cv2_camera()
             else:
-                self.picam.start()
-                self.running = True
+                try:
+                    self.picam.start()
+                    self.running = True
+                except Exception as e:
+                    logger.error(f"Picamera2 restart failed: {e}")
+                    self.picam = None
+                    self._start_cv2_camera()
         else:
             self._start_cv2_camera()
 
