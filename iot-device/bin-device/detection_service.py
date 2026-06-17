@@ -123,6 +123,8 @@ class DetectionService:
         if self.picam and self.running:
             try:
                 frame = self.picam.capture_array()
+                # สลับสี RGB/BGR เพราะกล้องส่งสีมาสลับกัน (สีแดงกลายเป็นฟ้า)
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             except Exception as e:
                 logger.warning(f"Picamera frame read failed: {e}")
                 return None, 0
@@ -134,15 +136,10 @@ class DetectionService:
                 logger.warning("Camera frame read failed")
                 return None, 0
 
-        # หมุนภาพ 90 องศาตามเข็มนาฬิกา (เพื่อให้ภาพกล้องเป็นแนวตั้ง)
-        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-
-        # 2. Resize เฟรม
-        frame = cv2.resize(frame, (320, 320))
+        # ไม่ต้อง Resize ภาพให้เป็นสี่เหลี่ยมจัตุรัสแล้ว ปล่อยให้เป็น 640x480 สัดส่วนจริงเลย
 
         # 3. อัปเดตเฟรมล่าสุดสำหรับ GUI (ทำทุกรอบ ไม่ว่าจะ cooldown หรือไม่)
         display_frame = frame.copy()
-        cv2.rectangle(display_frame, (50, 100), (270, 300), (0, 255, 0), 2)
         self.latest_frame = display_frame
 
         # 4. Cooldown check
