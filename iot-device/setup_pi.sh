@@ -13,7 +13,7 @@ sudo apt update && sudo apt upgrade -y
 
 # 2. ติดตั้งไลบรารีพื้นฐานสำหรับ OpenCV
 echo "📷 2. กำลังติดตั้งไลบรารีสำหรับกล้อง (OpenCV Dependencies)..."
-sudo apt install -y libgl1-mesa-glx libgtk2.0-dev pkg-config python3-opencv
+sudo apt install -y libgl1-mesa-glx libgtk2.0-dev pkg-config python3-opencv python3-tk python3-pil.imagetk
 
 # 3. ติดตั้ง Python และ Pip
 echo "🐍 3. กำลังติดตั้ง Python 3 และเครื่องมือที่จำเป็น..."

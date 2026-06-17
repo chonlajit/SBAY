@@ -7,6 +7,8 @@ import tkinter as tk
 from tkinter import font as tkfont
 import threading
 import logging
+import cv2
+from PIL import Image, ImageTk
 
 from config import WASTE_LABELS, USE_IR
 
@@ -225,8 +227,18 @@ class SmartBinGUI:
         mid = tk.Frame(self.container, bg=self.BG)
         mid.pack(fill="both", expand=True, padx=15, pady=10)
 
+        left_mid = tk.Frame(mid, bg=self.BG)
+        left_mid.pack(side="left", fill="both", expand=True)
+
+        right_mid = tk.Frame(mid, bg=self.BG)
+        right_mid.pack(side="right", fill="both", expand=True)
+
+        # Camera frame
+        self.camera_label = tk.Label(left_mid, bg=self.BG_CARD)
+        self.camera_label.pack(expand=True, fill="both", padx=10)
+
         # Scrollable list
-        self.items_canvas = tk.Canvas(mid, bg=self.BG, highlightthickness=0)
+        self.items_canvas = tk.Canvas(right_mid, bg=self.BG, highlightthickness=0)
         self.items_canvas.pack(fill="both", expand=True)
 
         self.items_inner = tk.Frame(self.items_canvas, bg=self.BG)
@@ -235,7 +247,7 @@ class SmartBinGUI:
         # Status label
         status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
         self.status_label = tk.Label(
-            mid, text=status_msg,
+            right_mid, text=status_msg,
             font=self.font_small, fg=self.GRAY, bg=self.BG
         )
         self.status_label.pack(pady=5)
@@ -289,6 +301,20 @@ class SmartBinGUI:
         """อัปเดตข้อความสถานะ"""
         if hasattr(self, 'status_label'):
             self.status_label.config(text=text, fg=color or self.GRAY)
+
+    def update_camera_frame(self, cv2_frame):
+        """อัปเดตภาพจากกล้องบน GUI"""
+        if not hasattr(self, 'camera_label') or not self.camera_label.winfo_exists():
+            return
+            
+        if cv2_frame is not None:
+            rgb = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(rgb)
+            imgtk = ImageTk.PhotoImage(image=img)
+            self.camera_label.imgtk = imgtk
+            self.camera_label.configure(image=imgtk)
+        else:
+            self.camera_label.configure(image='')
 
     # ==============================
     # SCREEN: RESULT - สรุปผล

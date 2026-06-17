@@ -46,6 +46,7 @@ class DetectionService:
         self.calculator = ScoreCalculator()
         self.cap = None
         self.running = False
+        self.latest_frame = None
 
         # Stability buffers
         self.heights_buffer = deque(maxlen=STABLE_FRAMES)
@@ -101,6 +102,11 @@ class DetectionService:
 
         # Resize and define ROI
         frame = cv2.resize(frame, (320, 320))
+        
+        display_frame = frame.copy()
+        cv2.rectangle(display_frame, (50, 100), (270, 300), (0, 255, 0), 2)
+        self.latest_frame = display_frame
+
         roi = frame[100:300, 50:270]
 
         # Run YOLO detection

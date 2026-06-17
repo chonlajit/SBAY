@@ -126,6 +126,10 @@ class SmartBinController:
 
                 result = self.detection.detect_once()
 
+                if self.gui and self.detection.latest_frame is not None:
+                    frame_to_show = self.detection.latest_frame.copy()
+                    self.gui.schedule(self.gui.update_camera_frame, frame_to_show)
+
                 if result:
                     item = self.session.add_item(
                         item_type=result["type"],
@@ -154,6 +158,7 @@ class SmartBinController:
                     if self.gui:
                         status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
                         self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
+                        self.gui.schedule(self.gui.update_camera_frame, None)
 
             time.sleep(0.1)  # Prevent CPU spike
 
