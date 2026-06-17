@@ -91,6 +91,10 @@ export default function DashboardPage() {
         }
     }, [latestSession]);
 
+    const totalItems = useMemo(() => {
+        return history.reduce((sum: number, s: any) => sum + (s.items ? s.items.length : 0), 0);
+    }, [history]);
+
     if (!isInitialized || !user) {
         return (
             <div className="min-h-full bg-gray-50 pb-6 animate-pulse">
@@ -132,9 +136,7 @@ export default function DashboardPage() {
         );
     }
 
-    const totalItems = useMemo(() => {
-        return history.reduce((sum: number, s: any) => sum + (s.items ? s.items.length : 0), 0);
-    }, [history]);
+
 
     return (
         <div className="min-h-full bg-gray-50 pb-6">
