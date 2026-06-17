@@ -233,12 +233,12 @@ class SmartBinGUI:
         right_mid = tk.Frame(mid, bg=self.BG)
         right_mid.pack(side="right", fill="both", expand=True)
 
-        # Camera frame
-        self.camera_label = tk.Label(left_mid, bg=self.BG_CARD)
+        # Camera frame (Now on right)
+        self.camera_label = tk.Label(right_mid, bg=self.BG_CARD)
         self.camera_label.pack(expand=True, fill="both", padx=10)
 
-        # Scrollable list
-        self.items_canvas = tk.Canvas(right_mid, bg=self.BG, highlightthickness=0)
+        # Scrollable list (Now on left)
+        self.items_canvas = tk.Canvas(left_mid, bg=self.BG, highlightthickness=0)
         self.items_canvas.pack(fill="both", expand=True)
 
         self.items_inner = tk.Frame(self.items_canvas, bg=self.BG)
@@ -247,7 +247,7 @@ class SmartBinGUI:
         # Status label
         status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
         self.status_label = tk.Label(
-            right_mid, text=status_msg,
+            left_mid, text=status_msg,
             font=self.font_small, fg=self.GRAY, bg=self.BG
         )
         self.status_label.pack(pady=5)

@@ -12,8 +12,14 @@
 ```ini
 DEVICE_ID=BIN-001
 BACKEND_URL=https://<your-cloudflare-tunnel-url>
-DEVICE_SECRET=SBAY_SECRET_X9q2Lm8vP4kRz7w
-USE_HARDWARE=true
+DEVICE_SECRET=<your-device-secret>
+
+# --- การตั้งค่าเปิด-ปิดฮาร์ดแวร์ (Hardware Toggles) ---
+USE_CAMERA=true   # เปิดใช้กล้อง Picamera2 (false = ใช้ Webcam)
+USE_SERVO=true    # เปิดใช้เซอร์โวมอเตอร์ (false = จำลองการทำงาน)
+USE_IR=true       # เปิดใช้เซ็นเซอร์อินฟาเรด (false = กล้องรันตลอด)
+
+# --- ทั่วไป ---
 USE_GUI=true
 ```
 

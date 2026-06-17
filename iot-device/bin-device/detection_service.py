@@ -82,7 +82,11 @@ class DetectionService:
 
     def _start_cv2_camera(self):
         if self.cap is None or not self.cap.isOpened():
-            self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+            import os
+            if os.name == 'nt':
+                self.cap = cv2.VideoCapture(0)
+            else:
+                self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
             self.running = True
             logger.info("Camera started")
 
