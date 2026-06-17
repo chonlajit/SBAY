@@ -14,38 +14,28 @@ export default function DashboardPage() {
     const [activeTab, setActiveTab] = useState<'recycle' | 'redeem'>('recycle');
 
     const groupedHistory = useMemo(() => {
-        // Sort history ascending (oldest first) to assign "ครั้งที่ X" chronologically
-        const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        // Group transactions into sessions if they are within 10 minutes of each other
+        const sortedHistory = [...history].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         
-        const sessions: { id: string, label: string, items: any[] }[] = [];
+        const groups: Record<string, any[]> = {};
+        let currentSessionId = '';
         let currentSessionTime = 0;
 
         sortedHistory.forEach(tx => {
             const txTime = new Date(tx.timestamp).getTime();
             
             // If more than 10 minutes apart, start a new session group
-            if (!currentSessionTime || Math.abs(txTime - currentSessionTime) > 600000) {
+            if (!currentSessionTime || Math.abs(currentSessionTime - txTime) > 600000) {
                 const dateObj = new Date(tx.timestamp);
                 const dateStr = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
                 const timeStr = dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-                
-                sessions.push({
-                    id: tx.id || txTime.toString(),
-                    label: `ครั้งที่ ${sessions.length + 1} (${dateStr} ${timeStr} น.)`,
-                    items: []
-                });
+                currentSessionId = `${dateStr} เวลา ${timeStr} น.`;
                 currentSessionTime = txTime;
+                groups[currentSessionId] = [];
             }
             
-            sessions[sessions.length - 1].items.unshift(tx); // Newest items first within session
+            groups[currentSessionId].push(tx);
         });
-        
-        // Reverse sessions to show newest first, then convert to Object for the existing render logic
-        const groups: Record<string, any[]> = {};
-        sessions.reverse().forEach(session => {
-            groups[session.label] = session.items;
-        });
-        
         return groups;
     }, [history]);
 
