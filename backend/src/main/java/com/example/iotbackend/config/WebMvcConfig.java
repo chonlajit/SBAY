@@ -14,9 +14,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         // Protect endpoints that the IoT Device calls
-        registry.addInterceptor(deviceAuthInterceptor)
-                .addPathPatterns("/api/sessions")
-                .addPathPatterns("/api/sessions/user/**")
-                .addPathPatterns("/api/devices/**");
+        // registry.addInterceptor(deviceAuthInterceptor)
+        //         .addPathPatterns("/api/sessions")
+        //         .addPathPatterns("/api/sessions/user/**")
+        //         .addPathPatterns("/api/devices/**");
     }
 }
