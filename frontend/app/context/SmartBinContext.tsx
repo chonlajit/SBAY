@@ -59,11 +59,11 @@ interface SmartBinContextType {
 const SmartBinContext = createContext<SmartBinContextType | null>(null);
 
 export const WASTE_TYPES = [
-    { type: 'CLEAR_BOTTLES', label: 'ขวดพลาสติกใส', points: 1 },
-    { type: 'OPAQUE_BOTTLES', label: 'ขวดพลาสติกขุ่น', points: 2 },
-    { type: 'GLASSES_BOTTLES', label: 'ขวดแก้ว', points: 5 },
+    { type: 'CLEAR_BOTTLE', label: 'ขวดพลาสติกใส', points: 1 },
+    { type: 'OPAQUE_BOTTLE', label: 'ขวดพลาสติกขุ่น', points: 2 },
+    { type: 'GLASSES_BOTTLE', label: 'ขวดแก้ว', points: 5 },
     { type: 'STEEL_CAN', label: 'กระป๋องเหล็ก', points: 2 },
-    { type: 'ALUMINUM_CANS', label: 'กระป๋องอลูมิเนียม', points: 3 },
+    { type: 'ALUMINUM_CAN', label: 'กระป๋องอลูมิเนียม', points: 3 },
 ];
 
 export function SmartBinProvider({ children }: { children: React.ReactNode }) {
@@ -97,16 +97,33 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             const savedUser = localStorage.getItem('sbay_user');
             const savedToken = localStorage.getItem('sbay_token');
             if (savedUser && savedToken) {
-                setUser(JSON.parse(savedUser));
+                const parsedUser = JSON.parse(savedUser);
+                setUser(parsedUser);
                 setToken(savedToken);
+                
+                // Connect global WebSocket to listen for live point updates
+                connectWebSocket(parsedUser.id);
+                
+                // Fetch fresh user data to update points
+                fetch(`${apiBase}/user/${parsedUser.id}`)
+                    .then(res => res.json())
+                    .then(freshUser => {
+                        if (freshUser && !freshUser.error) {
+                            setUser(freshUser);
+                            localStorage.setItem('sbay_user', JSON.stringify(freshUser));
+                        }
+                    })
+                    .catch(e => console.error("Failed to refresh user", e));
             }
             setIsInitialized(true);
         }
     }, []);
 
-    const connectWebSocket = (userId: string, machineId: string) => {
+    const connectWebSocket = (userId: string, machineId?: string) => {
         if (clientRef.current && clientRef.current.active) {
-            clientRef.current.publish({ destination: `/app/login/${machineId}`, body: userId });
+            if (machineId) {
+                clientRef.current.publish({ destination: `/app/login/${machineId}`, body: userId });
+            }
             return;
         }
         const client = new Client({
@@ -114,14 +131,8 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             reconnectDelay: 5000,
             onConnect: () => {
                 setWsConnected(true);
-                client.publish({ destination: `/app/login/${machineId}`, body: userId });
-                client.subscribe(`/topic/machine/${machineId}`, (msg) => {
-                    if (msg.body) {
-                        const tx = JSON.parse(msg.body);
-                        setSessionPoints(prev => prev + tx.pointsEarned);
-                        setSessionHistory(prev => [tx, ...prev]);
-                    }
-                });
+                
+                // Global subscriptions for user
                 client.subscribe(`/topic/sessions`, (msg) => {
                     if (msg.body) {
                         const sessionData = JSON.parse(msg.body);
@@ -137,6 +148,18 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
                         localStorage.setItem('sbay_user', JSON.stringify(updatedUser));
                     }
                 });
+
+                // Machine-specific subscriptions
+                if (machineId) {
+                    client.publish({ destination: `/app/login/${machineId}`, body: userId });
+                    client.subscribe(`/topic/machine/${machineId}`, (msg) => {
+                        if (msg.body) {
+                            const tx = JSON.parse(msg.body);
+                            setSessionPoints(prev => prev + tx.pointsEarned);
+                            setSessionHistory(prev => [tx, ...prev]);
+                        }
+                    });
+                }
             },
             onStompError: (frame) => console.error('WS Error:', frame.headers['message']),
             onWebSocketClose: () => setWsConnected(false),
