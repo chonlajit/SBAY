@@ -19,10 +19,10 @@ if not DEVICE_SECRET:
     raise ValueError("CRITICAL ERROR: DEVICE_SECRET environment variable is not set!")
 
 # --- Mode ---
-USE_HARDWARE = os.getenv("USE_HARDWARE", "true").lower() == "true"
-USE_CAMERA = os.getenv("USE_CAMERA", "true").lower() == "true"
-USE_GUI = os.getenv("USE_GUI", "true").lower() == "true"
-USE_IR = os.getenv("USE_IR", "true").lower() == "true"
+USE_HARDWARE = str(os.getenv("USE_HARDWARE", "true")).strip().lower() == "true"
+USE_CAMERA = str(os.getenv("USE_CAMERA", "true")).strip().lower() == "true"
+USE_GUI = str(os.getenv("USE_GUI", "true")).strip().lower() == "true"
+USE_IR = str(os.getenv("USE_IR", "true")).strip().lower() == "true"
 USE_SERVO = os.getenv("USE_SERVO", "true").lower() == "true"
 
 # --- Hardware Pins (Raspberry Pi BCM) ---
