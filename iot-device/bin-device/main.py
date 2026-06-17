@@ -5,7 +5,7 @@ from collections import deque
 from vision.detector import Detector
 from size.estimator import SizeEstimator
 from scoring.calculator import ScoreCalculator
-from config import USE_IR
+from config import USE_IR, USE_SERVO
 
 # =========================
 # MODE
@@ -20,7 +20,13 @@ if USE_HARDWARE:
         from hardware.infrared import is_detected
     else:
         def is_detected(): return True
-    from hardware.servo import sort_item, release_item, cleanup
+        
+    if USE_SERVO:
+        from hardware.servo import sort_item, release_item, cleanup
+    else:
+        def sort_item(label): print(f"[SIMULATE] sort → {label}")
+        def release_item(): print("[SIMULATE] release")
+        def cleanup(): pass
 else:
     def is_detected():
         return True

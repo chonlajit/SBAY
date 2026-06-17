@@ -13,7 +13,7 @@ from size.estimator import SizeEstimator
 from scoring.calculator import ScoreCalculator
 from config import (
     MODEL_PATH, CONF_THRESHOLD, STABLE_FRAMES,
-    COOLDOWN, DETECT_TIMEOUT, USE_HARDWARE, USE_IR
+    COOLDOWN, DETECT_TIMEOUT, USE_HARDWARE, USE_IR, USE_SERVO, USE_CAMERA
 )
 
 logger = logging.getLogger("detection")
@@ -24,7 +24,12 @@ if USE_HARDWARE:
         from hardware.infrared import is_detected as ir_detected
     else:
         def ir_detected(): return True
-    from hardware.servo import sort_item, release_item
+        
+    if USE_SERVO:
+        from hardware.servo import sort_item, release_item
+    else:
+        def sort_item(label): logger.debug(f"[SIMULATE] sort → {label}")
+        def release_item(): logger.debug("[SIMULATE] release")
 else:
     def ir_detected():
         return True
@@ -56,7 +61,7 @@ class DetectionService:
 
     def start_camera(self):
         """เปิดกล้อง"""
-        if USE_HARDWARE:
+        if USE_CAMERA:
             if not self.picam:
                 try:
                     from picamera2 import Picamera2
