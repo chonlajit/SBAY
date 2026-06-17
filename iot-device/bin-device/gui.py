@@ -304,17 +304,27 @@ class SmartBinGUI:
 
     def update_camera_frame(self, cv2_frame):
         """อัปเดตภาพจากกล้องบน GUI"""
-        if not hasattr(self, 'camera_label') or not self.camera_label.winfo_exists():
-            return
-            
-        if cv2_frame is not None:
-            rgb = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(rgb)
-            imgtk = ImageTk.PhotoImage(image=img)
-            self.camera_label.imgtk = imgtk
-            self.camera_label.configure(image=imgtk)
-        else:
-            self.camera_label.configure(image='')
+        try:
+            if not hasattr(self, 'camera_label'):
+                return
+            if not self.camera_label.winfo_exists():
+                return
+                
+            if cv2_frame is not None:
+                rgb = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
+                img = Image.fromarray(rgb)
+                # ปรับขนาดภาพให้พอดีกับ label
+                label_w = self.camera_label.winfo_width()
+                label_h = self.camera_label.winfo_height()
+                if label_w > 10 and label_h > 10:
+                    img = img.resize((label_w, label_h), Image.LANCZOS)
+                imgtk = ImageTk.PhotoImage(image=img)
+                self.camera_label.imgtk = imgtk
+                self.camera_label.configure(image=imgtk)
+            else:
+                self.camera_label.configure(image='')
+        except Exception as e:
+            logger.debug(f"Camera frame update skipped: {e}")
 
     # ==============================
     # SCREEN: RESULT - สรุปผล
