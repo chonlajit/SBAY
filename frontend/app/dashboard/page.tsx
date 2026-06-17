@@ -352,6 +352,11 @@ export default function DashboardPage() {
                                                             if (typeForLabel === 'GLASS_BOTTLES') typeForLabel = 'GLASSES_BOTTLE';
                                                             if (typeForLabel === 'ALUMINUM_CANS') typeForLabel = 'ALUMINUM_CAN';
                                                             if (typeForLabel === 'STEEL_CANS') typeForLabel = 'STEEL_CAN';
+                                                            if (typeForLabel === 'plastic_clear') typeForLabel = 'CLEAR_BOTTLE';
+                                                            if (typeForLabel === 'plastic_opaque') typeForLabel = 'OPAQUE_BOTTLE';
+                                                            if (typeForLabel === 'glass') typeForLabel = 'GLASSES_BOTTLE';
+                                                            if (typeForLabel === 'aluminum') typeForLabel = 'ALUMINUM_CAN';
+                                                            if (typeForLabel === 'steel') typeForLabel = 'STEEL_CAN';
 
                                                             const typeLabel = wasteTypes.find(w => w.type === typeForLabel)?.label || tx.wasteType;
                                                             return (
