@@ -87,8 +87,19 @@ class DetectionService:
                 self.cap = cv2.VideoCapture(0)
             else:
                 self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+            
+            if not self.cap.isOpened():
+                logger.error("ไม่สามารถเปิดกล้องได้ — ตรวจสอบว่ากล้องเชื่อมต่ออยู่หรือไม่ หรือมีแอพอื่นใช้งานอยู่")
+                self.cap = None
+                return
+            
+            # Warmup: อ่านเฟรมทิ้งสักสองสามรอบเพื่อให้กล้องพร้อม
+            for _ in range(5):
+                self.cap.read()
+                time.sleep(0.1)
+            
             self.running = True
-            logger.info("Camera started")
+            logger.info("Camera started (cv2)")
 
     def stop_camera(self):
         """ปิดกล้อง"""
@@ -110,6 +121,7 @@ class DetectionService:
         """
         อ่านเฟรมจากกล้อง + ทำ detection 1 รอบ
         """
+        # 1. อ่านเฟรมจากกล้อง
         if self.picam and self.running:
             try:
                 frame = self.picam.capture_array()
@@ -124,19 +136,20 @@ class DetectionService:
                 logger.warning("Camera frame read failed")
                 return None
 
-        current_time = time.time()
-
-        # Cooldown check
-        if current_time - self.last_detection_time < COOLDOWN:
-            return None
-
-        # Resize and define ROI
+        # 2. Resize เฟรม
         frame = cv2.resize(frame, (320, 320))
-        
+
+        # 3. อัปเดตเฟรมล่าสุดสำหรับ GUI (ทำทุกรอบ ไม่ว่าจะ cooldown หรือไม่)
         display_frame = frame.copy()
         cv2.rectangle(display_frame, (50, 100), (270, 300), (0, 255, 0), 2)
         self.latest_frame = display_frame
 
+        # 4. Cooldown check
+        current_time = time.time()
+        if current_time - self.last_detection_time < COOLDOWN:
+            return None
+
+        # 5. ตัดเฉพาะ ROI แล้วรัน YOLO
         roi = frame[100:300, 50:270]
 
         # Run YOLO detection
