@@ -45,6 +45,7 @@ class DetectionService:
         self.size_estimator = SizeEstimator()
         self.calculator = ScoreCalculator()
         self.cap = None
+        self.picam = None
         self.running = False
         self.latest_frame = None
 
@@ -55,6 +56,26 @@ class DetectionService:
 
     def start_camera(self):
         """เปิดกล้อง"""
+        if USE_HARDWARE:
+            if not self.picam:
+                try:
+                    from picamera2 import Picamera2
+                    self.picam = Picamera2()
+                    cfg = self.picam.create_preview_configuration(main={"format": "BGR888", "size": (640, 480)})
+                    self.picam.configure(cfg)
+                    self.picam.start()
+                    self.running = True
+                    logger.info("PiCamera2 started")
+                except ImportError:
+                    logger.warning("Picamera2 not found, falling back to cv2")
+                    self._start_cv2_camera()
+            else:
+                self.picam.start()
+                self.running = True
+        else:
+            self._start_cv2_camera()
+
+    def _start_cv2_camera(self):
         if self.cap is None or not self.cap.isOpened():
             self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
             self.running = True
@@ -63,6 +84,8 @@ class DetectionService:
     def stop_camera(self):
         """ปิดกล้อง"""
         self.running = False
+        if self.picam:
+            self.picam.stop()
         if self.cap:
             self.cap.release()
             self.cap = None
@@ -77,22 +100,20 @@ class DetectionService:
     def detect_once(self):
         """
         อ่านเฟรมจากกล้อง + ทำ detection 1 รอบ
-        Returns:
-            dict | None → ข้อมูลขยะที่ detect ได้ (หรือ None ถ้าไม่เจอ)
-            {
-                "type": "CLEAR_BOTTLE",
-                "size_ml": 500,
-                "weight": 16.5,
-                "score": 13.2
-            }
         """
-        if not self.cap or not self.cap.isOpened():
-            return None
-
-        ret, frame = self.cap.read()
-        if not ret:
-            logger.warning("Camera frame read failed")
-            return None
+        if self.picam and self.running:
+            try:
+                frame = self.picam.capture_array()
+            except Exception as e:
+                logger.warning(f"Picamera frame read failed: {e}")
+                return None
+        else:
+            if not self.cap or not self.cap.isOpened():
+                return None
+            ret, frame = self.cap.read()
+            if not ret:
+                logger.warning("Camera frame read failed")
+                return None
 
         current_time = time.time()
 
