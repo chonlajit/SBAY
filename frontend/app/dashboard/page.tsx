@@ -305,7 +305,7 @@ export default function DashboardPage() {
                                 {Object.entries(activeTab === 'recycle' ? groupedHistory : groupedRedemptions).map(([date, items]) => {
                                     const isRecycle = activeTab === 'recycle';
                                     const totalPointsOrCost = items.reduce((sum: number, tx: any) => sum + (isRecycle ? tx.pointsEarned : tx.cost), 0);
-                                    const expanded = expandedDates[date] !== false; // default expanded
+                                    const expanded = expandedDates[date] === true;
                                     return (
                                         <div key={date}>
                                             <button
