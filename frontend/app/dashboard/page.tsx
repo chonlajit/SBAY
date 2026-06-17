@@ -70,12 +70,24 @@ export default function DashboardPage() {
     useEffect(() => {
         if (latestSession && latestSession.items) {
             // Map session items to match history format
-            const mappedItems = latestSession.items.map((item: any) => ({
-                id: Math.random().toString(),
-                wasteType: item.type,
-                pointsEarned: Math.floor(item.ml / 100), // mock calculation
-                timestamp: item.timestamp
-            }));
+            const mappedItems = latestSession.items.map((item: any) => {
+                let mappedType = item.type;
+                if (mappedType) {
+                    switch (mappedType) {
+                        case 'plastic_clear': case 'CLEAR_BOTTLE': mappedType = 'CLEAR_BOTTLES'; break;
+                        case 'plastic_opaque': case 'OPAQUE_BOTTLE': mappedType = 'OPAQUE_BOTTLES'; break;
+                        case 'glass': case 'GLASS_BOTTLE': case 'GLASSES_BOTTLE': mappedType = 'GLASS_BOTTLES'; break;
+                        case 'aluminum': case 'ALUMINUM_CAN': mappedType = 'ALUMINUM_CANS'; break;
+                        case 'steel': case 'STEEL_CAN': mappedType = 'STEEL_CANS'; break;
+                    }
+                }
+                return {
+                    id: Math.random().toString(),
+                    wasteType: mappedType,
+                    pointsEarned: item.score ? Math.round(item.score) : 0,
+                    timestamp: item.timestamp
+                };
+            });
             
             setHistory(prev => [...mappedItems, ...prev]);
         }

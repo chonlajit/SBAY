@@ -74,7 +74,8 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
     const [latestSession, setLatestSession] = useState<any>(null);
     const [wsConnected, setWsConnected] = useState(false);
     const [apiBase, setApiBase] = useState('http://localhost:8070/api');
-    const [wsBase, setWsBase] = useState('ws://localhost:8070/ws-native');
+    const [wsBase, setWsBase] = useState('');
+    const wsBaseRef = useRef('');
     const [isInitialized, setIsInitialized] = useState(false);
 
     const clientRef = useRef<Client | null>(null);
@@ -100,6 +101,7 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             
             setApiBase(currentApiBase);
             setWsBase(currentWsBase);
+            wsBaseRef.current = currentWsBase;
 
             const savedUser = localStorage.getItem('sbay_user');
             const savedToken = localStorage.getItem('sbay_token');
@@ -121,22 +123,24 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
                 
                 // Keep WS connected for global user updates
                 setTimeout(() => {
-                    connectWebSocket(parsedUser.id, 'background');
+                    connectWebSocket(parsedUser.id, 'background', currentWsBase);
                 }, 500);
             }
             setIsInitialized(true);
         }
     }, []);
 
-    const connectWebSocket = (userId: string, machineId?: string) => {
+    const connectWebSocket = (userId: string, machineId: string, customWsUrl?: string) => {
         if (clientRef.current && clientRef.current.active) {
-            if (machineId) {
-                clientRef.current.publish({ destination: `/app/login/${machineId}`, body: userId });
-            }
+            clientRef.current.publish({ destination: `/app/login/${machineId}`, body: userId });
             return;
         }
+        
+        const wsUrl = customWsUrl || wsBaseRef.current || wsBase;
+        if (!wsUrl) return;
+
         const client = new Client({
-            brokerURL: wsBase,
+            brokerURL: wsUrl,
             reconnectDelay: 5000,
             onConnect: () => {
                 setWsConnected(true);
