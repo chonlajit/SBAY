@@ -18,6 +18,7 @@ services:
     environment:
       - MONGODB_HOST=mongodb
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/iotdb
+      - DEVICE_SECRET=${DEVICE_SECRET}
     depends_on:
       - mongodb
     restart: always

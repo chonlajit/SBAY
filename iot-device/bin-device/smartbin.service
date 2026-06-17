@@ -20,11 +20,7 @@ After=network.target
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/SBAY/iot-device/bin-device
-Environment=DEVICE_ID=BIN-001
-Environment=BACKEND_URL=http://192.168.1.100:8080
-Environment=USE_HARDWARE=true
-Environment=USE_GUI=true
-Environment=MODEL_PATH=/home/pi/SBAY/iot-device/yolov8n.pt
+# โหลดตัวแปรสภาพแวดล้อมจากไฟล์ .env ผ่านไลบรารี python-dotenv ในโปรแกรม
 Environment=DISPLAY=:0
 ExecStart=/usr/bin/python3 main_controller.py
 Restart=always

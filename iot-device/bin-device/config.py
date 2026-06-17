@@ -3,6 +3,10 @@
 # ============================
 
 import os
+from dotenv import load_dotenv
+
+# Load variables from .env file
+load_dotenv()
 
 # --- Device Identity ---
 DEVICE_ID = os.getenv("DEVICE_ID", "BIN-001")
@@ -10,9 +14,12 @@ DEVICE_ID = os.getenv("DEVICE_ID", "BIN-001")
 # --- Backend Server ---
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8070")
 API_BASE = f"{BACKEND_URL}/api"
+DEVICE_SECRET = os.getenv("DEVICE_SECRET")
+if not DEVICE_SECRET:
+    raise ValueError("CRITICAL ERROR: DEVICE_SECRET environment variable is not set!")
 
 # --- Mode ---
-USE_HARDWARE = os.getenv("USE_HARDWARE", "false").lower() == "true"
+USE_HARDWARE = os.getenv("USE_HARDWARE", "true").lower() == "true"
 USE_GUI = os.getenv("USE_GUI", "true").lower() == "true"
 
 # --- Hardware Pins (Raspberry Pi BCM) ---
@@ -21,7 +28,7 @@ SERVO_SORT_PIN = 18
 SERVO_RELEASE_PIN = 19
 
 # --- AI Detection ---
-MODEL_PATH = os.getenv("MODEL_PATH", "yolov8n.pt")
+MODEL_PATH = os.getenv("MODEL_PATH", "bottle.pt")
 CONF_THRESHOLD = 0.7
 STABLE_FRAMES = 5       # ต้อง detect ซ้ำกี่เฟรมถึงจะยืนยัน
 COOLDOWN = 3             # วินาที ระหว่างการ detect แต่ละชิ้น

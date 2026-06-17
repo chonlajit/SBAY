@@ -14,7 +14,7 @@ CONSECUTIVE_FRAMES_REQUIRED = 5  # Must detect same item X times in a row
 
 # Load YOLOv8n model
 print("Loading YOLOv8n model...")
-model = YOLO('yolov8n.pt')
+model = YOLO('bottle.pt')
 
 # Waste Mapping (COCO classes) to System Types
 # Note: Standard YOLOv8n only knows 'bottle', 'cup', etc.
@@ -81,7 +81,7 @@ def main():
         if status == "ACTIVE":
             if not is_active:
                 print(" -> USER LOGGED IN! Starting Camera...")
-                cap = cv2.VideoCapture(0)
+                cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
                 is_active = True
                 cv2.namedWindow("Smart Recycle Bin", cv2.WINDOW_NORMAL)
                 consecutive_count = 0

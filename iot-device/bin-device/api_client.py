@@ -10,7 +10,7 @@ import threading
 import time
 import logging
 
-from config import API_BASE, OFFLINE_DB_PATH, RETRY_INTERVAL
+from config import API_BASE, OFFLINE_DB_PATH, RETRY_INTERVAL, DEVICE_SECRET
 
 logger = logging.getLogger("api_client")
 
@@ -72,6 +72,7 @@ class ApiClient:
                 response = requests.post(
                     f"{self.api_base}/sessions",
                     json=session_data,
+                    headers={"X-Device-Secret": DEVICE_SECRET},
                     timeout=5
                 )
                 if response.status_code == 200:
@@ -102,7 +103,11 @@ class ApiClient:
     def get_user_by_phone(self, phone):
         """ค้นหาผู้ใช้จากเบอร์โทร"""
         try:
-            resp = requests.get(f"{self.api_base}/sessions/user/{phone}", timeout=5)
+            resp = requests.get(
+                f"{self.api_base}/sessions/user/{phone}",
+                headers={"X-Device-Secret": DEVICE_SECRET},
+                timeout=5
+            )
             if resp.status_code == 200:
                 return resp.json()
             return None
@@ -116,6 +121,7 @@ class ApiClient:
             resp = requests.post(
                 f"{self.api_base}/sessions",
                 json=session_data,
+                headers={"X-Device-Secret": DEVICE_SECRET},
                 timeout=5
             )
             resp.raise_for_status()
@@ -129,7 +135,11 @@ class ApiClient:
     def send_heartbeat(self, device_id):
         """ส่ง heartbeat บอก Backend ว่าตู้ยัง online"""
         try:
-            requests.post(f"{self.api_base}/devices/{device_id}/heartbeat", timeout=3)
+            requests.post(
+                f"{self.api_base}/devices/{device_id}/heartbeat",
+                headers={"X-Device-Secret": DEVICE_SECRET},
+                timeout=3
+            )
             return True
         except requests.RequestException:
             return False

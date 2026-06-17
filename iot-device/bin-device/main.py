@@ -9,7 +9,7 @@ from scoring.calculator import ScoreCalculator
 # =========================
 # MODE
 # =========================
-USE_HARDWARE = False  # True = Raspberry Pi / False = PC
+USE_HARDWARE = True  # True = Raspberry Pi / False = PC
 
 # =========================
 # HARDWARE / MOCK
@@ -33,11 +33,11 @@ else:
 # =========================
 # INIT
 # =========================
-detector = Detector("yolov8n.pt")
+detector = Detector("bottle.pt")
 size_estimator = SizeEstimator()
 calculator = ScoreCalculator()
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
 # =========================
 # CONFIG
@@ -77,7 +77,7 @@ try:
                 print("Camera lost, retrying...")
                 cap.release()
                 time.sleep(1)
-                cap = cv2.VideoCapture(0)
+                cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
                 break
 
             frame = cv2.resize(frame, (320, 320))

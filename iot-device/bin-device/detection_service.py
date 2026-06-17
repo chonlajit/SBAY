@@ -52,7 +52,7 @@ class DetectionService:
     def start_camera(self):
         """เปิดกล้อง"""
         if self.cap is None or not self.cap.isOpened():
-            self.cap = cv2.VideoCapture(0)
+            self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
             self.running = True
             logger.info("Camera started")
 

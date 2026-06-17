@@ -4,12 +4,8 @@
 # ใส่ใน crontab หรือ systemd เพื่อรันอัตโนมัติตอนเปิดเครื่อง Pi
 # ============================
 
-# ตั้งค่า Environment
-export DEVICE_ID="BIN-001"
-export BACKEND_URL="http://192.168.1.100:8080"
-export USE_HARDWARE="true"
-export USE_GUI="true"
-export MODEL_PATH="/home/pi/SBAY/iot-device/yolov8n.pt"
+# ตั้งค่าต่างๆ ถูกย้ายไปที่ไฟล์ .env แทนแล้วเพื่อความปลอดภัย
+# กรุณาแก้ไขการตั้งค่าในไฟล์ .env ในโฟลเดอร์เดียวกัน
 
 # Path
 APP_DIR="/home/pi/SBAY/iot-device/bin-device"

@@ -113,29 +113,45 @@ class SmartBinController:
         threading.Thread(target=self._detection_loop, daemon=True).start()
 
     def _detection_loop(self):
-        """Background thread: วนตรวจจับขยะจากกล้อง"""
-        self.detection.start_camera()
-        logger.info("Detection loop started")
+        """Background thread: วนตรวจจับขยะจากกล้องและ IR Sensor"""
+        logger.info("Detection loop started (waiting for IR)")
 
         while self.detecting:
-            result = self.detection.detect_once()
+            if self.detection.is_item_present():
+                if not self.detection.running:
+                    if self.gui:
+                        self.gui.schedule(self.gui.update_status, "กำลังเปิดกล้องและวิเคราะห์...", "#eab308")
+                    self.detection.start_camera()
+                    time.sleep(1.0) # Wait for camera warmup
 
-            if result:
-                item = self.session.add_item(
-                    item_type=result["type"],
-                    size_ml=result["size_ml"],
-                    weight=result["weight"],
-                    score=result["score"]
-                )
+                result = self.detection.detect_once()
 
-                # Update GUI (thread-safe)
-                if self.gui:
-                    self.gui.schedule(
-                        self.gui.add_detected_item,
-                        result["type"],
-                        result["size_ml"],
-                        result["score"]
+                if result:
+                    item = self.session.add_item(
+                        item_type=result["type"],
+                        size_ml=result["size_ml"],
+                        weight=result["weight"],
+                        score=result["score"]
                     )
+
+                    # Update GUI (thread-safe)
+                    if self.gui:
+                        self.gui.schedule(
+                            self.gui.add_detected_item,
+                            result["type"],
+                            result["size_ml"],
+                            result["score"]
+                        )
+                    
+                    self.detection.stop_camera()
+                    if self.gui:
+                        self.gui.schedule(self.gui.update_status, "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)", "#94a3b8")
+                    time.sleep(2.0) # Wait for item to drop and IR to clear
+            else:
+                if self.detection.running:
+                    self.detection.stop_camera()
+                    if self.gui:
+                        self.gui.schedule(self.gui.update_status, "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)", "#94a3b8")
 
             time.sleep(0.1)  # Prevent CPU spike
 

@@ -234,7 +234,7 @@ class SmartBinGUI:
 
         # Status label
         self.status_label = tk.Label(
-            mid, text="รอการหยอดขยะ...",
+            mid, text="สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)",
             font=self.font_small, fg=self.GRAY, bg=self.BG
         )
         self.status_label.pack(pady=5)

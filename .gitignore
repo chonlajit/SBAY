@@ -66,3 +66,8 @@ build/
 *.pt
 *.onnx
 yolov8n.pt
+
+# Databases
+*.sqlite
+*.sqlite3
+*.db
