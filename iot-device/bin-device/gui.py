@@ -399,7 +399,7 @@ class SmartBinGUI:
 
     def schedule(self, func, *args):
         """เรียก function ใน GUI thread (thread-safe)"""
-        self.root.after(0, func, *args)
+        self.root.after(0, lambda: func(*args))
 
     def quit(self):
         self.root.quit()
