@@ -146,12 +146,9 @@ class DetectionService:
         current_time = time.time()
         if current_time - self.last_detection_time < COOLDOWN:
             return None
-
-        # 5. ตัดเฉพาะ ROI แล้วรัน YOLO
-        roi = frame[100:300, 50:270]
-
-        # Run YOLO detection
-        detections = self.detector.detect(roi)
+        # 5. รัน YOLO บนภาพเต็ม (ให้มันวาดกรอบสวยๆ ให้เลย)
+        detections, annotated_frame = self.detector.detect(frame)
+        self.latest_frame = annotated_frame
 
         if len(detections) == 0:
             self.reset_buffers()
