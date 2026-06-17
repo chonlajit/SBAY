@@ -31,6 +31,9 @@ public class SessionController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private com.example.iotbackend.service.RecycleService recycleService;
+
     @GetMapping("/user/{phone}")
     public ResponseEntity<?> getUserByPhone(@PathVariable String phone) {
         Optional<User> userOpt = userRepository.findByPhoneNumber(phone);
@@ -43,11 +46,21 @@ public class SessionController {
     @PostMapping
     public ResponseEntity<?> createSession(@RequestBody DeviceSession session) {
         session.setEndTime(LocalDateTime.now());
+        
+        // Resolve userId from Web App if IoT device didn't provide one
+        String activeUserId = session.getUserId();
+        if (activeUserId == null || activeUserId.trim().isEmpty()) {
+            activeUserId = recycleService.getCurrentUser(session.getDeviceId() != null ? session.getDeviceId() : "default-machine");
+            if (activeUserId != null) {
+                session.setUserId(activeUserId);
+            }
+        }
+        
         DeviceSession savedSession = sessionRepository.save(session);
         
-        // Update user points if userId is provided
-        if (session.getUserId() != null && !session.getUserId().isEmpty()) {
-            Optional<User> userOpt = userRepository.findById(session.getUserId());
+        // Update user points if activeUserId is found
+        if (activeUserId != null && !activeUserId.isEmpty()) {
+            Optional<User> userOpt = userRepository.findById(activeUserId);
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
                 if (session.getTotalScore() != null) {
@@ -63,9 +76,22 @@ public class SessionController {
         // Create Transaction records for the Dashboard
         if (session.getItems() != null && session.getUserId() != null && !session.getUserId().isEmpty()) {
             for (SessionItem item : session.getItems()) {
+                String type = item.getType();
+                String mappedType = type;
+                if (type != null) {
+                    switch(type) {
+                        case "plastic_clear": case "CLEAR_BOTTLE": mappedType = "CLEAR_BOTTLES"; break;
+                        case "plastic_opaque": case "OPAQUE_BOTTLE": mappedType = "OPAQUE_BOTTLES"; break;
+                        case "glass": case "GLASS_BOTTLE": case "GLASSES_BOTTLE": mappedType = "GLASS_BOTTLES"; break;
+                        case "aluminum": case "ALUMINUM_CAN": mappedType = "ALUMINUM_CANS"; break;
+                        case "steel": case "STEEL_CAN": mappedType = "STEEL_CANS"; break;
+                        default: mappedType = type;
+                    }
+                }
+                
                 Transaction tx = new Transaction();
                 tx.setUserId(session.getUserId());
-                tx.setWasteType(item.getType());
+                tx.setWasteType(mappedType);
                 tx.setPointsEarned(item.getScore() != null ? (int) Math.round(item.getScore()) : 0);
                 tx.setTimestamp(item.getTimestamp() != null ? item.getTimestamp() : LocalDateTime.now());
                 transactionRepository.save(tx);
