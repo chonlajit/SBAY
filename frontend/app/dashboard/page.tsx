@@ -6,41 +6,38 @@ import { useSmartBin } from '../context/SmartBinContext';
 
 export default function DashboardPage() {
     const router = useRouter();
-    const { user, wasteTypes, apiBase, isInitialized, latestSession } = useSmartBin();
+    const { user, wasteTypes, apiBase, isInitialized, latestSession, refreshUser } = useSmartBin();
     const [history, setHistory] = useState<any[]>([]);
     const [redemptions, setRedemptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
     const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
     const [activeTab, setActiveTab] = useState<'recycle' | 'redeem'>('recycle');
 
-    const groupedHistory = useMemo(() => {
-        // Group transactions into sessions if they are within 10 minutes of each other
-        const sortedHistory = [...history].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        
-        const groups: Record<string, any[]> = {};
-        let currentSessionId = '';
-        let currentSessionTime = 0;
+    const normalizeWasteType = (type: string): string => {
+        if (!type) return '';
+        const t = type.toLowerCase().trim();
+        if (t.includes('clear') || t === 'plastic_clear') return 'CLEAR_BOTTLE';
+        if (t.includes('opaque') || t === 'plastic_opaque' || t.includes('cloudy')) return 'OPAQUE_BOTTLE';
+        if (t.includes('glass') || t === 'glasses_bottle') return 'GLASSES_BOTTLE';
+        if (t.includes('steel')) return 'STEEL_CAN';
+        if (t.includes('aluminum')) return 'ALUMINUM_CAN';
+        return type; // Fallback
+    };
 
-        sortedHistory.forEach(tx => {
-            const txTime = new Date(tx.timestamp).getTime();
-            
-            // If more than 10 minutes apart, start a new session group
-            if (!currentSessionTime || Math.abs(currentSessionTime - txTime) > 600000) {
-                const dateObj = new Date(tx.timestamp);
-                const dateStr = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
-                const timeStr = dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-                currentSessionId = `${dateStr} เวลา ${timeStr} น.`;
-                currentSessionTime = txTime;
-                groups[currentSessionId] = [];
-            }
-            
-            groups[currentSessionId].push(tx);
-        });
-        return groups;
-    }, [history]);
+    const getSessionDateTime = (session: any) => {
+        const dateObj = new Date(session.startTime || session.endTime);
+        const dateStr = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+        const timeStr = dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        return `${dateStr} เวลา ${timeStr} น.`;
+    };
+
+    const toggleSession = (sessionId: string) => {
+        setExpandedSessions((prev: Record<string, boolean>) => ({ ...prev, [sessionId]: !prev[sessionId] }));
+    };
 
     const toggleDate = (date: string) => {
-        setExpandedDates(prev => ({ ...prev, [date]: !prev[date] }));
+        setExpandedDates((prev: Record<string, boolean>) => ({ ...prev, [date]: !prev[date] }));
     };
 
     const groupedRedemptions = useMemo(() => {
@@ -57,16 +54,19 @@ export default function DashboardPage() {
         return groups;
     }, [redemptions]);
 
+    const userId = user?.id;
+
     useEffect(() => {
-        if (user) {
+        if (userId) {
             const fetchData = async () => {
                 try {
                     const [res1, res2] = await Promise.all([
-                        fetch(`${apiBase}/transactions/user/${user.id}`),
-                        fetch(`${apiBase}/redemptions/user/${user.id}`)
+                        fetch(`${apiBase}/sessions/history/${userId}`),
+                        fetch(`${apiBase}/redemptions/user/${userId}`)
                     ]);
                     if (res1.ok) setHistory(await res1.json());
                     if (res2.ok) setRedemptions(await res2.json());
+                    await refreshUser();
                 } catch (e) {
                     console.error("Fetch error", e);
                 } finally {
@@ -77,19 +77,17 @@ export default function DashboardPage() {
         } else if (isInitialized) {
             router.push('/login');
         }
-    }, [user, isInitialized, router, apiBase]);
+    }, [userId, isInitialized, router, apiBase]);
 
     useEffect(() => {
-        if (latestSession && latestSession.items) {
-            // Map session items to match history format
-            const mappedItems = latestSession.items.map((item: any) => ({
-                id: Math.random().toString(),
-                wasteType: item.type,
-                pointsEarned: item.score ? Math.round(item.score) : 0,
-                timestamp: item.timestamp
-            }));
-            
-            setHistory(prev => [...mappedItems, ...prev]);
+        if (latestSession) {
+            setHistory((prev: any[]) => {
+                if (prev.some((s: any) => s.id === latestSession.id || (s.startTime === latestSession.startTime && s.deviceId === latestSession.deviceId))) {
+                    return prev;
+                }
+                return [latestSession, ...prev];
+            });
+            refreshUser();
         }
     }, [latestSession]);
 
@@ -134,7 +132,9 @@ export default function DashboardPage() {
         );
     }
 
-    const totalItems = history.length;
+    const totalItems = useMemo(() => {
+        return history.reduce((sum: number, s: any) => sum + (s.items ? s.items.length : 0), 0);
+    }, [history]);
 
     return (
         <div className="min-h-full bg-gray-50 pb-6">
@@ -190,12 +190,17 @@ export default function DashboardPage() {
                 {/* Points Hero Card */}
                 <div className="bg-white rounded-3xl shadow-xl p-5 border border-green-100">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-gray-500 text-sm font-medium">แต้มสะสมทั้งหมด</span>
-                        <span className="bg-green-100 text-green-600 text-xs font-bold px-2 py-0.5 rounded-full">{totalItems} รายการ</span>
+                        <span className="text-gray-500 text-sm font-medium">ขยะที่รีไซเคิลแล้ว</span>
+                        <span className="bg-green-100 text-green-600 text-xs font-bold px-2 py-0.5 rounded-full">{totalItems} ชิ้น</span>
                     </div>
-                    <div className="flex items-end space-x-2">
-                        <span className="text-5xl font-black text-green-600">{user.points}</span>
-                        <span className="text-yellow-500 font-bold text-xl pb-1">Point</span>
+                    <div className="flex items-end justify-between">
+                        <div className="flex items-end space-x-2">
+                            <span className="text-5xl font-black text-green-600">{user.points}</span>
+                            <span className="text-yellow-500 font-bold text-xl pb-1">แต้มสะสม</span>
+                        </div>
+                        <div className="text-right text-xs text-gray-400">
+                            จากทั้งหมด {history.length} รอบการทำงาน
+                        </div>
                     </div>
                 </div>
 
@@ -221,30 +226,29 @@ export default function DashboardPage() {
                         <h3 className="font-bold text-gray-700 mb-3 text-sm px-1">สถิติตามประเภทขยะ</h3>
                         <div className="grid grid-cols-2 gap-3">
                             {wasteTypes.map((type) => {
-                                const typeStats = history
-                                    .filter(h => {
-                                        let typeForLabel = h.wasteType;
-                                        if (typeForLabel === 'CLEAR_BOTTLES') typeForLabel = 'CLEAR_BOTTLE';
-                                        if (typeForLabel === 'OPAQUE_BOTTLES') typeForLabel = 'OPAQUE_BOTTLE';
-                                        if (typeForLabel === 'GLASS_BOTTLES') typeForLabel = 'GLASSES_BOTTLE';
-                                        if (typeForLabel === 'ALUMINUM_CANS') typeForLabel = 'ALUMINUM_CAN';
-                                        if (typeForLabel === 'STEEL_CANS') typeForLabel = 'STEEL_CAN';
-                                        return typeForLabel === type.type;
-                                    })
-                                    .reduce((acc, curr) => ({
-                                        count: acc.count + 1,
-                                        points: acc.points + curr.pointsEarned
-                                    }), { count: 0, points: 0 });
+                                let count = 0;
+                                let points = 0;
+
+                                history.forEach((session: any) => {
+                                    if (session.items) {
+                                        session.items.forEach((item: any) => {
+                                            if (normalizeWasteType(item.type) === type.type) {
+                                                count += 1;
+                                                points += item.score ? Math.round(item.score) : 0;
+                                            }
+                                        });
+                                    }
+                                });
 
                                 return (
                                     <div key={type.type} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                                         <p className="text-gray-500 text-xs mb-1 truncate">{type.label}</p>
                                         <div className="flex items-baseline space-x-1">
-                                            <span className="text-2xl font-black text-gray-800">{typeStats.count}</span>
+                                            <span className="text-2xl font-black text-gray-800">{count}</span>
                                             <span className="text-gray-400 text-xs">ชิ้น</span>
                                         </div>
                                         <div className="bg-green-50 text-green-600 text-xs font-bold px-2 py-0.5 rounded-full inline-block mt-1">
-                                            +{typeStats.points} point
+                                            +{points} แต้ม
                                         </div>
                                     </div>
                                 );
@@ -302,71 +306,102 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             <div className="divide-y divide-gray-50">
-                                {Object.entries(activeTab === 'recycle' ? groupedHistory : groupedRedemptions).map(([date, items]) => {
-                                    const isRecycle = activeTab === 'recycle';
-                                    const totalPointsOrCost = items.reduce((sum: number, tx: any) => sum + (isRecycle ? tx.pointsEarned : tx.cost), 0);
-                                    const expanded = expandedDates[date] === true;
-                                    return (
-                                        <div key={date}>
-                                            <button
-                                                onClick={() => toggleDate(date)}
-                                                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition"
-                                            >
-                                                <div className="flex items-center space-x-2">
-                                                    <svg
-                                                        className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
-                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
-                                                    >
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
-                                                    </svg>
-                                                    <span className="font-semibold text-gray-700 text-sm">{date}</span>
-                                                    <span className="text-gray-400 text-xs">({items.length} รายการ)</span>
-                                                </div>
-                                                <span className={`font-bold text-xs px-2.5 py-1 rounded-full ${isRecycle ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                                                    {isRecycle ? '+' : '-'}{totalPointsOrCost} {isRecycle ? 'pt' : 'แต้ม'}
-                                                </span>
-                                            </button>
+                                {activeTab === 'recycle' ? (
+                                    history.map((session: any, idx: number) => {
+                                        const sessionId = session.id || `session-${idx}`;
+                                        const dateStr = getSessionDateTime(session);
+                                        const expanded = expandedSessions[sessionId] === true;
+                                        const totalPoints = Math.round(session.totalScore || 0);
+                                        const itemsCount = session.items ? session.items.length : 0;
 
-                                            {expanded && (
-                                                <div className="divide-y divide-gray-50 bg-gray-50/50">
-                                                    {items.map((tx: any, idx: number) => {
-                                                        const time = new Date(tx.timestamp).toLocaleTimeString('th-TH', {
-                                                            hour: '2-digit', minute: '2-digit'
-                                                        });
+                                        return (
+                                            <div key={sessionId}>
+                                                <button
+                                                    onClick={() => toggleSession(sessionId)}
+                                                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition"
+                                                >
+                                                    <div className="flex items-center space-x-2">
+                                                        <svg
+                                                            className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+                                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+                                                        >
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+                                                        </svg>
+                                                        <span className="font-semibold text-gray-700 text-sm">{dateStr}</span>
+                                                        <span className="text-gray-400 text-xs">({itemsCount} รายการ)</span>
+                                                    </div>
+                                                    <span className="font-bold text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700">
+                                                        +{totalPoints} แต้ม
+                                                    </span>
+                                                </button>
 
-                                                        if (isRecycle) {
-                                                            // Clean up any plural forms from previous DB bug
-                                                            let typeForLabel = tx.wasteType;
-                                                            if (typeForLabel === 'CLEAR_BOTTLES') typeForLabel = 'CLEAR_BOTTLE';
-                                                            if (typeForLabel === 'OPAQUE_BOTTLES') typeForLabel = 'OPAQUE_BOTTLE';
-                                                            if (typeForLabel === 'GLASS_BOTTLES') typeForLabel = 'GLASSES_BOTTLE';
-                                                            if (typeForLabel === 'ALUMINUM_CANS') typeForLabel = 'ALUMINUM_CAN';
-                                                            if (typeForLabel === 'STEEL_CANS') typeForLabel = 'STEEL_CAN';
-                                                            if (typeForLabel === 'plastic_clear') typeForLabel = 'CLEAR_BOTTLE';
-                                                            if (typeForLabel === 'plastic_opaque') typeForLabel = 'OPAQUE_BOTTLE';
-                                                            if (typeForLabel === 'glass') typeForLabel = 'GLASSES_BOTTLE';
-                                                            if (typeForLabel === 'aluminum') typeForLabel = 'ALUMINUM_CAN';
-                                                            if (typeForLabel === 'steel') typeForLabel = 'STEEL_CAN';
+                                                {expanded && (
+                                                    <div className="divide-y divide-gray-50 bg-gray-50/50">
+                                                        {session.items && session.items.map((item: any, itemIdx: number) => {
+                                                            const typeForLabel = normalizeWasteType(item.type);
+                                                            const typeLabel = wasteTypes.find(w => w.type === typeForLabel)?.label || item.type;
+                                                            const itemTime = item.timestamp 
+                                                                ? new Date(item.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+                                                                : '';
 
-                                                            const typeLabel = wasteTypes.find(w => w.type === typeForLabel)?.label || tx.wasteType;
                                                             return (
-                                                                <div key={idx} className="flex items-center justify-between px-5 py-3">
+                                                                <div key={itemIdx} className="flex items-center justify-between px-5 py-3">
                                                                     <div className="flex items-center space-x-3">
                                                                         <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center text-base">
                                                                             <i className="fa-solid fa-recycle text-green-600"></i>
                                                                         </div>
                                                                         <div>
-                                                                            <p className="font-semibold text-gray-800 text-sm">{typeLabel}</p>
-                                                                            <p className="text-gray-400 text-xs">{time} น.</p>
+                                                                            <p className="font-semibold text-gray-800 text-sm">
+                                                                                {typeLabel} {item.size ? `(${item.size === 'SMALL' ? 'เล็ก' : item.size === 'MEDIUM' ? 'กลาง' : 'ใหญ่'})` : ''}
+                                                                            </p>
+                                                                            <p className="text-gray-400 text-xs">
+                                                                                {item.ml ? `${item.ml} ml` : ''} {item.weight ? `• ${item.weight} กรัม` : ''} {itemTime ? `• ${itemTime} น.` : ''}
+                                                                            </p>
                                                                         </div>
                                                                     </div>
-                                                                    <span className="text-green-600 font-black text-sm">+{tx.pointsEarned}</span>
+                                                                    <span className="text-green-600 font-black text-sm">+{item.score ? Math.round(item.score) : 0}</span>
                                                                 </div>
                                                             );
-                                                        } else {
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    Object.entries(groupedRedemptions).map(([date, rawItems]) => {
+                                        const items = rawItems as any[];
+                                        const totalCost = items.reduce((sum: number, tx: any) => sum + tx.cost, 0);
+                                        const expanded = expandedDates[date] === true;
+                                        return (
+                                            <div key={date}>
+                                                <button
+                                                    onClick={() => toggleDate(date)}
+                                                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition"
+                                                >
+                                                    <div className="flex items-center space-x-2">
+                                                        <svg
+                                                            className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+                                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+                                                        >
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+                                                        </svg>
+                                                        <span className="font-semibold text-gray-700 text-sm">{date}</span>
+                                                        <span className="text-gray-400 text-xs">({items.length} รายการ)</span>
+                                                    </div>
+                                                    <span className="font-bold text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-600">
+                                                        -{totalCost} แต้ม
+                                                    </span>
+                                                </button>
+
+                                                {expanded && (
+                                                    <div className="divide-y divide-gray-50 bg-gray-50/50">
+                                                        {items.map((tx: any, idx: number) => {
+                                                            const time = new Date(tx.timestamp).toLocaleTimeString('th-TH', {
+                                                                hour: '2-digit', minute: '2-digit'
+                                                            });
                                                             const isPending = tx.status === 'PENDING';
                                                             const isApproved = tx.status === 'APPROVED';
-                                                            const isRejected = tx.status === 'REJECTED';
 
                                                             return (
                                                                 <div key={idx} className="flex items-center justify-between px-5 py-3">
@@ -388,13 +423,13 @@ export default function DashboardPage() {
                                                                     <span className="text-red-500 font-black text-sm">-{tx.cost}</span>
                                                                 </div>
                                                             );
-                                                        }
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
                         )}
                     </div>

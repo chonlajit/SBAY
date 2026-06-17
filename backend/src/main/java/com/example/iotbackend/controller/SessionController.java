@@ -17,6 +17,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/sessions")
+@CrossOrigin(origins = "*")
 public class SessionController {
 
     @Autowired
@@ -41,6 +42,11 @@ public class SessionController {
             return ResponseEntity.ok(userOpt.get());
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/history/{userId}")
+    public ResponseEntity<?> getUserSessionHistory(@PathVariable String userId) {
+        return ResponseEntity.ok(sessionRepository.findByUserIdOrderByStartTimeDesc(userId));
     }
 
     @PostMapping

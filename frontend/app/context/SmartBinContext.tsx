@@ -54,6 +54,7 @@ interface SmartBinContextType {
     token: string | null;
     apiBase: string;
     isInitialized: boolean;
+    refreshUser: () => Promise<void>;
 }
 
 const SmartBinContext = createContext<SmartBinContextType | null>(null);
@@ -342,6 +343,22 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
         router.push('/');
     };
 
+    const refreshUser = async () => {
+        if (!user) return;
+        try {
+            const res = await fetch(`${apiBase}/user/${user.id}`);
+            if (res.ok) {
+                const freshUser = await res.json();
+                if (freshUser && !freshUser.error) {
+                    setUser(freshUser);
+                    localStorage.setItem('sbay_user', JSON.stringify(freshUser));
+                }
+            }
+        } catch (e) {
+            console.error("Error refreshing user", e);
+        }
+    };
+
     return (
         <SmartBinContext.Provider value={{
             user, sessionPoints, sessionHistory, latestSession, wasteTypes: WASTE_TYPES,
@@ -352,7 +369,8 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             sendRegisterOtp, register,
             registerWithGoogle,
             logout, releaseMachine,
-            wsConnected, token, apiBase, isInitialized
+            wsConnected, token, apiBase, isInitialized,
+            refreshUser
         }}>
             {children}
         </SmartBinContext.Provider>
