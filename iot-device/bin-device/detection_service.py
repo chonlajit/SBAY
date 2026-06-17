@@ -66,7 +66,7 @@ class DetectionService:
                 logger.info("Starting Picamera2...")
                 from picamera2 import Picamera2
                 self.picam = Picamera2()
-                cfg = self.picam.create_preview_configuration(main={"format": "RGB888", "size": (640, 480)})
+                cfg = self.picam.create_preview_configuration(main={"format": "BGR888", "size": (640, 480)})
                 self.picam.configure(cfg)
                 self.picam.start()
                 import time as _t
@@ -86,29 +86,28 @@ class DetectionService:
                 self.cap = cv2.VideoCapture(0)
             else:
                 self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+                
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
             
-            if not self.cap.isOpened():
-                logger.error("ไม่สามารถเปิดกล้องได้ — ตรวจสอบว่ากล้องเชื่อมต่ออยู่หรือไม่ หรือมีแอพอื่นใช้งานอยู่")
-                self.cap = None
-                return
-            
-            # Warmup: อ่านเฟรมทิ้งสักสองสามรอบเพื่อให้กล้องพร้อม
+            # Warm up cv2 camera
             for _ in range(5):
                 self.cap.read()
-                time.sleep(0.1)
-            
-            self.running = True
+                
             logger.info("Camera started (cv2)")
 
     def stop_camera(self):
         """ปิดกล้อง"""
         self.running = False
         if self.picam:
-            self.picam.stop()
-        if self.cap:
+            try:
+                self.picam.stop()
+            except Exception as e:
+                logger.error(f"Error stopping Picamera2: {e}")
+        
+        if self.cap and self.cap.isOpened():
             self.cap.release()
-            self.cap = None
-        cv2.destroyAllWindows()
+            
         logger.info("Camera stopped")
 
     def reset_buffers(self):
@@ -117,25 +116,27 @@ class DetectionService:
         self.labels_buffer.clear()
 
     def detect_once(self):
-        """
-        อ่านเฟรมจากกล้อง + ทำ detection 1 รอบ
-        """
-        # 1. อ่านเฟรมจากกล้อง
+        """อ่านภาพ 1 เฟรมและส่งเข้า YOLO (ถ้าพ้น Cooldown)"""
+        if not self.use_hardware:
+            return None, 0
+
+        frame = None
         if self.picam and self.running:
             try:
                 frame = self.picam.capture_array()
-                # Picamera2 is configured as RGB888, so we get RGB. Convert to BGR for YOLO and GUI standard.
-                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             except Exception as e:
                 logger.warning(f"Picamera frame read failed: {e}")
-                return None
+                return None, 0
         else:
             if not self.cap or not self.cap.isOpened():
-                return None
+                return None, 0
             ret, frame = self.cap.read()
             if not ret:
                 logger.warning("Camera frame read failed")
-                return None
+                return None, 0
+
+        # หมุนภาพ 90 องศาตามเข็มนาฬิกา (เพื่อให้ภาพกล้องเป็นแนวตั้ง)
+        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
         # 2. Resize เฟรม
         frame = cv2.resize(frame, (320, 320))
