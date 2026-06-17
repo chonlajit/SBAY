@@ -21,6 +21,7 @@ if not DEVICE_SECRET:
 # --- Mode ---
 USE_HARDWARE = os.getenv("USE_HARDWARE", "true").lower() == "true"
 USE_GUI = os.getenv("USE_GUI", "true").lower() == "true"
+USE_IR = os.getenv("USE_IR", "true").lower() == "true"
 
 # --- Hardware Pins (Raspberry Pi BCM) ---
 IR_PIN = 17

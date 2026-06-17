@@ -13,14 +13,17 @@ from size.estimator import SizeEstimator
 from scoring.calculator import ScoreCalculator
 from config import (
     MODEL_PATH, CONF_THRESHOLD, STABLE_FRAMES,
-    COOLDOWN, DETECT_TIMEOUT, USE_HARDWARE
+    COOLDOWN, DETECT_TIMEOUT, USE_HARDWARE, USE_IR
 )
 
 logger = logging.getLogger("detection")
 
 # Hardware imports (conditional)
 if USE_HARDWARE:
-    from hardware.infrared import is_detected as ir_detected
+    if USE_IR:
+        from hardware.infrared import is_detected as ir_detected
+    else:
+        def ir_detected(): return True
     from hardware.servo import sort_item, release_item
 else:
     def ir_detected():

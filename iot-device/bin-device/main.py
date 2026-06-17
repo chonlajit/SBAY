@@ -5,6 +5,7 @@ from collections import deque
 from vision.detector import Detector
 from size.estimator import SizeEstimator
 from scoring.calculator import ScoreCalculator
+from config import USE_IR
 
 # =========================
 # MODE
@@ -15,7 +16,10 @@ USE_HARDWARE = True  # True = Raspberry Pi / False = PC
 # HARDWARE / MOCK
 # =========================
 if USE_HARDWARE:
-    from hardware.infrared import is_detected
+    if USE_IR:
+        from hardware.infrared import is_detected
+    else:
+        def is_detected(): return True
     from hardware.servo import sort_item, release_item, cleanup
 else:
     def is_detected():
