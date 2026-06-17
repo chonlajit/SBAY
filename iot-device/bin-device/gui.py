@@ -229,9 +229,11 @@ class SmartBinGUI:
 
         left_mid = tk.Frame(mid, bg=self.BG)
         left_mid.pack(side="left", fill="both", expand=True)
+        left_mid.pack_propagate(False)
 
         right_mid = tk.Frame(mid, bg=self.BG)
         right_mid.pack(side="right", fill="both", expand=True)
+        right_mid.pack_propagate(False)
 
         # Camera frame (Now on right)
         self.camera_label = tk.Label(right_mid, bg=self.BG_CARD)
