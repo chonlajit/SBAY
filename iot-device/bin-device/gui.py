@@ -244,7 +244,19 @@ class SmartBinGUI:
         self.items_canvas.pack(fill="both", expand=True)
 
         self.items_inner = tk.Frame(self.items_canvas, bg=self.BG)
-        self.items_canvas.create_window((0, 0), window=self.items_inner, anchor="nw")
+        self.items_window = self.items_canvas.create_window((0, 0), window=self.items_inner, anchor="nw")
+
+        # ผูก Event เพื่อให้ Canvas รู้จักขนาดที่เปลี่ยนไปของ Frame ด้านใน (เพื่อให้ Scroll ได้)
+        self.items_inner.bind(
+            "<Configure>",
+            lambda e: self.items_canvas.configure(scrollregion=self.items_canvas.bbox("all"))
+        )
+        
+        # บังคับให้ Frame ด้านในขยายเต็มความกว้างของ Canvas ตลอดเวลา
+        self.items_canvas.bind(
+            "<Configure>",
+            lambda e: self.items_canvas.itemconfig(self.items_window, width=e.width)
+        )
 
         # Status label
         status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"

@@ -47,11 +47,12 @@ class Detector:
 
             # --- ดึงฟังก์ชันแปลง px -> cm มาใช้แสดงผล ---
             try:
-                from size.estimator import get_scale, pixel_to_cm
+                from size.estimator import get_scale, pixel_to_cm, estimate_volume_ml
                 scale = get_scale()
                 w_cm = pixel_to_cm(width, scale)
                 h_cm = pixel_to_cm(height, scale)
-                text = f"W: {width}px ({w_cm:.1f}cm) | H: {height}px ({h_cm:.1f}cm)"
+                vol = estimate_volume_ml(w_cm, h_cm)
+                text = f"W: {w_cm:.1f}cm | H: {h_cm:.1f}cm | V: {vol:.0f}ml"
             except Exception:
                 text = f"W: {width}px | H: {height}px"
 
