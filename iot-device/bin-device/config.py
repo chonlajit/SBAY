@@ -43,9 +43,9 @@ K = 80  # ค่าคงที่คำนวณ Score
 # --- Camera & Size Estimation Calibration ---
 USE_FOCAL = False
 REF_WIDTH_CM = 5.6
-REF_WIDTH_PX = 150
+REF_WIDTH_PX = 171
 REF_HEIGHT_CM = 14.5
-REF_HEIGHT_PX = 340
+REF_HEIGHT_PX = 360
 DISTANCE_CM = 40.0
 FOCAL_LENGTH_PX = 910.7143  # (REF_WIDTH_PX * DISTANCE_CM) / REF_WIDTH_CM
 CORRECTION_FACTOR = 1.08  # ปรับลดลงนิดนึงเพื่อให้ตกช่วง 325ml พอดี
