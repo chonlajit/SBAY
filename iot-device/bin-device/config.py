@@ -48,7 +48,7 @@ REF_HEIGHT_CM = 14.5
 REF_HEIGHT_PX = 360
 DISTANCE_CM = 40.0
 FOCAL_LENGTH_PX = 1016  # (REF_WIDTH_PX * DISTANCE_CM) / REF_WIDTH_CM
-CORRECTION_FACTOR = 1.00  # ปรับเป็น 1.00 เพื่อดึง 350ml ลงมาที่ 324ml
+CORRECTION_FACTOR = 9.8  # ปรับเป็น 1.00 เพื่อดึง 350ml ลงมาที่ 324ml
 MIN_HEIGHT_PX = 100
 ML_RANGES = [
     # (min_ml, max_ml, label_ml)
