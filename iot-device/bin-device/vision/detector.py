@@ -16,11 +16,12 @@ class Detector:
         }
 
     def detect(self, frame):
+        import config
         # รัน YOLO และใช้ผลลัพธ์วาดกรอบแบบออริจินัล (results.plot())
         results = self.model(
             frame,
             imgsz=320,
-            conf=0.45,
+            conf=config.CONF_THRESHOLD,
             device="cpu",
             verbose=False
         )[0]
@@ -48,12 +49,12 @@ class Detector:
             # --- ดึงฟังก์ชันแปลง px -> cm มาใช้แสดงผล ---
             try:
                 from size.estimator import get_scale, pixel_to_cm, estimate_volume_ml
-                scale = get_scale()
-                w_cm = pixel_to_cm(width, scale)
-                h_cm = pixel_to_cm(height, scale)
+                scale_w, scale_h = get_scale()
+                w_cm = pixel_to_cm(width, scale_w)
+                h_cm = pixel_to_cm(height, scale_h)
                 vol = estimate_volume_ml(w_cm, h_cm)
-                text = f"W: {w_cm:.1f}cm | H: {h_cm:.1f}cm | V: {vol:.0f}ml"
-            except Exception:
+                text = f"W:{width}px({w_cm:.1f}cm) | H:{height}px({h_cm:.1f}cm) | V:{vol:.0f}ml"
+            except Exception as e:
                 text = f"W: {width}px | H: {height}px"
 
             # วาดตรงด้านล่างกรอบ (ถ้าขอบล่างเลยกรอบภาพไป ให้วาดด้านในแทน)

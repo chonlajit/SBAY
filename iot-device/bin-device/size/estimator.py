@@ -3,8 +3,13 @@ import config
 
 def get_scale():
     if config.USE_FOCAL:
-        return None
-    return config.REF_WIDTH_CM / config.REF_WIDTH_PX
+        return None, None
+    scale_w = config.REF_WIDTH_CM / config.REF_WIDTH_PX
+    if hasattr(config, 'REF_HEIGHT_CM') and hasattr(config, 'REF_HEIGHT_PX'):
+        scale_h = config.REF_HEIGHT_CM / config.REF_HEIGHT_PX
+    else:
+        scale_h = scale_w
+    return scale_w, scale_h
 
 def pixel_to_cm(px, scale=None):
     if config.USE_FOCAL:
@@ -28,10 +33,10 @@ class SizeEstimator:
         if h_px < config.MIN_HEIGHT_PX:
             return 150  # Default min size for very small detections
 
-        scale = get_scale()
+        scale_w, scale_h = get_scale()
 
-        w_cm = pixel_to_cm(w_px, scale)
-        h_cm = pixel_to_cm(h_px, scale)
+        w_cm = pixel_to_cm(w_px, scale_w)
+        h_cm = pixel_to_cm(h_px, scale_h)
 
         volume_ml = estimate_volume_ml(w_cm, h_cm)
         label = classify_ml(volume_ml)
