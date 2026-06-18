@@ -10,6 +10,8 @@ load_dotenv()
 
 # --- Device Identity ---
 DEVICE_ID = os.getenv("DEVICE_ID", "BIN-001")
+DEVICE_NAME = os.getenv("DEVICE_NAME", "Smart Bin")
+DEVICE_LOCATION = os.getenv("DEVICE_LOCATION", "")
 
 # --- Backend Server ---
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8070")

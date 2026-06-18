@@ -10,7 +10,7 @@ import threading
 import time
 import logging
 
-from config import API_BASE, OFFLINE_DB_PATH, RETRY_INTERVAL, DEVICE_SECRET
+from config import API_BASE, OFFLINE_DB_PATH, RETRY_INTERVAL, DEVICE_SECRET, DEVICE_NAME, DEVICE_LOCATION
 
 logger = logging.getLogger("api_client")
 
@@ -133,10 +133,15 @@ class ApiClient:
             return False
 
     def send_heartbeat(self, device_id):
-        """ส่ง heartbeat บอก Backend ว่าตู้ยัง online"""
+        """ส่ง heartbeat บอก Backend ว่าตู้ยัง online พร้อมข้อมูลชื่อและสถานที่"""
         try:
+            payload = {
+                "name": DEVICE_NAME,
+                "location": DEVICE_LOCATION
+            }
             requests.post(
                 f"{self.api_base}/devices/{device_id}/heartbeat",
+                json=payload,
                 headers={"X-Device-Secret": DEVICE_SECRET},
                 timeout=3
             )
