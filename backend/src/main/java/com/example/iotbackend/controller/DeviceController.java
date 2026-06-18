@@ -45,10 +45,11 @@ public class DeviceController {
         
         // Initialize default capacities if empty
         if (device.getMaxCapacities().isEmpty()) {
-            device.getMaxCapacities().put("PLASTIC", 100.0);
-            device.getMaxCapacities().put("CAN", 100.0);
-            device.getMaxCapacities().put("GLASS", 100.0);
-            device.getMaxCapacities().put("GENERAL", 100.0);
+            device.getMaxCapacities().put("CLEAR_BOTTLE", 100.0);
+            device.getMaxCapacities().put("OPAQUE_BOTTLE", 100.0);
+            device.getMaxCapacities().put("GLASSES_BOTTLE", 100.0);
+            device.getMaxCapacities().put("STEEL_CAN", 100.0);
+            device.getMaxCapacities().put("ALUMINUM_CAN", 100.0);
         }
         
         // Save or update

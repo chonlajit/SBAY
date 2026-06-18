@@ -4,9 +4,11 @@ import com.example.iotbackend.model.DeviceSession;
 import com.example.iotbackend.model.SessionItem;
 import com.example.iotbackend.model.Transaction;
 import com.example.iotbackend.model.User;
+import com.example.iotbackend.model.Device;
 import com.example.iotbackend.repository.DeviceSessionRepository;
 import com.example.iotbackend.repository.TransactionRepository;
 import com.example.iotbackend.repository.UserRepository;
+import com.example.iotbackend.repository.DeviceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -22,6 +24,9 @@ public class SessionController {
 
     @Autowired
     private DeviceSessionRepository sessionRepository;
+
+    @Autowired
+    private DeviceRepository deviceRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -88,6 +93,23 @@ public class SessionController {
                 tx.setPointsEarned(item.getScore() != null ? (int) Math.round(item.getScore()) : 0);
                 tx.setTimestamp(item.getTimestamp() != null ? item.getTimestamp() : LocalDateTime.now());
                 transactionRepository.save(tx);
+            }
+        }
+        
+        // Update device waste levels based on items
+        if (session.getItems() != null && !session.getItems().isEmpty()) {
+            String deviceId = session.getDeviceId() != null ? session.getDeviceId() : "BIN-001";
+            Optional<Device> deviceOpt = deviceRepository.findById(deviceId);
+            if (deviceOpt.isPresent()) {
+                Device device = deviceOpt.get();
+                for (SessionItem item : session.getItems()) {
+                    String type = item.getType();
+                    if (type != null) {
+                        double currentLevel = device.getWasteLevels().getOrDefault(type, 0.0);
+                        device.getWasteLevels().put(type, currentLevel + 1.0);
+                    }
+                }
+                deviceRepository.save(device);
             }
         }
         
