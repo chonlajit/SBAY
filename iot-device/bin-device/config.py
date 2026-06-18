@@ -43,7 +43,7 @@ K = 80  # ค่าคงที่คำนวณ Score
 # --- Camera & Size Estimation Calibration ---
 USE_FOCAL = False
 REF_WIDTH_CM = 5.6
-REF_WIDTH_PX = 170
+REF_WIDTH_PX = 161
 REF_HEIGHT_CM = 14.5
 REF_HEIGHT_PX = 324
 DISTANCE_CM = 30.0
