@@ -240,7 +240,7 @@ class SmartBinGUI:
         self.camera_label.pack(expand=True, fill="both", padx=10)
 
         # Scrollable list (Now on left)
-        self.items_canvas = tk.Canvas(left_mid, bg=self.BG, highlightthickness=0)
+        self.items_canvas = tk.Canvas(left_mid, bg=self.BG, highlightthickness=0, yscrollincrement=1)
         self.items_canvas.pack(fill="both", expand=True)
 
         self.items_inner = tk.Frame(self.items_canvas, bg=self.BG)
@@ -430,6 +430,9 @@ class SmartBinGUI:
         """ผูก Event นิ้วลากหน้าจอให้กับ Widget และลูกๆ ทั้งหมด"""
         widget.bind("<ButtonPress-1>", self._scroll_start, add="+")
         widget.bind("<B1-Motion>", self._scroll_drag, add="+")
+        widget.bind("<MouseWheel>", self._scroll_mouse, add="+")
+        widget.bind("<Button-4>", self._scroll_mouse, add="+")
+        widget.bind("<Button-5>", self._scroll_mouse, add="+")
         for child in widget.winfo_children():
             self._bind_touch_scroll(child)
 
@@ -439,10 +442,24 @@ class SmartBinGUI:
     def _scroll_drag(self, event):
         if hasattr(self, 'items_canvas') and self.items_canvas.winfo_exists():
             delta = self._drag_start_y - event.y_root
-            if abs(delta) > 2:
-                # เลื่อน Canvas ตามทิศทางที่นิ้วลาก
-                self.items_canvas.yview_scroll(int(delta / 2), "units")
+            if abs(delta) > 0:
+                self.items_canvas.yview_scroll(delta, "units")
                 self._drag_start_y = event.y_root
+
+    def _scroll_mouse(self, event):
+        if hasattr(self, 'items_canvas') and self.items_canvas.winfo_exists():
+            delta_val = getattr(event, 'delta', 0)
+            num_val = getattr(event, 'num', 0)
+            
+            if delta_val != 0:
+                # Windows / Mac (delta is usually multiple of 120)
+                self.items_canvas.yview_scroll(int(-1 * (delta_val / 120) * 40), "units")
+            elif num_val == 4:
+                # Linux scroll up
+                self.items_canvas.yview_scroll(-40, "units")
+            elif num_val == 5:
+                # Linux scroll down
+                self.items_canvas.yview_scroll(40, "units")
 
     def _clear(self):
         """ล้างหน้าจอ"""
