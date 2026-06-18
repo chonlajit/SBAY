@@ -17,11 +17,31 @@ public class DeviceController {
     private DeviceRepository deviceRepository;
 
     @PostMapping("/{deviceId}/heartbeat")
-    public ResponseEntity<?> heartbeat(@PathVariable String deviceId) {
+    public ResponseEntity<?> heartbeat(
+            @PathVariable String deviceId,
+            @RequestBody(required = false) Map<String, String> payload) {
         Device device = deviceRepository.findById(deviceId).orElse(new Device());
         device.setId(deviceId);
         device.setStatus("ONLINE");
         device.setLastHeartbeat(LocalDateTime.now());
+        
+        // Update name and location from IoT payload (if provided)
+        if (payload != null) {
+            if (payload.containsKey("name") && payload.get("name") != null && !payload.get("name").trim().isEmpty()) {
+                device.setName(payload.get("name"));
+            }
+            if (payload.containsKey("location") && payload.get("location") != null && !payload.get("location").trim().isEmpty()) {
+                device.setLocation(payload.get("location"));
+            }
+        }
+        
+        // Fallback defaults if still empty
+        if (device.getName() == null || device.getName().trim().isEmpty()) {
+            device.setName("Smart Bin " + deviceId.substring(0, Math.min(deviceId.length(), 6)));
+        }
+        if (device.getLocation() == null || device.getLocation().trim().isEmpty()) {
+            device.setLocation("ไม่ระบุสถานที่");
+        }
         
         // Initialize default capacities if empty
         if (device.getMaxCapacities().isEmpty()) {
