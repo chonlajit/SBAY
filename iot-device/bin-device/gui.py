@@ -288,6 +288,9 @@ class SmartBinGUI:
         """เพิ่มรายการที่ detect ได้แสดงบนหน้าจอ"""
         self.items_list.append({"type": item_type, "ml": size_ml, "score": score})
 
+        if not hasattr(self, 'items_inner') or not self.items_inner.winfo_exists():
+            return
+
         label_text = WASTE_LABELS.get(item_type, item_type)
 
         row = tk.Frame(self.items_inner, bg=self.BG_CARD, padx=10, pady=8)
@@ -313,7 +316,7 @@ class SmartBinGUI:
 
         # Update count
         count = len(self.items_list)
-        if hasattr(self, 'item_count_label'):
+        if hasattr(self, 'item_count_label') and self.item_count_label.winfo_exists():
             self.item_count_label.config(text=f"{count} ชิ้น")
 
         # Update status
@@ -326,7 +329,7 @@ class SmartBinGUI:
 
     def update_status(self, text, color=None):
         """อัปเดตข้อความสถานะ"""
-        if hasattr(self, 'status_label'):
+        if hasattr(self, 'status_label') and self.status_label.winfo_exists():
             self.status_label.config(text=text, fg=color or self.GRAY)
 
     def update_camera_frame(self, cv2_frame):
