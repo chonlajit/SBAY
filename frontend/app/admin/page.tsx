@@ -10,6 +10,7 @@ export default function AdminPage() {
     const [summary, setSummary] = useState<any>(null);
     const [users, setUsers] = useState<any[]>([]);
     const [alerts, setAlerts] = useState<any[]>([]);
+    const [devices, setDevices] = useState<any[]>([]);
     const [pendingRedemptions, setPendingRedemptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -20,11 +21,12 @@ export default function AdminPage() {
         try {
             const headers = { 'Authorization': `Bearer ${token}` };
 
-            const [summaryRes, usersRes, alertsRes, redemptionsRes] = await Promise.all([
+            const [summaryRes, usersRes, alertsRes, redemptionsRes, devicesRes] = await Promise.all([
                 fetch(`${apiBase}/admin/summary`, { headers }),
                 fetch(`${apiBase}/admin/users`, { headers }),
                 fetch(`${apiBase}/admin/alerts`, { headers }),
-                fetch(`${apiBase}/admin/redemptions/pending`, { headers })
+                fetch(`${apiBase}/admin/redemptions/pending`, { headers }),
+                fetch(`${apiBase}/admin/devices`, { headers })
             ]);
 
             if (summaryRes.ok && usersRes.ok) {
@@ -32,6 +34,7 @@ export default function AdminPage() {
                 setUsers(await usersRes.json());
                 if (alertsRes.ok) setAlerts(await alertsRes.json());
                 if (redemptionsRes.ok) setPendingRedemptions(await redemptionsRes.json());
+                if (devicesRes.ok) setDevices(await devicesRes.json());
             } else {
                 if (summaryRes.status === 403 || summaryRes.status === 401) {
                     setError("Access Denied: คุณไม่มีสิทธิ์เข้าถึงหน้าผู้ดูแลระบบ");
@@ -285,6 +288,71 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Bin Status Section */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col mt-8">
+                    <div className="px-5 py-4 border-b border-blue-100 bg-blue-50/50 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <span className="text-lg">🗑️</span>
+                            <h2 className="font-bold text-blue-800">สถานะตู้ขยะอัจฉริยะ (Smart Bins)</h2>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-500 bg-white px-2 py-1 rounded-md border border-slate-200">
+                            {devices.length} ตู้
+                        </span>
+                    </div>
+                    <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {devices.map(device => (
+                            <div key={device.id} className={`rounded-xl border p-4 ${device.isFull ? 'border-red-300 bg-red-50/30' : 'border-slate-200 bg-white'} relative overflow-hidden`}>
+                                {device.isFull && (
+                                    <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">
+                                        เต็มแล้ว: {device.fullWasteType || 'ไม่ทราบประเภท'}
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <div className="font-bold text-slate-800">{device.name || 'Unknown Device'}</div>
+                                        <div className="text-xs text-slate-500">{device.location || 'Unknown Location'}</div>
+                                    </div>
+                                    <div className={`px-2 py-1 rounded text-[10px] font-bold ${device.status === 'ONLINE' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                                        {device.status}
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-3 mt-4">
+                                    {device.maxCapacities && Object.keys(device.maxCapacities).map(type => {
+                                        const max = device.maxCapacities[type] || 100;
+                                        const current = (device.wasteLevels && device.wasteLevels[type]) || 0;
+                                        const percentage = Math.min(100, Math.max(0, (current / max) * 100));
+                                        
+                                        let barColor = "bg-blue-500";
+                                        if (percentage > 80) barColor = "bg-red-500";
+                                        else if (percentage > 50) barColor = "bg-orange-400";
+
+                                        return (
+                                            <div key={type}>
+                                                <div className="flex justify-between text-[10px] font-bold mb-1">
+                                                    <span className="text-slate-600">{type}</span>
+                                                    <span className="text-slate-500">{current.toFixed(1)} / {max.toFixed(1)}</span>
+                                                </div>
+                                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                    <div className={`${barColor} h-1.5 rounded-full transition-all duration-500`} style={{ width: `${percentage}%` }}></div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                    {(!device.maxCapacities || Object.keys(device.maxCapacities).length === 0) && (
+                                        <div className="text-xs text-slate-400 text-center py-2">ไม่มีข้อมูลความจุขยะ</div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                        {devices.length === 0 && (
+                            <div className="col-span-full py-8 text-center text-slate-400 font-medium">
+                                ไม่พบตู้ในระบบ
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 {/* Pending Redemptions Section */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col mt-8">

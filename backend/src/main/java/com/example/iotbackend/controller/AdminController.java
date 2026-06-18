@@ -42,6 +42,9 @@ public class AdminController {
     @Autowired
     private JwtUtil jwtUtil;
     
+    @Autowired
+    private com.example.iotbackend.repository.DeviceRepository deviceRepository;
+    
     private void validateAdmin(String token) {
         if (token == null || !token.startsWith("Bearer ")) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing Token");
@@ -60,6 +63,12 @@ public class AdminController {
     public List<User> getAllUsers(@RequestHeader("Authorization") String token) {
         validateAdmin(token);
         return userRepository.findAll();
+    }
+    
+    @GetMapping("/devices")
+    public List<com.example.iotbackend.model.Device> getAllDevices(@RequestHeader("Authorization") String token) {
+        validateAdmin(token);
+        return deviceRepository.findAll();
     }
     
     @DeleteMapping("/user/{id}")
