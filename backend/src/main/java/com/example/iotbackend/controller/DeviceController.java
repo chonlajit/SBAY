@@ -43,14 +43,18 @@ public class DeviceController {
             device.setLocation("ไม่ระบุสถานที่");
         }
         
-        // Initialize default capacities if empty
-        if (device.getMaxCapacities().isEmpty()) {
-            device.getMaxCapacities().put("CLEAR_BOTTLE", 100.0);
-            device.getMaxCapacities().put("OPAQUE_BOTTLE", 100.0);
-            device.getMaxCapacities().put("GLASSES_BOTTLE", 100.0);
-            device.getMaxCapacities().put("STEEL_CAN", 100.0);
-            device.getMaxCapacities().put("ALUMINUM_CAN", 100.0);
-        }
+        // Ensure default capacities exist for all required types
+        device.getMaxCapacities().putIfAbsent("CLEAR_BOTTLE", 100.0);
+        device.getMaxCapacities().putIfAbsent("OPAQUE_BOTTLE", 100.0);
+        device.getMaxCapacities().putIfAbsent("GLASSES_BOTTLE", 100.0);
+        device.getMaxCapacities().putIfAbsent("STEEL_CAN", 100.0);
+        device.getMaxCapacities().putIfAbsent("ALUMINUM_CAN", 100.0);
+        
+        // Remove old unused types
+        device.getMaxCapacities().remove("PLASTIC");
+        device.getMaxCapacities().remove("CAN");
+        device.getMaxCapacities().remove("GLASS");
+        device.getMaxCapacities().remove("GENERAL");
         
         // Save or update
         deviceRepository.save(device);
