@@ -45,8 +45,16 @@ class Detector:
             height = y2 - y1
             width = x2 - x1
 
-            # --- วาดค่า Width และ Height (Pixel) ลงบนกรอบ Bbox เพื่อให้ง่ายต่อการ Calibrate ---
-            text = f"W: {width}px | H: {height}px"
+            # --- ดึงฟังก์ชันแปลง px -> cm มาใช้แสดงผล ---
+            try:
+                from size.estimator import get_scale, pixel_to_cm
+                scale = get_scale()
+                w_cm = pixel_to_cm(width, scale)
+                h_cm = pixel_to_cm(height, scale)
+                text = f"W: {width}px ({w_cm:.1f}cm) | H: {height}px ({h_cm:.1f}cm)"
+            except Exception:
+                text = f"W: {width}px | H: {height}px"
+
             # วาดตรงด้านล่างกรอบ (ถ้าขอบล่างเลยกรอบภาพไป ให้วาดด้านในแทน)
             text_y = y2 + 20 if y2 + 20 < annotated_frame.shape[0] else y2 - 10
             # สีเหลือง (0, 255, 255) ขนาดตัวอักษร 0.6 ความหนาเส้น 2
