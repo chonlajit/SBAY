@@ -258,6 +258,11 @@ class SmartBinGUI:
             lambda e: self.items_canvas.itemconfig(self.items_window, width=e.width)
         )
 
+        # เพิ่มระบบทัชสกรีนสไลด์เลื่อนขึ้นลง (Touch Scroll)
+        self._drag_start_y = 0
+        self._bind_touch_scroll(self.items_canvas)
+        self._bind_touch_scroll(self.items_inner)
+
         # Status label
         status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
         self.status_label = tk.Label(
@@ -297,6 +302,9 @@ class SmartBinGUI:
             row, text=f"{size_ml}ml  |  +{score:.1f} pt",
             font=self.font_small, fg=self.YELLOW, bg=self.BG_CARD, anchor="e"
         ).pack(side="right")
+
+        # ผูกระบบทัชสกรีนให้กับแถวและข้อความใหม่ที่เพิ่งสร้าง
+        self._bind_touch_scroll(row)
 
         # Update count
         count = len(self.items_list)
@@ -413,6 +421,24 @@ class SmartBinGUI:
     # ==============================
     # Utilities
     # ==============================
+    def _bind_touch_scroll(self, widget):
+        """ผูก Event นิ้วลากหน้าจอให้กับ Widget และลูกๆ ทั้งหมด"""
+        widget.bind("<ButtonPress-1>", self._scroll_start, add="+")
+        widget.bind("<B1-Motion>", self._scroll_drag, add="+")
+        for child in widget.winfo_children():
+            self._bind_touch_scroll(child)
+
+    def _scroll_start(self, event):
+        self._drag_start_y = event.y_root
+
+    def _scroll_drag(self, event):
+        if hasattr(self, 'items_canvas') and self.items_canvas.winfo_exists():
+            delta = self._drag_start_y - event.y_root
+            if abs(delta) > 2:
+                # เลื่อน Canvas ตามทิศทางที่นิ้วลาก
+                self.items_canvas.yview_scroll(int(delta / 2), "units")
+                self._drag_start_y = event.y_root
+
     def _clear(self):
         """ล้างหน้าจอ"""
         for widget in self.container.winfo_children():
