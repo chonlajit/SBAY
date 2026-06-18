@@ -331,7 +331,15 @@ export default function AdminPage() {
                                         return (
                                             <div key={type}>
                                                 <div className="flex justify-between text-[10px] font-bold mb-1">
-                                                    <span className="text-slate-600">{type}</span>
+                                                    <span className="text-slate-600">
+                                                        {{
+                                                            "CLEAR_BOTTLE": "ขวดพลาสติกใส",
+                                                            "OPAQUE_BOTTLE": "ขวดพลาสติกขุ่น",
+                                                            "GLASSES_BOTTLE": "ขวดแก้ว",
+                                                            "STEEL_CAN": "กระป๋องเหล็ก",
+                                                            "ALUMINUM_CAN": "กระป๋องอลูมิเนียม"
+                                                        }[type] || type}
+                                                    </span>
                                                     <span className="text-slate-500">{current.toFixed(1)} / {max.toFixed(1)}</span>
                                                 </div>
                                                 <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
@@ -455,7 +463,15 @@ export default function AdminPage() {
                                 <div className="p-5 grid grid-cols-2 gap-3">
                                     {Object.entries(summary.wasteStats).map(([key, value]) => (
                                         <div key={key} className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col items-center text-center">
-                                            <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">{key.replace('_', ' ')}</div>
+                                            <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">
+                                                {{
+                                                    "CLEAR_BOTTLE": "ขวดพลาสติกใส",
+                                                    "OPAQUE_BOTTLE": "ขวดพลาสติกขุ่น",
+                                                    "GLASSES_BOTTLE": "ขวดแก้ว",
+                                                    "STEEL_CAN": "กระป๋องเหล็ก",
+                                                    "ALUMINUM_CAN": "กระป๋องอลูมิเนียม"
+                                                }[key] || key.replace('_', ' ')}
+                                            </div>
                                             <div className="text-xl font-black text-slate-700">{String(value)}</div>
                                         </div>
                                     ))}
