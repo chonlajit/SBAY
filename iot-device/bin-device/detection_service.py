@@ -56,6 +56,7 @@ class DetectionService:
 
         # Stability buffers
         self.heights_buffer = deque(maxlen=STABLE_FRAMES)
+        self.widths_buffer = deque(maxlen=STABLE_FRAMES)
         self.labels_buffer = deque(maxlen=STABLE_FRAMES)
         self.last_detection_time = 0
 
@@ -113,6 +114,7 @@ class DetectionService:
     def reset_buffers(self):
         """ล้าง buffer สำหรับ detection ใหม่"""
         self.heights_buffer.clear()
+        self.widths_buffer.clear()
         self.labels_buffer.clear()
 
     def detect_once(self):
@@ -136,8 +138,10 @@ class DetectionService:
                 logger.warning("Camera frame read failed")
                 return None, 0
 
-        # ไม่ต้อง Resize ภาพให้เป็นสี่เหลี่ยมจัตุรัสแล้ว ปล่อยให้เป็น 640x480 สัดส่วนจริงเลย
-
+        # ตัดขอบซ้ายขวาทิ้งให้ภาพกลายเป็น "สี่เหลี่ยมผืนผ้าแนวตั้ง" (Portrait)
+        # ภาพเดิมกว้าง 640 สูง 480 -> ตัดเหลือ กว้าง 360 สูง 480 (เอาตรงกลาง)
+        # แกน 0 คือ ความสูง (0-480), แกน 1 คือ ความกว้าง (140-500)
+        frame = frame[:, 140:500]
         # 3. อัปเดตเฟรมล่าสุดสำหรับ GUI (ทำทุกรอบ ไม่ว่าจะ cooldown หรือไม่)
         display_frame = frame.copy()
         self.latest_frame = display_frame
@@ -165,6 +169,7 @@ class DetectionService:
 
         # Add to stability buffer
         self.heights_buffer.append(height)
+        self.widths_buffer.append(best["width"])
         self.labels_buffer.append(label)
 
         # Need enough consecutive stable frames
@@ -178,8 +183,9 @@ class DetectionService:
         # ✅ STABLE DETECTION CONFIRMED
         stable_label = self.labels_buffer[-1]
         avg_height = sum(self.heights_buffer) / len(self.heights_buffer)
+        avg_width = sum(self.widths_buffer) / len(self.widths_buffer)
 
-        size_ml = self.size_estimator.get_size_ml(avg_height)
+        size_ml = self.size_estimator.get_size_ml(avg_width, avg_height)
         result = self.calculator.calculate(stable_label, size_ml)
 
         # Hardware action

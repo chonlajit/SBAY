@@ -42,11 +42,13 @@ class Detector:
 
             x1, y1, x2, y2 = map(int, box.xyxy[0])
             height = y2 - y1
+            width = x2 - x1
 
             detections.append({
                 "label": sbay_label,
                 "coco_label": label_name,
                 "height": height,
+                "width": width,
                 "confidence": float(box.conf[0])
             })
 

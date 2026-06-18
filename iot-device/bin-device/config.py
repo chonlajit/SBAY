@@ -40,6 +40,21 @@ DETECT_TIMEOUT = 10      # วินาที ถ้า detect ไม่ได�
 # --- Size Estimation ---
 K = 80  # ค่าคงที่คำนวณ Score
 
+# --- Camera & Size Estimation Calibration ---
+USE_FOCAL = False
+REF_WIDTH_CM = 6.5
+REF_WIDTH_PX = 130
+DISTANCE_CM = 30.0
+FOCAL_LENGTH_PX = 600.0  # (REF_WIDTH_PX * DISTANCE_CM) / REF_WIDTH_CM
+CORRECTION_FACTOR = 0.85
+MIN_HEIGHT_PX = 100
+ML_RANGES = [
+    (0, 450, 350),
+    (450, 550, 500),
+    (550, 700, 600),
+    (700, 9999, 1000)
+]
+
 # --- Heartbeat ---
 HEARTBEAT_INTERVAL = 30  # วินาที
 

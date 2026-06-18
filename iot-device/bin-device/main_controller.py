@@ -269,7 +269,7 @@ class SmartBinController:
                     from size.estimator import SizeEstimator
                     from scoring.calculator import ScoreCalculator
 
-                    size_ml = SizeEstimator().get_size_ml(150)  # mock height
+                    size_ml = SizeEstimator().get_size_ml(50, 150)  # mock width and height
                     result = ScoreCalculator().calculate(item_type, size_ml)
 
                     item = self.session.add_item(item_type, size_ml, result["weight"], result["score"])
