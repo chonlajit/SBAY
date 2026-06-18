@@ -1,3 +1,4 @@
+import cv2
 from ultralytics import YOLO
 
 class Detector:
@@ -43,6 +44,13 @@ class Detector:
             x1, y1, x2, y2 = map(int, box.xyxy[0])
             height = y2 - y1
             width = x2 - x1
+
+            # --- วาดค่า Width และ Height (Pixel) ลงบนกรอบ Bbox เพื่อให้ง่ายต่อการ Calibrate ---
+            text = f"W: {width}px | H: {height}px"
+            # วาดตรงด้านล่างกรอบ (ถ้าขอบล่างเลยกรอบภาพไป ให้วาดด้านในแทน)
+            text_y = y2 + 20 if y2 + 20 < annotated_frame.shape[0] else y2 - 10
+            # สีเหลือง (0, 255, 255) ขนาดตัวอักษร 0.6 ความหนาเส้น 2
+            cv2.putText(annotated_frame, text, (x1, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
             detections.append({
                 "label": sbay_label,
