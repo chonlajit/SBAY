@@ -298,8 +298,13 @@ class SmartBinGUI:
             font=self.font_small, fg=self.WHITE, bg=self.BG_CARD, anchor="w"
         ).pack(side="left")
 
+        # แปลงตัวเลขเป๊ะๆ เป็นช่วง (เช่น 325 -> 320-340) ตามที่ผู้ใช้ต้องการ
+        lower_bound = size_ml - (size_ml % 10)
+        upper_bound = lower_bound + 20
+        size_str = f"{lower_bound}-{upper_bound}"
+
         tk.Label(
-            row, text=f"{size_ml}ml  |  +{score:.1f} pt",
+            row, text=f"{size_str}ml  |  +{score:.1f} pt",
             font=self.font_small, fg=self.YELLOW, bg=self.BG_CARD, anchor="e"
         ).pack(side="right")
 

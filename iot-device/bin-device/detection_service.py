@@ -185,7 +185,10 @@ class DetectionService:
         avg_height = sum(self.heights_buffer) / len(self.heights_buffer)
         avg_width = sum(self.widths_buffer) / len(self.widths_buffer)
 
-        size_ml = self.size_estimator.get_size_ml(avg_width, avg_height)
+        raw_size_ml = self.size_estimator.get_size_ml(avg_width, avg_height)
+        # ปรับค่าให้เป็นขอบล่างของช่วง (Lower bound) เพื่อใช้คิดคะแนน
+        size_ml = raw_size_ml - (raw_size_ml % 10)
+
         result = self.calculator.calculate(stable_label, size_ml)
 
         # Hardware action
