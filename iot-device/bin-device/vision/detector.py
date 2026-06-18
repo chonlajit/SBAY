@@ -53,14 +53,23 @@ class Detector:
                 w_cm = pixel_to_cm(width, scale_w)
                 h_cm = pixel_to_cm(height, scale_h)
                 vol = estimate_volume_ml(w_cm, h_cm)
-                text = f"W:{width}px({w_cm:.1f}cm) | H:{height}px({h_cm:.1f}cm) | V:{vol:.0f}ml"
+                text1 = f"W:{width}px({w_cm:.1f}cm)"
+                text2 = f"H:{height}px({h_cm:.1f}cm) | V:{vol:.0f}ml"
             except Exception as e:
-                text = f"W: {width}px | H: {height}px"
+                text1 = f"W: {width}px"
+                text2 = f"H: {height}px"
 
-            # วาดตรงด้านล่างกรอบ (ถ้าขอบล่างเลยกรอบภาพไป ให้วาดด้านในแทน)
-            text_y = y2 + 20 if y2 + 20 < annotated_frame.shape[0] else y2 - 10
+            text_y1 = y2 + 20
+            text_y2 = y2 + 40
+            
+            # ถ้าวาด 2 บรรทัดแล้วเกินขอบล่างของภาพ (y2+40 >= frame.shape[0]) ให้วาดข้างในกรอบแทน
+            if y2 + 40 >= annotated_frame.shape[0]:
+                text_y1 = y2 - 30
+                text_y2 = y2 - 10
+
             # สีเหลือง (0, 255, 255) ขนาดตัวอักษร 0.6 ความหนาเส้น 2
-            cv2.putText(annotated_frame, text, (x1, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+            cv2.putText(annotated_frame, text1, (x1, text_y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+            cv2.putText(annotated_frame, text2, (x1, text_y2), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
             detections.append({
                 "label": sbay_label,
