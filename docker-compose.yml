@@ -63,9 +63,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: sbay-tunnel
     restart: always
-    environment:
-      - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
-    command: tunnel run
+    command: tunnel --no-autoupdate --url http://nginx:80
     depends_on:
       - nginx
 
