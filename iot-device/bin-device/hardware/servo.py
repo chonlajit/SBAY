@@ -32,7 +32,7 @@ def reset_position():
 
 def sort_item(label):
     mapping = {
-        "PLASTIC_BOTTLE": DEFAULT_SORT_ANGLE,    # ตรงกลาง/ช่องใหญ่สุด
+        "PLASTIC_BOTTLE": DEFAULT_SORT_ANGLE,    # ตรงกลางช่องใหญ่สุด
         "ALUMINUM_CAN": 30,                      # ขวาล่าง
         "BEVERAGE_CARTON": 150                   # ซ้ายล่าง
     }
