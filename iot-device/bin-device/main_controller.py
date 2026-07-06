@@ -66,6 +66,15 @@ class SmartBinController:
         logger.info(f"  GUI Mode: {USE_GUI}")
         logger.info("=" * 50)
 
+        from config import USE_HARDWARE, USE_SERVO
+        if USE_HARDWARE and USE_SERVO:
+            try:
+                from hardware.servo import reset_position
+                logger.info("Resetting servos to default positions...")
+                reset_position()
+            except Exception as e:
+                logger.error(f"Failed to reset servos: {e}")
+
         # Start heartbeat
         self.heartbeat.start()
 
@@ -240,7 +249,7 @@ class SmartBinController:
 
                 # Detection loop (CLI simulated)
                 print("\n🔍 กำลังรอการหยอดขยะ...")
-                print("   พิมพ์ชนิดขยะ: bottle, can, glass")
+                print("   พิมพ์ชนิดขยะ: bottle, can, carton")
                 print("   พิมพ์ 'done' เพื่อเสร็จสิ้น\n")
 
                 while True:
@@ -251,13 +260,13 @@ class SmartBinController:
 
                     # Map simple input to types
                     type_map = {
-                        'bottle': 'CLEAR_BOTTLE',
-                        'plastic': 'CLEAR_BOTTLE',
-                        'opaque': 'OPAQUE_BOTTLE',
-                        'glass': 'GLASSES_BOTTLE',
-                        'steel': 'STEEL_CAN',
+                        'bottle': 'PLASTIC_BOTTLE',
+                        'plastic': 'PLASTIC_BOTTLE',
                         'can': 'ALUMINUM_CAN',
                         'aluminum': 'ALUMINUM_CAN',
+                        'carton': 'BEVERAGE_CARTON',
+                        'paper': 'BEVERAGE_CARTON',
+                        'box': 'BEVERAGE_CARTON'
                     }
 
                     item_type = type_map.get(cmd)

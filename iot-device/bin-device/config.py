@@ -78,34 +78,26 @@ RETRY_INTERVAL = 30      # วินาที
 
 # --- Price & Scoring ---
 PRICE_PER_KG = {
-    "CLEAR_BOTTLE": 10,
-    "OPAQUE_BOTTLE": 3,
-    "GLASSES_BOTTLE": 0.5,
-    "STEEL_CAN": 2,
-    "ALUMINUM_CAN": 40
+    "PLASTIC_BOTTLE": 10,
+    "ALUMINUM_CAN": 40,
+    "BEVERAGE_CARTON": 9
 }
 
 GRAM_PER_ML = {
-    "CLEAR_BOTTLE": 0.033,
-    "OPAQUE_BOTTLE": 0.08,
-    "GLASSES_BOTTLE": 0.4,
-    "STEEL_CAN": 0.17,
-    "ALUMINUM_CAN": 0.033
+    "PLASTIC_BOTTLE": 0.033,
+    "ALUMINUM_CAN": 0.033,
+    "BEVERAGE_CARTON": 0.05
 }
 
 SCORE_PER_GRAM = {
-    "CLEAR_BOTTLE": 0.8,
-    "OPAQUE_BOTTLE": 0.24,
-    "GLASSES_BOTTLE": 0.04,
-    "STEEL_CAN": 0.16,
-    "ALUMINUM_CAN": 3.2
+    "PLASTIC_BOTTLE": 0.8,
+    "ALUMINUM_CAN": 3.2,
+    "BEVERAGE_CARTON": 0.72
 }
 
 # --- Waste Type Labels (Thai) ---
 WASTE_LABELS = {
-    "CLEAR_BOTTLE": "ขวดพลาสติกใส",
-    "OPAQUE_BOTTLE": "ขวดพลาสติกขุ่น",
-    "GLASSES_BOTTLE": "ขวดแก้ว",
-    "STEEL_CAN": "กระป๋องเหล็ก",
-    "ALUMINUM_CAN": "กระป๋องอลูมิเนียม"
+    "PLASTIC_BOTTLE": "ขวดพลาสติก",
+    "ALUMINUM_CAN": "กระป๋องอลูมิเนียม",
+    "BEVERAGE_CARTON": "กล่องเครื่องดื่ม"
 }
