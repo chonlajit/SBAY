@@ -43,8 +43,8 @@ def release_item(label="PLASTIC_BOTTLE"):
     # ตั้งค่าให้ฝาเปิดทิ้งไปคนละฝั่งได้
     mapping = {
         "PLASTIC_BOTTLE": 45,   
-        "ALUMINUM_CAN": 45,      
-        "BEVERAGE_CARTON": 45    
+        "ALUMINUM_CAN": 135,      
+        "BEVERAGE_CARTON": 135    
     }
     angle = mapping.get(label, 45)
     

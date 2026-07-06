@@ -160,7 +160,20 @@ class DetectionService:
 
         # Pick best detection
         best = max(detections, key=lambda x: x["confidence"])
-        label = best["label"]
+        
+        # แปลงชื่อคลาสจาก AI ให้ตรงกับที่ระบบตั้งไว้ (เผื่อใช้โมเดลคนละเวอร์ชัน)
+        label_map = {
+            "CLEAR_BOTTLE": "PLASTIC_BOTTLE",
+            "BOTTLE": "PLASTIC_BOTTLE",
+            "PLASTIC_BOTTLE": "PLASTIC_BOTTLE",
+            "CAN": "ALUMINUM_CAN",
+            "ALUMINUM_CAN": "ALUMINUM_CAN",
+            "CARTON": "BEVERAGE_CARTON",
+            "BEVERAGE_CARTON": "BEVERAGE_CARTON"
+        }
+        raw_label = best["label"].upper()
+        label = label_map.get(raw_label, raw_label)
+        
         height = best["height"]
         conf = best["confidence"]
 
