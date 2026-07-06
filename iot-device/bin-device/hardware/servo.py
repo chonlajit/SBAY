@@ -42,9 +42,9 @@ def sort_item(label):
 def release_item(label="PLASTIC_BOTTLE"):
     # ตั้งค่าให้ฝาเปิดทิ้งไปคนละฝั่งได้
     mapping = {
-        "PLASTIC_BOTTLE": 45,    # หมุนไปฝั่งนึง
-        "ALUMINUM_CAN": 45,      # แก้ไขเลขตรงนี้ให้หมุนไปอีกฝั่งได้ (เช่น 135)
-        "BEVERAGE_CARTON": 45    # แก้ไขเลขตรงนี้
+        "PLASTIC_BOTTLE": 45,   
+        "ALUMINUM_CAN": 45,      
+        "BEVERAGE_CARTON": 45    
     }
     angle = mapping.get(label, 45)
     
