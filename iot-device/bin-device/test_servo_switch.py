@@ -7,6 +7,7 @@ import hardware.servo as servo
 SW_PLASTIC = 22
 SW_CAN = 23
 SW_CARTON = 24
+SW_RESET = 25
 
 def setup_switches():
     # ใช้ Internal Pull-Up Resistor
@@ -14,6 +15,7 @@ def setup_switches():
     GPIO.setup(SW_PLASTIC, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(SW_CAN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(SW_CARTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(SW_RESET, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def run_test():
     setup_switches()
@@ -24,6 +26,7 @@ def run_test():
     print(f" - สวิตช์ 1 (Pin BCM {SW_PLASTIC}) : จำลอง ขวดพลาสติก (ตรงกลาง)")
     print(f" - สวิตช์ 2 (Pin BCM {SW_CAN}) : จำลอง กระป๋องอลูมิเนียม (ขวาล่าง)")
     print(f" - สวิตช์ 3 (Pin BCM {SW_CARTON}) : จำลอง กล่องกระดาษ (ซ้ายล่าง)")
+    print(f" - สวิตช์ 4 (Pin BCM {SW_RESET}) : รีเซ็ต Servo กลับค่าเริ่มต้น (จุดศูนย์)")
     print("💡 วิธีต่อ: ขาข้างหนึ่งของปุ่มต่อ Pin ขาอีกข้างต่อ GND")
     print("กด Ctrl+C เพื่อออกจากโปรแกรม")
     print("="*50)
@@ -59,6 +62,14 @@ def run_test():
                 time.sleep(0.5)
                 servo.release_item()
                 print("✅ เสร็จสิ้นกระบวนการ กลับสู่สแตนด์บาย")
+                time.sleep(1)
+                
+            elif GPIO.input(SW_RESET) == GPIO.LOW:
+                while GPIO.input(SW_RESET) == GPIO.LOW:
+                    time.sleep(0.05)
+                print("\n🔄 ปล่อยปุ่ม 4: สั่งรีเซ็ตเซอร์โวกลับค่าเริ่มต้น (จุดศูนย์)")
+                servo.reset_position()
+                print("✅ รีเซ็ตเสร็จสิ้น")
                 time.sleep(1)
                 
             time.sleep(0.1) # ป้องกัน CPU ลูปเร็วเกินไป
