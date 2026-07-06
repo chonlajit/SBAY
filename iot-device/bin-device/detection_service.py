@@ -194,7 +194,7 @@ class DetectionService:
         # Hardware action
         sort_item(stable_label)
         time.sleep(0.3)
-        release_item()
+        release_item(stable_label)
 
         # Reset buffers for next item
         self.reset_buffers()

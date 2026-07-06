@@ -40,7 +40,7 @@ def run_test():
                 print("\n🎯 ปล่อยปุ่ม 1: แยกขวดพลาสติก (90 องศา)")
                 servo.sort_item("PLASTIC_BOTTLE")
                 time.sleep(0.5)
-                servo.release_item()
+                servo.release_item("PLASTIC_BOTTLE")
                 print("✅ เสร็จสิ้นกระบวนการ กลับสู่สแตนด์บาย")
                 time.sleep(1)
                 
@@ -50,7 +50,7 @@ def run_test():
                 print("\n🎯 ปล่อยปุ่ม 2: แยกกระป๋อง (30 องศา)")
                 servo.sort_item("ALUMINUM_CAN")
                 time.sleep(0.5)
-                servo.release_item()
+                servo.release_item("ALUMINUM_CAN")
                 print("✅ เสร็จสิ้นกระบวนการ กลับสู่สแตนด์บาย")
                 time.sleep(1)
                 
@@ -60,7 +60,7 @@ def run_test():
                 print("\n🎯 ปล่อยปุ่ม 3: แยกกล่องกระดาษ (150 องศา)")
                 servo.sort_item("BEVERAGE_CARTON")
                 time.sleep(0.5)
-                servo.release_item()
+                servo.release_item("BEVERAGE_CARTON")
                 print("✅ เสร็จสิ้นกระบวนการ กลับสู่สแตนด์บาย")
                 time.sleep(1)
                 

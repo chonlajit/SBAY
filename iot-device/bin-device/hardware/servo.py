@@ -39,8 +39,16 @@ def sort_item(label):
     angle = mapping.get(label, DEFAULT_SORT_ANGLE)
     set_angle(sort_pwm, angle)
 
-def release_item():
-    set_angle(release_pwm, 45)   # หมุนลง 45 องศาเพื่อปล่อยขยะ
+def release_item(label="PLASTIC_BOTTLE"):
+    # ตั้งค่าให้ฝาเปิดทิ้งไปคนละฝั่งได้
+    mapping = {
+        "PLASTIC_BOTTLE": 45,    # หมุนไปฝั่งนึง
+        "ALUMINUM_CAN": 45,      # แก้ไขเลขตรงนี้ให้หมุนไปอีกฝั่งได้ (เช่น 135)
+        "BEVERAGE_CARTON": 45    # แก้ไขเลขตรงนี้
+    }
+    angle = mapping.get(label, 45)
+    
+    set_angle(release_pwm, angle)   # หมุนลงเพื่อปล่อยขยะ
     time.sleep(1)
     set_angle(release_pwm, DEFAULT_RELEASE_ANGLE) # คืนค่าตัวแผ่นรองกลับมาตำแหน่งเริ่มต้น
     set_angle(sort_pwm, DEFAULT_SORT_ANGLE)       # คืนค่าตัวปัดคัดแยกกลับมาตรงกลาง
