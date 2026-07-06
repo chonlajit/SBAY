@@ -32,15 +32,19 @@ def run_test():
         while True:
             # ถ้าปุ่มถูกกด (เชื่อมกับ GND) สถานะจะเป็น LOW (0)
             if GPIO.input(SW_PLASTIC) == GPIO.LOW:
-                print("\n🎯 กดปุ่ม 1: แยกขวดพลาสติก (90 องศา)")
+                while GPIO.input(SW_PLASTIC) == GPIO.LOW:
+                    time.sleep(0.05) # รอจนกว่าจะปล่อยปุ่ม
+                print("\n🎯 ปล่อยปุ่ม 1: แยกขวดพลาสติก (90 องศา)")
                 servo.sort_item("PLASTIC_BOTTLE")
-                time.sleep(0.5) # รอให้แผ่นปัดทำงานเสร็จ
+                time.sleep(0.5)
                 servo.release_item()
                 print("✅ เสร็จสิ้นกระบวนการ กลับสู่สแตนด์บาย")
-                time.sleep(1) # ป้องกันการกดเบิ้ลติดกัน (Debounce)
+                time.sleep(1)
                 
             elif GPIO.input(SW_CAN) == GPIO.LOW:
-                print("\n🎯 กดปุ่ม 2: แยกกระป๋อง (30 องศา)")
+                while GPIO.input(SW_CAN) == GPIO.LOW:
+                    time.sleep(0.05)
+                print("\n🎯 ปล่อยปุ่ม 2: แยกกระป๋อง (30 องศา)")
                 servo.sort_item("ALUMINUM_CAN")
                 time.sleep(0.5)
                 servo.release_item()
@@ -48,7 +52,9 @@ def run_test():
                 time.sleep(1)
                 
             elif GPIO.input(SW_CARTON) == GPIO.LOW:
-                print("\n🎯 กดปุ่ม 3: แยกกล่องกระดาษ (150 องศา)")
+                while GPIO.input(SW_CARTON) == GPIO.LOW:
+                    time.sleep(0.05)
+                print("\n🎯 ปล่อยปุ่ม 3: แยกกล่องกระดาษ (150 องศา)")
                 servo.sort_item("BEVERAGE_CARTON")
                 time.sleep(0.5)
                 servo.release_item()
