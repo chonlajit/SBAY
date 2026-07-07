@@ -31,7 +31,7 @@ class SmartBinGUI:
 
         self.root = tk.Tk()
         self.root.title("SBAY Smart Bin")
-        self.root.geometry("1280x800")  # Expanded resolution for larger screens
+        self.root.geometry("1920x1080")  # Full HD resolution
         self.root.configure(bg="#0f172a")
 
         # Try fullscreen on Pi
@@ -41,11 +41,11 @@ class SmartBinGUI:
             pass
 
         # Fonts
-        self.font_title = tkfont.Font(family="Helvetica", size=42, weight="bold")
-        self.font_large = tkfont.Font(family="Helvetica", size=32, weight="bold")
-        self.font_medium = tkfont.Font(family="Helvetica", size=24)
-        self.font_small = tkfont.Font(family="Helvetica", size=18)
-        self.font_keypad = tkfont.Font(family="Helvetica", size=32, weight="bold")
+        self.font_title = tkfont.Font(family="Helvetica", size=64, weight="bold")
+        self.font_large = tkfont.Font(family="Helvetica", size=48, weight="bold")
+        self.font_medium = tkfont.Font(family="Helvetica", size=36)
+        self.font_small = tkfont.Font(family="Helvetica", size=28)
+        self.font_keypad = tkfont.Font(family="Helvetica", size=48, weight="bold")
 
         # Colors
         self.BG = "#0f172a"
@@ -78,7 +78,7 @@ class SmartBinGUI:
         frame.place(relx=0.5, rely=0.5, anchor="center")
 
         # Logo / Icon
-        tk.Label(frame, text="♻️", font=("Segoe UI Emoji", 100), bg=self.BG).pack()
+        tk.Label(frame, text="♻️", font=("Segoe UI Emoji", 150), bg=self.BG).pack()
 
         tk.Label(
             frame, text="SBAY Smart Bin",
@@ -112,7 +112,7 @@ class SmartBinGUI:
         # Phone display
         self.phone_display = tk.Label(
             frame, textvariable=self.phone_var,
-            font=tkfont.Font(family="Courier", size=48, weight="bold"),
+            font=tkfont.Font(family="Courier", size=72, weight="bold"),
             fg=self.GREEN, bg=self.BG_CARD,
             width=15, relief="flat", pady=10
         )
@@ -185,7 +185,7 @@ class SmartBinGUI:
         frame.place(relx=0.5, rely=0.5, anchor="center")
 
         tk.Label(
-            frame, text="👋", font=("Segoe UI Emoji", 80), bg=self.BG
+            frame, text="👋", font=("Segoe UI Emoji", 120), bg=self.BG
         ).pack()
 
         tk.Label(
@@ -208,7 +208,7 @@ class SmartBinGUI:
         self._clear()
 
         # Top bar
-        top = tk.Frame(self.container, bg=self.GREEN_DARK, height=80)
+        top = tk.Frame(self.container, bg=self.GREEN_DARK, height=120)
         top.pack(fill="x")
         top.pack_propagate(False)
 
@@ -272,7 +272,7 @@ class SmartBinGUI:
         self.status_label.pack(pady=5)
 
         # Bottom: Finish button
-        bottom = tk.Frame(self.container, bg=self.BG, height=100)
+        bottom = tk.Frame(self.container, bg=self.BG, height=150)
         bottom.pack(fill="x", side="bottom")
         bottom.pack_propagate(False)
 
@@ -367,13 +367,13 @@ class SmartBinGUI:
         frame.place(relx=0.5, rely=0.5, anchor="center")
 
         if success:
-            tk.Label(frame, text="✅", font=("Segoe UI Emoji", 80), bg=self.BG).pack()
+            tk.Label(frame, text="✅", font=("Segoe UI Emoji", 120), bg=self.BG).pack()
             tk.Label(
                 frame, text="ส่งข้อมูลสำเร็จ!",
                 font=self.font_title, fg=self.GREEN, bg=self.BG
             ).pack(pady=(10, 20))
         else:
-            tk.Label(frame, text="📡", font=("Segoe UI Emoji", 80), bg=self.BG).pack()
+            tk.Label(frame, text="📡", font=("Segoe UI Emoji", 120), bg=self.BG).pack()
             tk.Label(
                 frame, text="เก็บข้อมูลไว้แล้ว",
                 font=self.font_title, fg=self.YELLOW, bg=self.BG
@@ -416,7 +416,7 @@ class SmartBinGUI:
         frame = tk.Frame(self.container, bg=self.BG)
         frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        tk.Label(frame, text="📡", font=("Segoe UI Emoji", 80), bg=self.BG).pack()
+        tk.Label(frame, text="📡", font=("Segoe UI Emoji", 120), bg=self.BG).pack()
         tk.Label(
             frame, text="กำลังส่งข้อมูล...",
             font=self.font_title, fg=self.YELLOW, bg=self.BG
