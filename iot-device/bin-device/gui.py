@@ -31,7 +31,7 @@ class SmartBinGUI:
 
         self.root = tk.Tk()
         self.root.title("SBAY Smart Bin")
-        self.root.geometry("1920x1080")  # Full HD resolution
+        self.root.geometry("1080x1920")  # Portrait Full HD resolution
         self.root.configure(bg="#0f172a")
 
         # Try fullscreen on Pi
@@ -40,12 +40,12 @@ class SmartBinGUI:
         except:
             pass
 
-        # Fonts
-        self.font_title = tkfont.Font(family="Helvetica", size=64, weight="bold")
-        self.font_large = tkfont.Font(family="Helvetica", size=48, weight="bold")
-        self.font_medium = tkfont.Font(family="Helvetica", size=36)
-        self.font_small = tkfont.Font(family="Helvetica", size=28)
-        self.font_keypad = tkfont.Font(family="Helvetica", size=48, weight="bold")
+        # Fonts (ขยายให้ใหญ่ขึ้นสำหรับจอแนวตั้ง)
+        self.font_title = tkfont.Font(family="Helvetica", size=96, weight="bold")
+        self.font_large = tkfont.Font(family="Helvetica", size=64, weight="bold")
+        self.font_medium = tkfont.Font(family="Helvetica", size=48)
+        self.font_small = tkfont.Font(family="Helvetica", size=36)
+        self.font_keypad = tkfont.Font(family="Helvetica", size=64, weight="bold")
 
         # Colors
         self.BG = "#0f172a"
@@ -78,7 +78,7 @@ class SmartBinGUI:
         frame.place(relx=0.5, rely=0.5, anchor="center")
 
         # Logo / Icon
-        tk.Label(frame, text="♻️", font=("Segoe UI Emoji", 150), bg=self.BG).pack()
+        tk.Label(frame, text="♻️", font=("Segoe UI Emoji", 200), bg=self.BG).pack()
 
         tk.Label(
             frame, text="SBAY Smart Bin",
@@ -112,11 +112,11 @@ class SmartBinGUI:
         # Phone display
         self.phone_display = tk.Label(
             frame, textvariable=self.phone_var,
-            font=tkfont.Font(family="Courier", size=72, weight="bold"),
+            font=tkfont.Font(family="Courier", size=80, weight="bold"),
             fg=self.GREEN, bg=self.BG_CARD,
-            width=15, relief="flat", pady=10
+            width=12, relief="flat", pady=20
         )
-        self.phone_display.pack(pady=(0, 15))
+        self.phone_display.pack(pady=(0, 20))
 
         # Keypad
         keypad_frame = tk.Frame(frame, bg=self.BG)
@@ -185,7 +185,7 @@ class SmartBinGUI:
         frame.place(relx=0.5, rely=0.5, anchor="center")
 
         tk.Label(
-            frame, text="👋", font=("Segoe UI Emoji", 120), bg=self.BG
+            frame, text="👋", font=("Segoe UI Emoji", 180), bg=self.BG
         ).pack()
 
         tk.Label(
@@ -227,20 +227,21 @@ class SmartBinGUI:
         mid = tk.Frame(self.container, bg=self.BG)
         mid.pack(fill="both", expand=True, padx=15, pady=10)
 
-        left_mid = tk.Frame(mid, bg=self.BG)
-        left_mid.pack(side="left", fill="both", expand=True)
-        left_mid.pack_propagate(False)
+        # จัด Layout เป็นแนวตั้ง (กล้องอยู่บน, รายการอยู่ล่าง) สำหรับจอ Portrait
+        top_mid = tk.Frame(mid, bg=self.BG)
+        top_mid.pack(side="top", fill="both", expand=True)
+        top_mid.pack_propagate(False)
 
-        right_mid = tk.Frame(mid, bg=self.BG)
-        right_mid.pack(side="right", fill="both", expand=True)
-        right_mid.pack_propagate(False)
+        bottom_mid = tk.Frame(mid, bg=self.BG)
+        bottom_mid.pack(side="bottom", fill="both", expand=True)
+        bottom_mid.pack_propagate(False)
 
-        # Camera frame (Now on right)
-        self.camera_label = tk.Label(right_mid, bg=self.BG_CARD)
-        self.camera_label.pack(expand=True, fill="both", padx=10)
+        # Camera frame (Now on top)
+        self.camera_label = tk.Label(top_mid, bg=self.BG_CARD)
+        self.camera_label.pack(expand=True, fill="both", padx=10, pady=10)
 
-        # Scrollable list (Now on left)
-        self.items_canvas = tk.Canvas(left_mid, bg=self.BG, highlightthickness=0, yscrollincrement=1)
+        # Scrollable list (Now on bottom)
+        self.items_canvas = tk.Canvas(bottom_mid, bg=self.BG, highlightthickness=0, yscrollincrement=1)
         self.items_canvas.pack(fill="both", expand=True)
 
         self.items_inner = tk.Frame(self.items_canvas, bg=self.BG)
@@ -266,10 +267,10 @@ class SmartBinGUI:
         # Status label
         status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
         self.status_label = tk.Label(
-            left_mid, text=status_msg,
+            bottom_mid, text=status_msg,
             font=self.font_small, fg=self.GRAY, bg=self.BG
         )
-        self.status_label.pack(pady=5)
+        self.status_label.pack(pady=10)
 
         # Bottom: Finish button
         bottom = tk.Frame(self.container, bg=self.BG, height=150)
@@ -367,17 +368,17 @@ class SmartBinGUI:
         frame.place(relx=0.5, rely=0.5, anchor="center")
 
         if success:
-            tk.Label(frame, text="✅", font=("Segoe UI Emoji", 120), bg=self.BG).pack()
+            tk.Label(frame, text="✅", font=("Segoe UI Emoji", 180), bg=self.BG).pack()
             tk.Label(
                 frame, text="ส่งข้อมูลสำเร็จ!",
                 font=self.font_title, fg=self.GREEN, bg=self.BG
-            ).pack(pady=(10, 20))
+            ).pack(pady=(20, 30))
         else:
-            tk.Label(frame, text="📡", font=("Segoe UI Emoji", 120), bg=self.BG).pack()
+            tk.Label(frame, text="📡", font=("Segoe UI Emoji", 180), bg=self.BG).pack()
             tk.Label(
                 frame, text="เก็บข้อมูลไว้แล้ว",
                 font=self.font_title, fg=self.YELLOW, bg=self.BG
-            ).pack(pady=(10, 5))
+            ).pack(pady=(20, 10))
             tk.Label(
                 frame, text="จะส่งอัตโนมัติเมื่อเชื่อมต่อได้",
                 font=self.font_small, fg=self.GRAY, bg=self.BG
@@ -416,7 +417,7 @@ class SmartBinGUI:
         frame = tk.Frame(self.container, bg=self.BG)
         frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        tk.Label(frame, text="📡", font=("Segoe UI Emoji", 120), bg=self.BG).pack()
+        tk.Label(frame, text="📡", font=("Segoe UI Emoji", 180), bg=self.BG).pack()
         tk.Label(
             frame, text="กำลังส่งข้อมูล...",
             font=self.font_title, fg=self.YELLOW, bg=self.BG
