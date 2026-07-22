@@ -42,7 +42,7 @@ public class SessionController {
 
     @GetMapping("/user/{phone}")
     public ResponseEntity<?> getUserByPhone(@PathVariable String phone) {
-        Optional<User> userOpt = userRepository.findByPhoneNumber(phone);
+        Optional<User> userOpt = userRepository.findFirstByPhoneNumber(phone);
         if (userOpt.isPresent()) {
             return ResponseEntity.ok(userOpt.get());
         }
