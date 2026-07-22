@@ -11,6 +11,7 @@ public class User {
     @Id
     private String id;
     
+    @Indexed(unique = true)
     private String phoneNumber;
     
     private String username;

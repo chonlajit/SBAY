@@ -76,7 +76,7 @@ public class AppController {
         if (phone == null || phone.isBlank()) return Map.of("error", "Phone number is required");
 
         String normalizedPhone = phone.replaceAll("[^0-9]", "");
-        Optional<User> userOpt = userRepository.findFirstByPhoneNumber(normalizedPhone);
+        Optional<User> userOpt = userRepository.findByPhoneNumber(normalizedPhone);
         if (userOpt.isEmpty()) return Map.of("error", "ไม่พบเบอร์โทรนี้ในระบบ กรุณาลงทะเบียนก่อน");
 
         // Use phone as the OTP key
@@ -121,7 +121,7 @@ public class AppController {
         boolean valid = otpService.verifyOtp("phone:" + normalizedPhone, otp.trim());
         if (!valid) return Map.of("error", "OTP ไม่ถูกต้องหรือหมดอายุแล้ว");
 
-        Optional<User> userOpt = userRepository.findFirstByPhoneNumber(normalizedPhone);
+        Optional<User> userOpt = userRepository.findByPhoneNumber(normalizedPhone);
         if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้");
 
         User user = userOpt.get();
@@ -233,6 +233,14 @@ public class AppController {
         Optional<User> existing = userRepository.findByEmail(email.toLowerCase().trim());
         if (existing.isPresent()) return Map.of("error", "อีเมลนี้มีผู้ใช้ลงทะเบียนแล้ว");
 
+        String phoneNumber = (String) payload.get("phoneNumber");
+        if (phoneNumber != null) {
+            Optional<User> existingPhone = userRepository.findByPhoneNumber(phoneNumber.replaceAll("[^0-9]", ""));
+            if (existingPhone.isPresent()) {
+                return Map.of("error", "เบอร์โทรศัพท์นี้ถูกใช้งานไปแล้ว กรุณาใช้เบอร์อื่น");
+            }
+        }
+
         User newUser = new User();
         newUser.setPhoneNumber((String) payload.get("phoneNumber"));
         newUser.setUsername((String) payload.get("username"));
@@ -282,7 +290,7 @@ public class AppController {
     public Object login(@RequestBody Map<String, String> payload) {
         String phone = payload.get("phoneNumber");
         String machineId = payload.getOrDefault("machineId", "default-machine");
-        Optional<User> userOpt = userRepository.findFirstByPhoneNumber(phone);
+        Optional<User> userOpt = userRepository.findByPhoneNumber(phone);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             recycleService.bindUserToMachine(machineId, user.getId());
@@ -316,7 +324,7 @@ public class AppController {
         if (userOpt.isEmpty()) {
             String phone = identifier.replaceAll("[^0-9]", "");
             if (!phone.isEmpty()) {
-                userOpt = userRepository.findFirstByPhoneNumber(phone);
+                userOpt = userRepository.findByPhoneNumber(phone);
             }
         }
 
