@@ -227,21 +227,21 @@ class SmartBinGUI:
         mid = tk.Frame(self.container, bg=self.BG)
         mid.pack(fill="both", expand=True, padx=15, pady=10)
 
-        # จัด Layout เป็นแนวตั้ง (กล้องอยู่บน, รายการอยู่ล่าง) สำหรับจอ Portrait
-        top_mid = tk.Frame(mid, bg=self.BG)
-        top_mid.pack(side="top", fill="both", expand=True)
-        top_mid.pack_propagate(False)
+        # จัด Layout เป็นแนวซ้ายขวา (รายการอยู่ซ้าย, กล้องอยู่ขวา) โดยให้กล้องใหญ่กว่า
+        left_mid = tk.Frame(mid, bg=self.BG, width=450)
+        left_mid.pack(side="left", fill="y", expand=False)
+        left_mid.pack_propagate(False)
 
-        bottom_mid = tk.Frame(mid, bg=self.BG)
-        bottom_mid.pack(side="bottom", fill="both", expand=True)
-        bottom_mid.pack_propagate(False)
+        right_mid = tk.Frame(mid, bg=self.BG)
+        right_mid.pack(side="right", fill="both", expand=True)
+        right_mid.pack_propagate(False)
 
-        # Camera frame (Now on top)
-        self.camera_label = tk.Label(top_mid, bg=self.BG_CARD)
+        # Camera frame (Now on right, takes remaining space)
+        self.camera_label = tk.Label(right_mid, bg=self.BG_CARD)
         self.camera_label.pack(expand=True, fill="both", padx=10, pady=10)
 
-        # Scrollable list (Now on bottom)
-        self.items_canvas = tk.Canvas(bottom_mid, bg=self.BG, highlightthickness=0, yscrollincrement=1)
+        # Scrollable list (Now on left)
+        self.items_canvas = tk.Canvas(left_mid, bg=self.BG, highlightthickness=0, yscrollincrement=1)
         self.items_canvas.pack(fill="both", expand=True)
 
         self.items_inner = tk.Frame(self.items_canvas, bg=self.BG)
@@ -267,8 +267,8 @@ class SmartBinGUI:
         # Status label
         status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
         self.status_label = tk.Label(
-            bottom_mid, text=status_msg,
-            font=self.font_small, fg=self.GRAY, bg=self.BG
+            left_mid, text=status_msg,
+            font=self.font_small, fg=self.GRAY, bg=self.BG, wraplength=400
         )
         self.status_label.pack(pady=10)
 
