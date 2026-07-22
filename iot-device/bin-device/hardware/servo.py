@@ -18,7 +18,7 @@ release_pwm.start(0)
 # ตั้งค่าองศาเริ่มต้น (จุดศูนย์) ของ Servo 
 # แก้ไขตัวเลขตรงนี้ได้เลย หากหน้างานจริงไม่ได้อยู่ตรงกลางหรือแบนราบพอดี
 DEFAULT_SORT_ANGLE = 90
-DEFAULT_RELEASE_ANGLE = 0
+DEFAULT_RELEASE_ANGLE = 90
 
 def set_angle(pwm, angle):
     duty = 2 + (angle / 18)
@@ -42,9 +42,9 @@ def sort_item(label):
 def release_item(label="PLASTIC_BOTTLE"):
     # ตั้งค่าให้ฝาเปิดทิ้งไปคนละฝั่งได้
     mapping = {
-        "PLASTIC_BOTTLE": 45,   
-        "ALUMINUM_CAN": 135,      
-        "BEVERAGE_CARTON": 135    
+        "PLASTIC_BOTTLE": 45,       # เอียงไปทางซ้าย (หรือขวา ขึ้นอยู่กับการติดตั้งมอเตอร์)
+        "ALUMINUM_CAN": 135,        # เอียงไปอีกทาง
+        "BEVERAGE_CARTON": 135      # เอียงไปอีกทาง
     }
     angle = mapping.get(label, 45)
     
