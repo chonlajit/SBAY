@@ -74,7 +74,7 @@ function LoginContent() {
         setError('');
         setNotRegistered({ show: false, email: '' });
 
-        const result = await loginWithPassword(identifier.trim().toLowerCase(), password, machineId);
+        const result = await loginWithPassword(identifier.trim(), password, machineId);
 
         setIsLoading(false);
 

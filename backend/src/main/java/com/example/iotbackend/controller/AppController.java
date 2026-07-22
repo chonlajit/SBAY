@@ -306,10 +306,12 @@ public class AppController {
             return Map.of("error", "Email/Phone and Password are required");
         }
 
-        identifier = identifier.trim().toLowerCase();
+        String rawIdentifier = payload.get("identifier").trim();
+        String identifier = rawIdentifier.toLowerCase();
+        
         Optional<User> userOpt = userRepository.findByEmail(identifier);
         if (userOpt.isEmpty()) {
-            userOpt = userRepository.findByUsername(identifier);
+            userOpt = userRepository.findByUsername(rawIdentifier);
         }
         if (userOpt.isEmpty()) {
             String phone = identifier.replaceAll("[^0-9]", "");
