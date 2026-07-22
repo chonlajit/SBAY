@@ -328,7 +328,14 @@ export default function RegisterPage() {
                                             : 'border-gray-200 focus:border-green-500'
                                     }`}
                                 />
-                                <p className="text-xs text-gray-400 mt-1">ใช้ได้เฉพาะภาษาอังกฤษ, ตัวเลข, _ และ - (ไม่มีช่องว่าง อย่างน้อย 3 ตัว)</p>
+                                <div className="mt-1.5 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                    <span className="font-semibold text-gray-600">เงื่อนไข Username:</span>
+                                    <ul className="list-disc list-inside ml-1 mt-0.5 opacity-90 space-y-0.5">
+                                        <li className={form.username.length >= 3 ? "text-green-600" : ""}>ความยาวอย่างน้อย 3 ตัวอักษร</li>
+                                        <li className={form.username && /^[a-zA-Z0-9_\-]+$/.test(form.username) ? "text-green-600" : ""}>ใช้เฉพาะภาษาอังกฤษ, ตัวเลข, _, -</li>
+                                        <li className={form.username && !/\s/.test(form.username) && !/[ก-๙]/.test(form.username) ? "text-green-600" : ""}>ห้ามเว้นวรรค ห้ามใช้ภาษาไทย</li>
+                                    </ul>
+                                </div>
                             </div>
 
                             <div>
@@ -367,6 +374,13 @@ export default function RegisterPage() {
                                             >
                                                 <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                                             </button>
+                                        </div>
+                                        <div className="mt-1.5 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                            <span className="font-semibold text-gray-600">เงื่อนไขรหัสผ่าน:</span>
+                                            <ul className="list-disc list-inside ml-1 mt-0.5 opacity-90 space-y-0.5">
+                                                <li className={form.password.length >= 8 && form.password.length <= 20 ? "text-green-600" : ""}>ความยาวระหว่าง 8 ถึง 20 ตัวอักษร</li>
+                                                <li className={/[a-zA-Z]/.test(form.password) && /[0-9]/.test(form.password) ? "text-green-600" : ""}>แนะนำ: ผสมตัวอักษรและตัวเลขเพื่อความปลอดภัย</li>
+                                            </ul>
                                         </div>
                                         {/* Password Strength Indicator */}
                                         {form.password && (
