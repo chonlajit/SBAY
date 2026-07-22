@@ -194,6 +194,15 @@ function LoginContent() {
                                 <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                             </button>
                         </div>
+                        <div className="flex justify-end mt-1.5">
+                            <button
+                                type="button"
+                                onClick={() => router.push('/forgot-password')}
+                                className="text-sm font-semibold text-green-600 hover:text-green-700 hover:underline transition"
+                            >
+                                ลืมรหัสผ่าน?
+                            </button>
+                        </div>
                     </div>
 
                     <button

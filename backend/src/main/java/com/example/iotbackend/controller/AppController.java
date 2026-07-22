@@ -501,4 +501,76 @@ public class AppController {
         
         return userRepository.save(existing);
     }
+
+    // ─── Forgot Password ───────────────────────────────────────────────────────
+    @PostMapping("/auth/forgot-password")
+    public Object forgotPassword(@RequestBody Map<String, String> payload) {
+        String identifier = payload.get("identifier");
+        if (identifier == null || identifier.isBlank()) return Map.of("error", "Email or Phone is required");
+        
+        String rawIdentifier = identifier.trim();
+        identifier = rawIdentifier.toLowerCase();
+        
+        Optional<User> userOpt = userRepository.findByEmail(identifier);
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByUsername(rawIdentifier);
+        }
+        if (userOpt.isEmpty()) {
+            String phone = identifier.replaceAll("[^0-9]", "");
+            if (!phone.isEmpty()) {
+                userOpt = userRepository.findByPhoneNumber(phone);
+            }
+        }
+        
+        if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้ในระบบ");
+        
+        User user = userOpt.get();
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            otpService.generateAndSendOtp(user.getEmail());
+            return Map.of("success", true, "message", "รหัส OTP ถูกส่งไปยังอีเมลของคุณแล้ว", "email", user.getEmail());
+        } else if (user.getPhoneNumber() != null && !user.getPhoneNumber().isBlank()) {
+            otpService.generateAndSendOtp("phone:" + user.getPhoneNumber());
+            return Map.of("success", true, "message", "รหัส OTP ถูกส่งไปยังเบอร์โทรของคุณแล้ว (จำลอง)", "phone", user.getPhoneNumber());
+        } else {
+            return Map.of("error", "ไม่สามารถส่ง OTP ได้เนื่องจากผู้ใช้ไม่มีอีเมลหรือเบอร์โทร");
+        }
+    }
+
+    @PostMapping("/auth/reset-password")
+    public Object resetPassword(@RequestBody Map<String, String> payload) {
+        String identifier = payload.get("identifier");
+        String otp = payload.get("otp");
+        String newPassword = payload.get("newPassword");
+        
+        if (identifier == null || otp == null || newPassword == null) {
+            return Map.of("error", "Missing required fields");
+        }
+        
+        String rawIdentifier = identifier.trim();
+        identifier = rawIdentifier.toLowerCase();
+        
+        Optional<User> userOpt = userRepository.findByEmail(identifier);
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByUsername(rawIdentifier);
+        }
+        if (userOpt.isEmpty()) {
+            String phone = identifier.replaceAll("[^0-9]", "");
+            if (!phone.isEmpty()) {
+                userOpt = userRepository.findByPhoneNumber(phone);
+            }
+        }
+        
+        if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้ในระบบ");
+        User user = userOpt.get();
+        
+        String otpKey = user.getEmail() != null && !user.getEmail().isBlank() ? user.getEmail() : "phone:" + user.getPhoneNumber();
+        boolean valid = otpService.verifyOtp(otpKey, otp.trim());
+        
+        if (!valid) return Map.of("error", "OTP ไม่ถูกต้องหรือหมดอายุแล้ว");
+        
+        user.setPassword(hashPassword(newPassword));
+        userRepository.save(user);
+        
+        return Map.of("success", true, "message", "เปลี่ยนรหัสผ่านสำเร็จ");
+    }
 }

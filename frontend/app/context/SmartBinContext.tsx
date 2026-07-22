@@ -49,6 +49,9 @@ interface SmartBinContextType {
     register: (form: any) => Promise<{ success: boolean; message?: string }>;
     // Register: Google
     registerWithGoogle: (accessToken: string, extraInfo: any) => Promise<{ success: boolean; message?: string; email?: string }>;
+    // Forgot Password
+    sendForgotPasswordOtp: (identifier: string) => Promise<{ success: boolean; message?: string }>;
+    resetPassword: (identifier: string, otp: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
     logout: (machineId?: string) => void;
     releaseMachine: (machineId: string) => Promise<void>;
     wsConnected: boolean;
@@ -321,6 +324,29 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
         } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
 
+    // Forgot Password
+    const sendForgotPasswordOtp = async (identifier: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/forgot-password`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier })
+            });
+            const data = await res.json();
+            return data.error ? { success: false, message: data.error } : { success: true, message: data.message };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
+    const resetPassword = async (identifier: string, otp: string, newPassword: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/reset-password`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier, otp, newPassword })
+            });
+            const data = await res.json();
+            return data.error ? { success: false, message: data.error } : { success: true, message: data.message };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
     const releaseMachine = async (machineId: string) => {
         try {
             await fetch(`${apiBase}/auth/logout`, {
@@ -368,6 +394,8 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             loginWithGoogle,
             sendRegisterOtp, register,
             registerWithGoogle,
+            sendForgotPasswordOtp,
+            resetPassword,
             logout, releaseMachine,
             wsConnected, token, apiBase, isInitialized,
             refreshUser
