@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface DeviceSessionRepository extends MongoRepository<DeviceSession, String> {
     List<DeviceSession> findByUserIdOrderByStartTimeDesc(String userId);
+    List<DeviceSession> findByStartTimeBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 }

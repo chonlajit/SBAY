@@ -82,8 +82,16 @@ public class AdminController {
         validateAdmin(token);
         User user = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         String newRole = payload.get("role");
-        if (newRole != null && (newRole.equals("ADMIN") || newRole.equals("USER"))) {
+        if (newRole != null && (newRole.equals("ADMIN") || newRole.equals("USER") || newRole.equals("PARTNER"))) {
             user.setRole(newRole);
+            if ("PARTNER".equals(newRole)) {
+                String partnerId = payload.get("partnerId");
+                if (partnerId != null && !partnerId.isEmpty()) {
+                    user.setPartnerId(partnerId);
+                }
+            } else {
+                user.setPartnerId(null); // clear partnerId when not PARTNER role
+            }
             return userRepository.save(user);
         }
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role");

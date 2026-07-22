@@ -14,6 +14,9 @@ export default function AdminPage() {
     const [pendingRedemptions, setPendingRedemptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [partners, setPartners] = useState<any[]>([]);
+    const [selectedUserForPartnerRole, setSelectedUserForPartnerRole] = useState<any | null>(null);
+    const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
 
     const fetchData = async () => {
         if (!token) return;
@@ -21,12 +24,13 @@ export default function AdminPage() {
         try {
             const headers = { 'Authorization': `Bearer ${token}` };
 
-            const [summaryRes, usersRes, alertsRes, redemptionsRes, devicesRes] = await Promise.all([
+            const [summaryRes, usersRes, alertsRes, redemptionsRes, devicesRes, partnersRes] = await Promise.all([
                 fetch(`${apiBase}/admin/summary`, { headers }),
                 fetch(`${apiBase}/admin/users`, { headers }),
                 fetch(`${apiBase}/admin/alerts`, { headers }),
                 fetch(`${apiBase}/admin/redemptions/pending`, { headers }),
-                fetch(`${apiBase}/admin/devices`, { headers })
+                fetch(`${apiBase}/admin/devices`, { headers }),
+                fetch(`${apiBase}/admin/partners`, { headers })
             ]);
 
             if (summaryRes.ok && usersRes.ok) {
@@ -35,6 +39,7 @@ export default function AdminPage() {
                 if (alertsRes.ok) setAlerts(await alertsRes.json());
                 if (redemptionsRes.ok) setPendingRedemptions(await redemptionsRes.json());
                 if (devicesRes.ok) setDevices(await devicesRes.json());
+                if (partnersRes && partnersRes.ok) setPartners(await partnersRes.json());
             } else {
                 if (summaryRes.status === 403 || summaryRes.status === 401) {
                     setError("Access Denied: คุณไม่มีสิทธิ์เข้าถึงหน้าผู้ดูแลระบบ");
@@ -69,6 +74,13 @@ export default function AdminPage() {
     };
 
     const handleChangeRole = async (userId: string, newRole: string) => {
+        if (newRole === 'PARTNER') {
+            const u = users.find(x => x.id === userId);
+            setSelectedUserForPartnerRole(u);
+            setSelectedPartnerId(u?.partnerId || "");
+            return;
+        }
+
         if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการเปลี่ยนสิทธิ์ผู้ใช้นี้เป็น ${newRole}?`)) return;
         if (!token) return;
 
@@ -84,6 +96,30 @@ export default function AdminPage() {
 
             if (res.ok) {
                 alert(`เปลี่ยนสิทธิ์เป็น ${newRole} สำเร็จ`);
+                fetchData(); // Refresh list
+            } else {
+                alert("ไม่สามารถเปลี่ยนสิทธิ์ผู้ใช้ได้");
+            }
+        } catch (e) {
+            console.error("Change role failed", e);
+        }
+    };
+
+    const handleSavePartnerRole = async () => {
+        if (!selectedUserForPartnerRole || !token) return;
+        try {
+            const res = await fetch(`${apiBase}/admin/user/${selectedUserForPartnerRole.id}/role`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ role: 'PARTNER', partnerId: selectedPartnerId })
+            });
+
+            if (res.ok) {
+                alert(`เปลี่ยนสิทธิ์เป็น PARTNER สำเร็จ`);
+                setSelectedUserForPartnerRole(null);
                 fetchData(); // Refresh list
             } else {
                 alert("ไม่สามารถเปลี่ยนสิทธิ์ผู้ใช้ได้");
@@ -254,6 +290,9 @@ export default function AdminPage() {
                         <h1 className="text-3xl font-black text-white">ระบบจัดการ <span className="text-blue-400">SBAY</span></h1>
                     </div>
                     <div className="flex space-x-3">
+                        <button onClick={() => router.push('/admin/partners')} className="flex items-center space-x-2 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-400/40 text-violet-300 font-bold px-4 py-2.5 rounded-xl transition backdrop-blur-sm">
+                            <span>🏪</span><span>ร้านพาร์ทเนอร์</span>
+                        </button>
                         <button onClick={handleResetSystem} className="flex items-center space-x-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-bold px-4 py-2.5 rounded-xl transition backdrop-blur-sm">
                             <span>⚠️</span><span>รีเซ็ตระบบ</span>
                         </button>
@@ -362,94 +401,7 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* Pending Redemptions Section */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col mt-8">
-                    <div className="px-5 py-4 border-b border-orange-100 bg-orange-50/50 flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <span className="text-lg">⏳</span>
-                            <h2 className="font-bold text-orange-800">รออนุมัติการแลกคะแนน</h2>
-                        </div>
-                        {pendingRedemptions.length > 0 && (
-                            <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                {pendingRedemptions.length} รายการ
-                            </span>
-                        )}
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm whitespace-nowrap">
-                            <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold sticky top-0 border-b border-slate-100">
-                                <tr>
-                                    <th className="px-5 py-3">เวลา</th>
-                                    <th className="px-5 py-3">ID การแลก</th>
-                                    <th className="px-5 py-3">รหัสนักศึกษา</th>
-                                    <th className="px-5 py-3">ชื่อ-นามสกุล</th>
-                                    <th className="px-5 py-3">คณะและสาขา</th>
-                                    <th className="px-5 py-3">สิ่งที่ขอแลก</th>
-                                    <th className="px-5 py-3 text-center">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {pendingRedemptions.map((r: any) => {
-                                    const u = getUserData(r.userId);
-                                    return (
-                                        <tr key={r.id} className="hover:bg-slate-50/80 transition">
-                                            <td className="px-5 py-3 text-xs text-slate-500">
-                                                {new Date(r.timestamp).toLocaleString('th-TH')}
-                                            </td>
-                                            <td className="px-5 py-3">
-                                                <span className="font-mono text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">{r.id.substring(0, 8)}</span>
-                                            </td>
-                                            <td className="px-5 py-3 font-mono text-slate-600">
-                                                {u.studentId || '-'}
-                                            </td>
-                                            <td className="px-5 py-3 font-bold text-slate-700">
-                                                {u.title} {u.firstName} {u.lastName}
-                                            </td>
-                                            <td className="px-5 py-3">
-                                                <div className="text-sm font-semibold text-slate-800">{u.faculty || '-'}</div>
-                                                <div className="text-xs text-slate-500">{u.major || '-'}</div>
-                                            </td>
-                                            <td className="px-5 py-3">
-                                                <div className="font-bold text-slate-800">
-                                                    {r.rewardType === 'VOLUNTEER' 
-                                                        ? `จิตอาสา ${r.value} ชั่วโมง` 
-                                                        : `${r.details} ${r.value} หน่วย`}
-                                                </div>
-                                                <div className="text-[10px] text-orange-600 mt-0.5">
-                                                    ใช้ {r.cost} แต้ม
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-3 text-center">
-                                                <div className="flex items-center justify-center space-x-2">
-                                                    <button
-                                                        onClick={() => handleApproveRedemption(r.id)}
-                                                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm shadow-emerald-200"
-                                                    >
-                                                        อนุมัติ
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleRejectRedemption(r.id)}
-                                                        className="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                                    >
-                                                        ปฏิเสธ
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                                {pendingRedemptions.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="px-5 py-8 text-center">
-                                            <span className="text-3xl mb-2 block opacity-50">✨</span>
-                                            <div className="text-slate-400 font-medium">ไม่มีรายการรออนุมัติ</div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
                     {/* Left Column: Waste Stats & Alerts */}
@@ -536,12 +488,15 @@ export default function AdminPage() {
                                                 <td className="px-5 py-3">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-700 font-bold text-xs shrink-0">
-                                                            {u.firstName?.charAt(0) || '?'}
+                                                            {u.username?.charAt(0).toUpperCase() || u.firstName?.charAt(0) || '?'}
                                                         </div>
                                                         <div>
-                                                            <div className="font-bold text-slate-700">{u.title} {u.firstName} {u.lastName}</div>
-                                                            <div className="text-[10px] text-slate-400">
-                                                                {u.phoneNumber}
+                                                            <div className="font-bold text-slate-700">
+                                                                {u.username || `${u.title || ''} ${u.firstName || ''} ${u.lastName || ''}`.trim() || 'ไม่มีชื่อ'}
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-400 flex items-center gap-1.5">
+                                                                <span>{u.phoneNumber}</span>
+                                                                {u.email && <span className="opacity-60">• {u.email}</span>}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -555,11 +510,20 @@ export default function AdminPage() {
                                                     <select 
                                                         value={u.role || 'USER'}
                                                         onChange={(e) => handleChangeRole(u.id, e.target.value)}
-                                                        className={`text-xs font-bold px-2 py-1 rounded-lg outline-none cursor-pointer border ${u.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+                                                        className={`text-xs font-bold px-2 py-1 rounded-lg outline-none cursor-pointer border ${u.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : u.role === 'PARTNER' ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
                                                     >
                                                         <option value="USER">USER</option>
                                                         <option value="ADMIN">ADMIN</option>
+                                                        <option value="PARTNER">PARTNER</option>
                                                     </select>
+                                                    {u.role === 'PARTNER' && (() => {
+                                                        const p = partners.find(x => x.id === u.partnerId);
+                                                        return p ? (
+                                                            <div className="text-[9px] text-violet-600 mt-1 font-semibold max-w-[100px] truncate mx-auto">ร้าน: {p.name}</div>
+                                                        ) : (
+                                                            <div className="text-[9px] text-orange-500 mt-1 font-semibold mx-auto">ยังไม่เลือกตู้/ร้าน</div>
+                                                        );
+                                                    })()}
                                                 </td>
                                                 <td className="px-5 py-3 text-right">
                                                     <button
@@ -587,6 +551,52 @@ export default function AdminPage() {
                 </div>
 
             </div>
+
+            {/* === Partner Assign Modal === */}
+            {selectedUserForPartnerRole && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+                    <div className="bg-white w-full md:max-w-md rounded-t-3xl md:rounded-3xl p-6 shadow-2xl z-50">
+                        <div className="flex items-center justify-between mb-5">
+                            <div>
+                                <h2 className="font-black text-lg text-slate-800">กำหนดร้านค้าพาร์ทเนอร์</h2>
+                                <p className="text-xs text-slate-400 mt-0.5">{selectedUserForPartnerRole.title} {selectedUserForPartnerRole.firstName} {selectedUserForPartnerRole.lastName}</p>
+                            </div>
+                            <button onClick={() => setSelectedUserForPartnerRole(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                                <i className="fa-solid fa-times text-slate-500"></i>
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 mb-2 block font-sans">เลือกร้านพาร์ทเนอร์ที่ต้องการผูก *</label>
+                                {partners.length === 0 ? (
+                                    <p className="text-sm text-slate-400 text-center py-4 font-sans">ยังไม่มีร้านค้าพาร์ทเนอร์ในระบบ กรุณาเพิ่มร้านในหน้า จัดการร้านพาร์ทเนอร์ ก่อน</p>
+                                ) : (
+                                    <div className="space-y-2 max-h-56 overflow-y-auto">
+                                        {partners.map(p => (
+                                            <label key={p.id} className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition ${selectedPartnerId === p.id ? 'border-violet-500 bg-violet-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                                <input type="radio" name="partner" value={p.id} checked={selectedPartnerId === p.id} onChange={() => setSelectedPartnerId(p.id)} className="accent-violet-600" />
+                                                <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center overflow-hidden shrink-0">
+                                                    {p.logoUrl ? <img src={p.logoUrl} alt="" className="w-full h-full object-cover" /> : <i className="fa-solid fa-store text-violet-500 text-sm"></i>}
+                                                </div>
+                                                <div className="text-left">
+                                                    <div className="font-bold text-slate-800 text-sm">{p.name}</div>
+                                                    <div className="text-xs text-slate-400">{p.category}</div>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex gap-3 mt-5">
+                            <button onClick={() => setSelectedUserForPartnerRole(null)} className="flex-1 py-3 rounded-xl border-2 border-slate-200 font-bold text-slate-500 hover:bg-slate-50 transition">ยกเลิก</button>
+                            <button onClick={handleSavePartnerRole} disabled={!selectedPartnerId} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 text-white font-bold hover:shadow-lg transition disabled:opacity-50">
+                                บันทึก
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

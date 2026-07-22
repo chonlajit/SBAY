@@ -8,21 +8,33 @@ def main():
     except AttributeError:
         pass
 
-    if len(sys.argv) != 3:
-        print("Usage: python promote.py <FirstName> <LastName>")
-        print("Example: python promote.py สมชาย ใจดี")
+    if len(sys.argv) != 2:
+        print("Usage: python promote.py <Email>")
+        print("Example: python promote.py somchai@example.com")
         sys.exit(1)
 
-    first = sys.argv[1]
-    last = sys.argv[2]
+    email = sys.argv[1]
 
-    print(f"Promoting user '{first} {last}' to ADMIN...")
+    print(f"Promoting user with email '{email}' to ADMIN...")
     
     try:
-        # Use the bypass API instead of Docker CLI to avoid Windows pipe issues
-        url = f"http://localhost:8070/api/auth/promote?firstName={urllib.parse.quote(first)}&lastName={urllib.parse.quote(last)}"
-        response = requests.get(url)
-        
+        # Try localhost:8080 (Nginx) first, then fallback to backend port 8080 directly
+        urls = [
+            f"http://localhost:8080/api/auth/promote?email={urllib.parse.quote(email)}",
+            f"http://localhost:80/api/auth/promote?email={urllib.parse.quote(email)}",
+        ]
+        response = None
+        for url in urls:
+            try:
+                response = requests.get(url)
+                if response.status_code != 404:
+                    break
+            except Exception:
+                continue
+        if response is None:
+            print("Failed to reach promote endpoint.")
+            sys.exit(1)
+
         if response.status_code == 200:
             data = response.json()
             if data.get("success"):

@@ -26,6 +26,7 @@ export default function RegisterPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [form, setForm] = useState({
+        username: '',
         title: 'นาย',
         firstName: '',
         lastName: '',
@@ -66,7 +67,12 @@ export default function RegisterPage() {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        let value = e.target.value;
+        if (e.target.name === 'username') {
+            // Allow only a-z, A-Z, 0-9, _, - (no spaces, no Thai)
+            value = value.replace(/[^a-zA-Z0-9_\-]/g, '');
+        }
+        setForm({ ...form, [e.target.name]: value });
         setError('');
     };
 
@@ -102,14 +108,51 @@ export default function RegisterPage() {
         flow: 'implicit',
     });
 
+    const getPasswordStrength = (pwd: string) => {
+        if (!pwd) return { label: '', color: 'text-gray-400', barColor: 'bg-gray-200', percent: 0 };
+        if (pwd.length < 8) return { label: 'สั้นเกินไป (ต้อง 8-20 ตัว)', color: 'text-red-500', barColor: 'bg-red-500', percent: 20 };
+        if (pwd.length > 20) return { label: 'ยาวเกินไป (ต้องไม่เกิน 20 ตัว)', color: 'text-red-500', barColor: 'bg-red-500', percent: 100 };
+        
+        let score = 0;
+        if (/[a-z]/.test(pwd)) score++;
+        if (/[A-Z]/.test(pwd)) score++;
+        if (/[0-9]/.test(pwd)) score++;
+        if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+
+        if (score <= 1) {
+            return { label: 'ง่าย (เสี่ยง)', color: 'text-red-500', barColor: 'bg-red-500', percent: 33 };
+        } else if (score === 2) {
+            return { label: 'ปานกลาง', color: 'text-orange-500', barColor: 'bg-orange-500', percent: 66 };
+        } else {
+            return { label: 'ปลอดภัย (ยาก)', color: 'text-green-500', barColor: 'bg-green-500', percent: 100 };
+        }
+    };
+
+    const strength = getPasswordStrength(form.password);
+    const passwordsMatch = form.password && form.confirmPassword ? form.password === form.confirmPassword : null;
+
     const handleFormSubmit = async () => {
-        if (!form.email || !form.firstName || !form.lastName || !form.phoneNumber || !form.faculty || !form.major || (!form.password && method !== 'google')) {
-            setError('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน (ชื่อ, นามสกุล, เบอร์โทร, อีเมล, รหัสผ่าน, คณะ, สาขา)');
+        if (!form.email || !form.username || !form.phoneNumber || (!form.password && method !== 'google')) {
+            setError('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน (อีเมล, Username, เบอร์โทรศัพท์, รหัสผ่าน)');
             return;
         }
-        if (method !== 'google' && form.password !== form.confirmPassword) {
-            setError('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
+        if (!/^[a-zA-Z0-9_\-]+$/.test(form.username)) {
+            setError('Username ต้องเป็นภาษาอังกฤษเท่านั้น (ตัวอักษร, ตัวเลข, _, -) ไม่มีช่องว่าง');
             return;
+        }
+        if (form.username.length < 3) {
+            setError('Username ต้องมีความยาวอย่างน้อย 3 ตัวอักษร');
+            return;
+        }
+        if (method !== 'google') {
+            if (form.password.length < 8 || form.password.length > 20) {
+                setError('รหัสผ่านต้องมีความยาวระหว่าง 8 ถึง 20 ตัวอักษร');
+                return;
+            }
+            if (form.password !== form.confirmPassword) {
+                setError('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
+                return;
+            }
         }
         if (!form.email.includes('@')) {
             setError('กรุณากรอกอีเมลให้ถูกต้อง');
@@ -179,15 +222,6 @@ export default function RegisterPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-600 via-emerald-500 to-teal-400 flex flex-col items-center justify-center p-4">
-            {/* Logo */}
-            <div className="mb-6 text-center">
-                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-xl">
-                    <span className="text-3xl">♻️</span>
-                </div>
-                <h1 className="text-2xl font-black text-white tracking-wider">SBAY</h1>
-                <p className="text-white/70 text-xs mt-0.5">Smart Recycling Platform</p>
-            </div>
-
             {/* Card */}
             <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-5">
@@ -254,7 +288,7 @@ export default function RegisterPage() {
                         <div className="space-y-4">
                             {method === 'google' && (
                                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start space-x-3 mb-2">
-                                    <span className="text-blue-500 mt-0.5">ℹ️</span>
+                                    <span className="text-blue-500 mt-0.5"><i className="fa-solid fa-circle-info"></i></span>
                                     <div className="text-sm text-blue-800">
                                         <p className="font-semibold">เชื่อมต่อบัญชี Google สำเร็จ</p>
                                         <p className="text-xs opacity-90">กรุณากรอกข้อมูลส่วนตัวเพิ่มเติมเพื่อเสร็จสิ้นการลงทะเบียน</p>
@@ -263,8 +297,8 @@ export default function RegisterPage() {
                             )}
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-600 mb-1">
-                                    📧 อีเมล <span className="text-red-500">*</span>
+                                <label className="block text-sm font-semibold text-gray-600 mb-1 flex items-center">
+                                    <i className="fa-solid fa-envelope mr-1.5 text-green-600"></i>อีเมล <span className="text-red-500 ml-0.5">*</span>
                                 </label>
                                 <input
                                     type="email"
@@ -277,40 +311,29 @@ export default function RegisterPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-600 mb-1">
-                                    👤 ชื่อ-นามสกุล <span className="text-red-500">*</span>
+                                <label className="block text-sm font-semibold text-gray-600 mb-1 flex items-center">
+                                    <i className="fa-solid fa-user mr-1.5 text-green-600"></i>Username <span className="text-red-500 ml-0.5">*</span>
                                 </label>
-                                <div className="flex space-x-2">
-                                    <select
-                                        name="title"
-                                        value={form.title}
-                                        onChange={handleChange}
-                                        className="border-2 border-gray-200 focus:border-green-500 rounded-xl px-2 py-2.5 text-gray-800 text-sm outline-none bg-gray-50 w-20 shrink-0"
-                                    >
-                                        <option value="นาย">นาย</option>
-                                        <option value="นาง">นาง</option>
-                                        <option value="นางสาว">นางสาว</option>
-                                    </select>
-                                    <input
-                                        name="firstName"
-                                        value={form.firstName}
-                                        onChange={handleChange}
-                                        placeholder="ชื่อ"
-                                        className="flex-1 border-2 border-gray-200 focus:border-green-500 rounded-xl px-3 py-2.5 text-gray-800 text-sm outline-none bg-gray-50 min-w-0"
-                                    />
-                                    <input
-                                        name="lastName"
-                                        value={form.lastName}
-                                        onChange={handleChange}
-                                        placeholder="นามสกุล"
-                                        className="flex-1 border-2 border-gray-200 focus:border-green-500 rounded-xl px-3 py-2.5 text-gray-800 text-sm outline-none bg-gray-50 min-w-0"
-                                    />
-                                </div>
+                                <input
+                                    type="text"
+                                    name="username"
+                                    value={form.username}
+                                    onChange={handleChange}
+                                    placeholder="เช่น user123 (ภาษาอังกฤษเท่านั้น)"
+                                    className={`w-full border-2 rounded-xl px-3 py-2.5 text-gray-800 outline-none transition bg-gray-50 focus:bg-white ${
+                                        form.username && !/^[a-zA-Z0-9_\-]{3,}$/.test(form.username)
+                                            ? 'border-red-400 focus:border-red-500'
+                                            : form.username && /^[a-zA-Z0-9_\-]{3,}$/.test(form.username)
+                                            ? 'border-green-400 focus:border-green-500'
+                                            : 'border-gray-200 focus:border-green-500'
+                                    }`}
+                                />
+                                <p className="text-xs text-gray-400 mt-1">ใช้ได้เฉพาะภาษาอังกฤษ, ตัวเลข, _ และ - (ไม่มีช่องว่าง อย่างน้อย 3 ตัว)</p>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-600 mb-1">
-                                    📱 เบอร์โทรศัพท์ <span className="text-red-500">*</span>
+                                <label className="block text-sm font-semibold text-gray-600 mb-1 flex items-center">
+                                    <i className="fa-solid fa-phone mr-1.5 text-green-600"></i>เบอร์โทรศัพท์ <span className="text-red-500 ml-0.5">*</span>
                                 </label>
                                 <input
                                     type="tel"
@@ -318,15 +341,15 @@ export default function RegisterPage() {
                                     value={form.phoneNumber}
                                     onChange={handleChange}
                                     placeholder="0XX-XXX-XXXX"
-                                    className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-3 py-2.5 text-gray-800 outline-none transition bg-gray-50"
+                                    className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-3 py-2.5 text-gray-800 outline-none transition bg-gray-50 focus:bg-white"
                                 />
                             </div>
 
                             {method !== 'google' && (
                                 <>
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-600 mb-1">
-                                            🔑 รหัสผ่าน (สำหรับเข้าสู่ระบบ) <span className="text-red-500">*</span>
+                                        <label className="block text-sm font-semibold text-gray-600 mb-1 flex items-center">
+                                            <i className="fa-solid fa-lock mr-1.5 text-green-600"></i>รหัสผ่าน (สำหรับเข้าสู่ระบบ) <span className="text-red-500 ml-0.5">*</span>
                                         </label>
                                         <div className="relative">
                                             <input
@@ -334,7 +357,7 @@ export default function RegisterPage() {
                                                 name="password"
                                                 value={form.password}
                                                 onChange={handleChange}
-                                                placeholder="ตั้งรหัสผ่าน 6 ตัวขึ้นไป"
+                                                placeholder="ตั้งรหัสผ่าน 8-20 ตัวอักษร"
                                                 className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-3 py-2.5 pr-10 text-gray-800 outline-none transition bg-gray-50 focus:bg-white"
                                             />
                                             <button
@@ -345,10 +368,22 @@ export default function RegisterPage() {
                                                 <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                                             </button>
                                         </div>
+                                        {/* Password Strength Indicator */}
+                                        {form.password && (
+                                            <div className="mt-1.5 space-y-1">
+                                                <div className="flex justify-between items-center text-xs font-semibold">
+                                                    <span className="text-gray-500">ระดับความปลอดภัย:</span>
+                                                    <span className={strength.color}>{strength.label}</span>
+                                                </div>
+                                                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                                    <div className={`${strength.barColor} h-1.5 rounded-full transition-all duration-300`} style={{ width: `${strength.percent}%` }}></div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-600 mb-1">
-                                            🔐 ยืนยันรหัสผ่าน <span className="text-red-500">*</span>
+                                        <label className="block text-sm font-semibold text-gray-600 mb-1 flex items-center">
+                                            <i className="fa-solid fa-shield-halved mr-1.5 text-green-600"></i>ยืนยันรหัสผ่าน <span className="text-red-500 ml-0.5">*</span>
                                         </label>
                                         <div className="relative">
                                             <input
@@ -367,64 +402,27 @@ export default function RegisterPage() {
                                                 <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
                                             </button>
                                         </div>
+                                        {/* Real-time Match Indicator */}
+                                        {form.confirmPassword && (
+                                            <div className="mt-1.5 text-xs font-bold">
+                                                {passwordsMatch ? (
+                                                    <span className="text-green-600 flex items-center gap-1">
+                                                        <i className="fa-solid fa-circle-check"></i> รหัสผ่านตรงกัน
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-red-500 flex items-center gap-1">
+                                                        <i className="fa-solid fa-circle-xmark"></i> รหัสผ่านไม่ตรงกัน
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             )}
 
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-600 mb-1">
-                                    🎓 รหัสนักศึกษา (ถ้ามี)
-                                </label>
-                                <input
-                                    name="studentId"
-                                    value={form.studentId}
-                                    onChange={handleChange}
-                                    placeholder="เช่น 64XXXXXX"
-                                    className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-3 py-2.5 text-gray-800 outline-none transition bg-gray-50"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-600 mb-1">
-                                    🏢 คณะ <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    name="faculty"
-                                    value={form.faculty}
-                                    onChange={(e) => {
-                                        setForm({ ...form, faculty: e.target.value, major: '' });
-                                        setError('');
-                                    }}
-                                    className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-3 py-2.5 text-gray-800 outline-none transition bg-gray-50"
-                                >
-                                    {Object.keys(faculties).map(fac => (
-                                        <option key={fac} value={fac}>{fac}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-600 mb-1">
-                                    📖 สาขาวิชา <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    list="major-list"
-                                    name="major"
-                                    value={form.major}
-                                    onChange={handleChange}
-                                    placeholder="พิมพ์เพื่อค้นหาสาขา..."
-                                    className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-3 py-2.5 text-gray-800 outline-none transition bg-gray-50"
-                                />
-                                <datalist id="major-list">
-                                    {faculties[form.faculty as keyof typeof faculties]?.map((majorOption: string) => (
-                                        <option key={majorOption} value={majorOption} />
-                                    ))}
-                                </datalist>
-                            </div>
-
                             {error && (
                                 <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm flex items-center space-x-2">
-                                    <span>⚠️</span><span>{error}</span>
+                                    <span><i className="fa-solid fa-triangle-exclamation"></i></span><span>{error}</span>
                                 </div>
                             )}
 
@@ -451,13 +449,13 @@ export default function RegisterPage() {
                         <div className="space-y-4">
                             {otpMsg && (
                                 <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm flex items-start space-x-2">
-                                    <span className="mt-0.5">✅</span><span>{otpMsg}</span>
+                                    <span><i className="fa-solid fa-circle-check"></i></span><span>{otpMsg}</span>
                                 </div>
                             )}
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-600 mb-1.5">
-                                    🔐 รหัส OTP (6 หลัก)
+                                <label className="block text-sm font-semibold text-gray-600 mb-1.5 flex items-center">
+                                    <i className="fa-solid fa-key mr-1.5 text-green-600"></i>รหัส OTP (6 หลัก)
                                 </label>
                                 <input
                                     type="text"
@@ -478,7 +476,7 @@ export default function RegisterPage() {
 
                             {error && (
                                 <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm flex items-center space-x-2">
-                                    <span>⚠️</span><span>{error}</span>
+                                    <span><i className="fa-solid fa-triangle-exclamation"></i></span><span>{error}</span>
                                 </div>
                             )}
 

@@ -193,18 +193,10 @@ public class AppController {
             User newUser = new User();
             newUser.setEmail(email.toLowerCase().trim());
             newUser.setPhoneNumber((String) payload.get("phoneNumber"));
+            newUser.setUsername((String) payload.get("username"));
             newUser.setTitle((String) payload.getOrDefault("title", "นาย"));
-
-            String firstName = (String) payload.get("firstName");
-            String lastName = (String) payload.get("lastName");
-            // Fallback to Google name if not provided
-            if (firstName == null || firstName.isBlank()) {
-                String[] parts = googleName != null ? googleName.split(" ", 2) : new String[]{"", ""};
-                firstName = parts.length > 0 ? parts[0] : "";
-                lastName = parts.length > 1 ? parts[1] : "";
-            }
-            newUser.setFirstName(firstName);
-            newUser.setLastName(lastName != null ? lastName : "");
+            newUser.setFirstName((String) payload.getOrDefault("firstName", ""));
+            newUser.setLastName((String) payload.getOrDefault("lastName", ""));
             newUser.setStudentId((String) payload.get("studentId"));
             newUser.setFaculty((String) payload.get("faculty"));
             newUser.setMajor((String) payload.get("major"));
@@ -243,9 +235,9 @@ public class AppController {
 
         User newUser = new User();
         newUser.setPhoneNumber((String) payload.get("phoneNumber"));
+        newUser.setUsername((String) payload.get("username"));
         newUser.setTitle((String) payload.get("title"));
-        String firstName = (String) payload.get("firstName");
-        newUser.setFirstName(firstName);
+        newUser.setFirstName((String) payload.get("firstName"));
         newUser.setLastName((String) payload.get("lastName"));
         newUser.setEmail(email.toLowerCase().trim());
         newUser.setStudentId((String) payload.get("studentId"));
@@ -271,16 +263,18 @@ public class AppController {
 
     // ─── Temporary Admin Promotion Endpoint ──────────────────────────────────────
     @GetMapping("/auth/promote")
-    public Object promoteToAdmin(@RequestParam String firstName, @RequestParam String lastName) {
-        java.util.List<User> users = userRepository.findAll();
-        for (User u : users) {
-            if (firstName.equalsIgnoreCase(u.getFirstName()) && lastName.equalsIgnoreCase(u.getLastName())) {
-                u.setRole("ADMIN");
-                userRepository.save(u);
-                return Map.of("success", true, "message", "Promoted user " + firstName + " " + lastName + " to ADMIN.");
-            }
+    public Object promoteToAdmin(@RequestParam("email") String email) {
+        if (email == null || email.isBlank()) {
+            return Map.of("error", "Email is required");
         }
-        return Map.of("error", "User not found with name: " + firstName + " " + lastName);
+        Optional<User> userOpt = userRepository.findByEmail(email.toLowerCase().trim());
+        if (userOpt.isPresent()) {
+            User u = userOpt.get();
+            u.setRole("ADMIN");
+            userRepository.save(u);
+            return Map.of("success", true, "message", "Promoted user with email " + email + " to ADMIN.");
+        }
+        return Map.of("error", "User not found with email: " + email);
     }
 
     // ─── Legacy phone login (IoT backward compat) ─────────────────────────────
@@ -389,7 +383,7 @@ public class AppController {
     }
 
     @GetMapping("/user/{id}")
-    public User getUser(@PathVariable String id) {
+    public User getUser(@PathVariable("id") String id) {
         return userRepository.findById(id).orElseThrow();
     }
 
@@ -399,17 +393,11 @@ public class AppController {
         String type = (String) payload.get("type"); 
         String machineId = (String) payload.getOrDefault("machineId", "default-machine");
         
-        // Map IoT label to Backend label (Legacy mapping)
-        if ("plastic_clear".equalsIgnoreCase(type)) {
-            type = "CLEAR_BOTTLES";
-        } else if ("plastic_cloudy".equalsIgnoreCase(type)) {
-            type = "OPAQUE_BOTTLES";
-        } else if ("steel".equalsIgnoreCase(type)) {
-            type = "STEEL_CAN";
-        } else if ("aluminum".equalsIgnoreCase(type)) {
-            type = "ALUMINUM_CANS";
-        } else if ("glass".equalsIgnoreCase(type)) {
-            type = "GLASSES_BOTTLES";
+        // Use the type string sent directly from the IoT device
+        // Format is expected to match WasteType (e.g. PLASTIC_BOTTLE, ALUMINUM_CAN, BEVERAGE_CARTON)
+        // Ensure uppercase for consistency
+        if (type != null) {
+            type = type.toUpperCase();
         }
         
         int points = 0;
@@ -428,12 +416,12 @@ public class AppController {
     }
     
     @GetMapping("/transactions/user/{userId}")
-    public List<com.example.iotbackend.model.Transaction> getUserTransactions(@PathVariable String userId) {
+    public List<com.example.iotbackend.model.Transaction> getUserTransactions(@PathVariable("userId") String userId) {
         return transactionRepository.findByUserIdOrderByTimestampDesc(userId);
     }
     
     @GetMapping("/redemptions/user/{userId}")
-    public List<com.example.iotbackend.model.Redemption> getUserRedemptions(@PathVariable String userId) {
+    public List<com.example.iotbackend.model.Redemption> getUserRedemptions(@PathVariable("userId") String userId) {
         return redemptionRepository.findByUserIdOrderByTimestampDesc(userId);
     }
     
@@ -455,7 +443,7 @@ public class AppController {
     }
 
     @GetMapping("/machine/{id}/status")
-    public Map<String, String> getMachineStatus(@PathVariable String id) {
+    public Map<String, String> getMachineStatus(@PathVariable("id") String id) {
         String userId = recycleService.getCurrentUser(id);
         System.out.println("Checking status for Machine " + id + ": User=" + userId);
         if (userId != null) {
@@ -473,6 +461,31 @@ public class AppController {
         double value = Double.parseDouble(String.valueOf(payload.get("value")));
         String details = (String) payload.get("details");
         
-        recycleService.redeemPoints(userId, rewardType, cost, value, details);
+        String title = (String) payload.get("title");
+        String firstName = (String) payload.get("firstName");
+        String lastName = (String) payload.get("lastName");
+        String studentId = (String) payload.get("studentId");
+        String faculty = (String) payload.get("faculty");
+        String major = (String) payload.get("major");
+        
+        recycleService.redeemPoints(userId, rewardType, cost, value, details, 
+                                    title, firstName, lastName, studentId, faculty, major);
+    }
+
+    @PutMapping("/user/{id}")
+    public User updateUser(@PathVariable("id") String id, @RequestBody Map<String, Object> payload) {
+        User existing = userRepository.findById(id)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
+        
+        if (payload.containsKey("title")) existing.setTitle((String) payload.get("title"));
+        if (payload.containsKey("firstName")) existing.setFirstName((String) payload.get("firstName"));
+        if (payload.containsKey("lastName")) existing.setLastName((String) payload.get("lastName"));
+        if (payload.containsKey("studentId")) existing.setStudentId((String) payload.get("studentId"));
+        if (payload.containsKey("faculty")) existing.setFaculty((String) payload.get("faculty"));
+        if (payload.containsKey("major")) existing.setMajor((String) payload.get("major"));
+        if (payload.containsKey("username")) existing.setUsername((String) payload.get("username"));
+        if (payload.containsKey("phoneNumber")) existing.setPhoneNumber((String) payload.get("phoneNumber"));
+        
+        return userRepository.save(existing);
     }
 }

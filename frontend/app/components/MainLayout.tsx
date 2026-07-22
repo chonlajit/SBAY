@@ -19,6 +19,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         { href: '/', icon: <i className="fa-solid fa-house"></i>, label: 'หน้าหลัก' },
         { href: '/dashboard', icon: <i className="fa-solid fa-chart-column"></i>, label: 'สถิติ' },
         { href: '/redeem', icon: <i className="fa-solid fa-right-left"></i>, label: 'แลกรางวัล' },
+        ...(user.role === 'PARTNER' ? [{ href: '/partner/products', icon: <i className="fa-solid fa-store"></i>, label: 'ร้านของฉัน' }] : []),
         ...(user.role === 'ADMIN' ? [{ href: '/admin', icon: <i className="fa-solid fa-user-gear"></i>, label: 'Admin' }] : []),
     ] : [
         { href: '/', icon: <i className="fa-solid fa-house"></i>, label: 'หน้าหลัก' },
@@ -69,10 +70,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 className="flex items-center space-x-2 bg-green-50 border border-green-100 rounded-full pl-2 pr-3 py-1.5 active:scale-95 transition"
                             >
                                 <div className="w-7 h-7 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                                    {user.firstName.charAt(0)}
+                                    {(user.firstName || user.username || user.email || '?').charAt(0)}
                                 </div>
                                 <span className="text-gray-800 font-semibold text-sm hidden sm:inline">
-                                    {user.firstName}
+                                    {user.firstName || user.username || 'ผู้ใช้งาน'}
                                 </span>
                                 <svg className="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -102,11 +103,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <div className="bg-gradient-to-r from-green-600 to-emerald-500 p-4">
                             <div className="flex items-center space-x-3">
                                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center font-black text-green-600 text-xl shadow">
-                                    {user.firstName.charAt(0)}
+                                    {(user.firstName || user.username || user.email || '?').charAt(0)}
                                 </div>
                                 <div>
                                     <p className="font-bold text-white text-sm leading-tight">
-                                        {user.title} {user.firstName} {user.lastName}
+                                        {user.firstName ? `${user.title || ''} ${user.firstName} ${user.lastName || ''}` : (user.username || user.email || 'ผู้ใช้งาน')}
                                     </p>
                                     <p className="text-green-100 text-xs mt-0.5">{user.email}</p>
                                 </div>
@@ -122,6 +123,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             {[
                                 { href: '/dashboard', icon: <i className="fa-solid fa-chart-bar text-green-500"></i>, label: 'สถิติและแต้มสะสม' },
                                 { href: '/redeem', icon: <i className="fa-solid fa-gift text-yellow-500"></i>, label: 'แลกของรางวัล' },
+                                ...(user.role === 'PARTNER' ? [{ href: '/partner/products', icon: <i className="fa-solid fa-store text-blue-500"></i>, label: 'จัดการหน้าร้าน' }] : []),
                                 ...(user.role === 'ADMIN' ? [{ href: '/admin', icon: <i className="fa-solid fa-tools text-red-500"></i>, label: 'Admin Dashboard' }] : []),
                             ].map(item => (
                                 <Link
@@ -149,13 +151,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </>
             )}
 
-            {/* ─── Page Content ─── */}
-            <main className="flex-1 overflow-y-scroll pb-16 md:pb-0 md:pl-72">
+            <main className={`flex-1 overflow-y-scroll pb-16 md:pb-0 ${pathname !== '/' ? 'md:pl-72' : ''}`}>
                 {children}
             </main>
 
-            {/* ─── Bottom Navigation (Mobile) ─── */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-20 safe-area-inset-bottom">
+            {pathname !== '/' && <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-20 safe-area-inset-bottom">
                 <div className="flex items-center justify-around h-16 px-2">
                     {navItems.map((item) => {
                         const active = isActive(item.href);
@@ -179,10 +179,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         );
                     })}
                 </div>
-            </nav>
+            </nav>}
 
-            {/* ─── Desktop Sidebar (md+) ─── */}
-            <aside className="hidden md:flex md:fixed md:left-0 md:top-16 md:bottom-0 md:w-72 bg-green-700 text-white flex-col shadow-xl z-10">
+            {pathname !== '/' && <aside className="hidden md:flex md:fixed md:left-0 md:top-16 md:bottom-0 md:w-72 bg-green-700 text-white flex-col shadow-xl z-10">
                 <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
                     {navItems.map((item) => {
                         const active = isActive(item.href);
@@ -213,7 +212,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         </button>
                     </div>
                 )}
-            </aside>
+            </aside>}
         </div>
     );
 }

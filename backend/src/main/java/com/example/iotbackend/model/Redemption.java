@@ -17,4 +17,12 @@ public class Redemption {
     private String details; // Activity Category or "X hours"
     private String status; // PENDING, APPROVED, REJECTED
     private LocalDateTime timestamp;
+    
+    // Academic details captured at redemption time
+    private String title;
+    private String firstName;
+    private String lastName;
+    private String studentId;
+    private String faculty;
+    private String major;
 }

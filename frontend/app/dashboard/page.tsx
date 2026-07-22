@@ -16,13 +16,7 @@ export default function DashboardPage() {
 
     const normalizeWasteType = (type: string): string => {
         if (!type) return '';
-        const t = type.toLowerCase().trim();
-        if (t.includes('clear') || t === 'plastic_clear') return 'CLEAR_BOTTLE';
-        if (t.includes('opaque') || t === 'plastic_opaque' || t.includes('cloudy')) return 'OPAQUE_BOTTLE';
-        if (t.includes('glass') || t === 'glasses_bottle') return 'GLASSES_BOTTLE';
-        if (t.includes('steel')) return 'STEEL_CAN';
-        if (t.includes('aluminum')) return 'ALUMINUM_CAN';
-        return type; // Fallback
+        return type.toUpperCase().trim();
     };
 
     const getSessionDateTime = (session: any) => {
@@ -149,12 +143,12 @@ export default function DashboardPage() {
                 <div className="relative max-w-lg md:max-w-4xl mx-auto">
                     <div className="flex items-center space-x-4">
                         <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center font-black text-green-700 text-2xl shadow-lg">
-                            {user.firstName.charAt(0)}
+                            {(user.firstName || user.username || user.email || '?').charAt(0)}
                         </div>
                         <div>
                             <p className="text-green-200 text-xs font-medium">โปรไฟล์ของฉัน</p>
                             <h2 className="text-white font-bold text-xl leading-tight">
-                                {user.title} {user.firstName} {user.lastName}
+                                {user.firstName ? `${user.title || ''} ${user.firstName} ${user.lastName || ''}` : (user.username || user.email || 'ผู้ใช้งาน')}
                             </h2>
                             {user.email && (
                                 <p className="text-green-200 text-xs mt-0.5 truncate max-w-[200px]">{user.email}</p>
@@ -170,12 +164,7 @@ export default function DashboardPage() {
                                     <span className="opacity-80 mr-1">รหัสนักศึกษา:</span> <span className="font-medium">{user.studentId}</span>
                                 </p>
                             )}
-                            {user.faculty && (
-                                <p className="text-green-50 text-xs flex items-center">
-                                    <i className="fa-solid fa-building-columns w-4 opacity-70"></i>
-                                    <span className="opacity-80 mr-1">คณะ:</span> <span className="font-medium truncate">{user.faculty}</span>
-                                </p>
-                            )}
+
                             {user.major && (
                                 <p className="text-green-50 text-xs flex items-center">
                                     <i className="fa-solid fa-graduation-cap w-4 opacity-70"></i>

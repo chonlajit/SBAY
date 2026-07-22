@@ -14,6 +14,8 @@ public class User {
     @Indexed(unique = true)
     private String phoneNumber;
     
+    private String username;
+    
     private String title;
     private String firstName;
     private String lastName;
@@ -29,5 +31,6 @@ public class User {
     private double volunteerHours;
     private int activityCredits;
     
-    private String role; // "USER" or "ADMIN"
+    private String role; // "USER", "ADMIN", or "PARTNER"
+    private String partnerId; // กำหนดเมื่อ role = PARTNER เชื่อมกับ Partner document
 }

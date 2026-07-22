@@ -85,7 +85,9 @@ public class RecycleService {
         }
     }
 
-    public void redeemPoints(String userId, String rewardType, int cost, double value, String details) {
+    public void redeemPoints(String userId, String rewardType, int cost, double value, String details,
+                             String title, String firstName, String lastName,
+                             String studentId, String faculty, String major) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -103,6 +105,12 @@ public class RecycleService {
         redemption.setCost(cost);
         redemption.setValue(value);
         redemption.setDetails(details);
+        redemption.setTitle(title);
+        redemption.setFirstName(firstName);
+        redemption.setLastName(lastName);
+        redemption.setStudentId(studentId);
+        redemption.setFaculty(faculty);
+        redemption.setMajor(major);
         redemption.setStatus("PENDING");
         redemption.setTimestamp(LocalDateTime.now());
         redemptionRepository.save(redemption);

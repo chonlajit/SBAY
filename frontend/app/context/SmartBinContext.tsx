@@ -8,11 +8,12 @@ import { useRouter } from 'next/navigation';
 export interface User {
     id: string;
     phoneNumber: string;
+    username?: string;
     title?: string;
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
     email?: string;
-    studentId: string;
+    studentId?: string;
     faculty?: string;
     major?: string;
     points: number;
@@ -59,14 +60,6 @@ interface SmartBinContextType {
 
 const SmartBinContext = createContext<SmartBinContextType | null>(null);
 
-export const WASTE_TYPES = [
-    { type: 'CLEAR_BOTTLE', label: 'ขวดพลาสติกใส', points: 1 },
-    { type: 'OPAQUE_BOTTLE', label: 'ขวดพลาสติกขุ่น', points: 2 },
-    { type: 'GLASSES_BOTTLE', label: 'ขวดแก้ว', points: 5 },
-    { type: 'STEEL_CAN', label: 'กระป๋องเหล็ก', points: 2 },
-    { type: 'ALUMINUM_CAN', label: 'กระป๋องอลูมิเนียม', points: 3 },
-];
-
 export function SmartBinProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
@@ -78,6 +71,7 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
     const [wsBase, setWsBase] = useState('');
     const wsBaseRef = useRef('');
     const [isInitialized, setIsInitialized] = useState(false);
+    const [wasteTypes, setWasteTypes] = useState<WasteType[]>([]);
 
     const clientRef = useRef<Client | null>(null);
     const router = useRouter();
@@ -103,6 +97,12 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             setApiBase(currentApiBase);
             setWsBase(currentWsBase);
             wsBaseRef.current = currentWsBase;
+
+            // Fetch dynamic waste types
+            fetch(`${currentApiBase}/wastetypes`)
+                .then(res => res.ok ? res.json() : [])
+                .then(data => setWasteTypes(data))
+                .catch(e => console.error("Error fetching waste types:", e));
 
             const savedUser = localStorage.getItem('sbay_user');
             const savedToken = localStorage.getItem('sbay_token');
@@ -361,7 +361,7 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <SmartBinContext.Provider value={{
-            user, sessionPoints, sessionHistory, latestSession, wasteTypes: WASTE_TYPES,
+            user, sessionPoints, sessionHistory, latestSession, wasteTypes: wasteTypes,
             sendOtp, login,
             sendPhoneOtp, loginWithPhone,
             loginWithPassword,
