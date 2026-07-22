@@ -140,15 +140,21 @@ public class AdminController {
 
         long totalUsers = users.size();
         long totalPoints = users.stream().mapToInt(User::getPoints).sum();
-        double totalVolunteerHours = users.stream().mapToDouble(User::getVolunteerHours).sum();
-        long totalActivityCredits = users.stream().mapToInt(User::getActivityCredits).sum();
+        List<Redemption> redemptions = redemptionRepository.findAll();
+        long totalRedemptions = 0;
+        long totalPointsRedeemed = 0;
+        for (Redemption r : redemptions) {
+            if ("APPROVED".equals(r.getStatus()) || "COMPLETED".equals(r.getStatus())) {
+                totalRedemptions++;
+                totalPointsRedeemed += r.getCost();
+            }
+        }
 
         Map<String, Long> wasteStats = new HashMap<>();
         long totalRecycledItems = 0;
         
         for (Transaction tx : transactions) {
             String type = tx.getWasteType();
-            // Filter out Redemptions (which start with REDEEM_)
             if (type != null && !type.startsWith("REDEEM_")) {
                 wasteStats.put(type, wasteStats.getOrDefault(type, 0L) + 1);
                 totalRecycledItems++;
@@ -158,8 +164,8 @@ public class AdminController {
         Map<String, Object> summary = new HashMap<>();
         summary.put("totalUsers", totalUsers);
         summary.put("totalPoints", totalPoints);
-        summary.put("totalVolunteerHours", totalVolunteerHours);
-        summary.put("totalActivityCredits", totalActivityCredits);
+        summary.put("totalRedemptions", totalRedemptions);
+        summary.put("totalPointsRedeemed", totalPointsRedeemed);
         summary.put("totalRecycledItems", totalRecycledItems);
         summary.put("wasteStats", wasteStats);
 

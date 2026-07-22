@@ -318,12 +318,12 @@ export default function AdminPage() {
                             <div className="text-3xl font-black text-blue-600">{summary.totalPoints}</div>
                         </div>
                         <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col">
-                            <div className="text-slate-500 text-xs font-semibold mb-1 uppercase">ชั่วโมงจิตอาสา</div>
-                            <div className="text-3xl font-black text-indigo-600">{summary.totalVolunteerHours}</div>
+                            <div className="text-slate-500 text-xs font-semibold mb-1 uppercase">แต้มทั้งหมดที่แลกไปทั้งระบบ</div>
+                            <div className="text-3xl font-black text-indigo-600">{summary.totalPointsRedeemed || 0}</div>
                         </div>
                         <div className="bg-white rounded-2xl p-5 shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col">
-                            <div className="text-slate-500 text-xs font-semibold mb-1 uppercase">หน่วยกิตกิจกรรม</div>
-                            <div className="text-3xl font-black text-purple-600">{summary.totalActivityCredits}</div>
+                            <div className="text-slate-500 text-xs font-semibold mb-1 uppercase">แลกไปกี่ครั้ง</div>
+                            <div className="text-3xl font-black text-purple-600">{summary.totalRedemptions || 0}</div>
                         </div>
                     </div>
                 )}
@@ -358,8 +358,8 @@ export default function AdminPage() {
                                 </div>
                                 
                                 <div className="space-y-3 mt-4">
-                                    {device.maxCapacities && Object.keys(device.maxCapacities).map(type => {
-                                        const max = device.maxCapacities[type] || 100;
+                                    {["PLASTIC_BOTTLE", "ALUMINUM_CAN", "BEVERAGE_CARTON"].map(type => {
+                                        const max = device.maxCapacities?.[type] || 100;
                                         const current = (device.wasteLevels && device.wasteLevels[type]) || 0;
                                         const percentage = Math.min(100, Math.max(0, (current / max) * 100));
                                         
@@ -372,11 +372,9 @@ export default function AdminPage() {
                                                 <div className="flex justify-between text-[10px] font-bold mb-1">
                                                     <span className="text-slate-600">
                                                         {{
-                                                            "CLEAR_BOTTLE": "ขวดพลาสติกใส",
-                                                            "OPAQUE_BOTTLE": "ขวดพลาสติกขุ่น",
-                                                            "GLASSES_BOTTLE": "ขวดแก้ว",
-                                                            "STEEL_CAN": "กระป๋องเหล็ก",
-                                                            "ALUMINUM_CAN": "กระป๋องอลูมิเนียม"
+                                                            "PLASTIC_BOTTLE": "ขวดพลาสติก",
+                                                            "ALUMINUM_CAN": "กระป๋องอลูมิเนียม",
+                                                            "BEVERAGE_CARTON": "กล่องเครื่องดื่ม"
                                                         }[type] || type}
                                                     </span>
                                                     <span className="text-slate-500">{current.toFixed(1)} / {max.toFixed(1)}</span>
@@ -387,9 +385,6 @@ export default function AdminPage() {
                                             </div>
                                         )
                                     })}
-                                    {(!device.maxCapacities || Object.keys(device.maxCapacities).length === 0) && (
-                                        <div className="text-xs text-slate-400 text-center py-2">ไม่มีข้อมูลความจุขยะ</div>
-                                    )}
                                 </div>
                             </div>
                         ))}
@@ -413,18 +408,16 @@ export default function AdminPage() {
                                     <h2 className="font-bold text-slate-800">สถิติแยกตามประเภทขยะ</h2>
                                 </div>
                                 <div className="p-5 grid grid-cols-2 gap-3">
-                                    {Object.entries(summary.wasteStats).map(([key, value]) => (
+                                    {["PLASTIC_BOTTLE", "ALUMINUM_CAN", "BEVERAGE_CARTON"].map((key) => (
                                         <div key={key} className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col items-center text-center">
                                             <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">
                                                 {{
-                                                    "CLEAR_BOTTLE": "ขวดพลาสติกใส",
-                                                    "OPAQUE_BOTTLE": "ขวดพลาสติกขุ่น",
-                                                    "GLASSES_BOTTLE": "ขวดแก้ว",
-                                                    "STEEL_CAN": "กระป๋องเหล็ก",
-                                                    "ALUMINUM_CAN": "กระป๋องอลูมิเนียม"
-                                                }[key] || key.replace('_', ' ')}
+                                                    "PLASTIC_BOTTLE": "ขวดพลาสติก",
+                                                    "ALUMINUM_CAN": "กระป๋องอลูมิเนียม",
+                                                    "BEVERAGE_CARTON": "กล่องเครื่องดื่ม"
+                                                }[key] || key}
                                             </div>
-                                            <div className="text-xl font-black text-slate-700">{String(value)}</div>
+                                            <div className="text-xl font-black text-slate-700">{summary.wasteStats[key] || 0}</div>
                                         </div>
                                     ))}
                                 </div>
