@@ -129,6 +129,27 @@ export default function AdminPage() {
         }
     };
 
+    const handleResetBin = async (deviceId: string) => {
+        if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการล้างจำนวนขยะในตู้ ${deviceId}? (ใช้สำหรับตอนเอาขยะออกเพื่อรีเซ็ตตู้)`)) return;
+        if (!token) return;
+
+        try {
+            const res = await fetch(`${apiBase}/admin/devices/${deviceId}/reset`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                alert("ล้างขยะในตู้เรียบร้อยแล้ว!");
+                fetchData(); // Refresh list
+            } else {
+                alert("ไม่สามารถล้างข้อมูลตู้ได้");
+            }
+        } catch (e) {
+            console.error("Reset bin failed", e);
+        }
+    };
+
     const handleApproveRedemption = async (redemptionId: string) => {
         if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการอนุมัติการแลกคะแนนนี้?")) return;
         if (!token) return;
@@ -386,6 +407,13 @@ export default function AdminPage() {
                                         )
                                     })}
                                 </div>
+                                
+                                <button
+                                    onClick={() => handleResetBin(device.id)}
+                                    className="mt-4 w-full bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-600 font-semibold py-2 rounded-lg text-xs transition-colors border border-slate-200 hover:border-red-200 shadow-sm"
+                                >
+                                    🧹 ล้างปริมาณขยะในตู้ (Reset)
+                                </button>
                             </div>
                         ))}
                         {devices.length === 0 && (

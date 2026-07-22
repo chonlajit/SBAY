@@ -44,13 +44,15 @@ public class DeviceController {
         }
         
         // Ensure default capacities exist for all required types
-        device.getMaxCapacities().putIfAbsent("CLEAR_BOTTLE", 100.0);
-        device.getMaxCapacities().putIfAbsent("OPAQUE_BOTTLE", 100.0);
-        device.getMaxCapacities().putIfAbsent("GLASSES_BOTTLE", 100.0);
-        device.getMaxCapacities().putIfAbsent("STEEL_CAN", 100.0);
+        device.getMaxCapacities().putIfAbsent("PLASTIC_BOTTLE", 100.0);
         device.getMaxCapacities().putIfAbsent("ALUMINUM_CAN", 100.0);
+        device.getMaxCapacities().putIfAbsent("BEVERAGE_CARTON", 100.0);
         
         // Remove old unused types
+        device.getMaxCapacities().remove("CLEAR_BOTTLE");
+        device.getMaxCapacities().remove("OPAQUE_BOTTLE");
+        device.getMaxCapacities().remove("GLASSES_BOTTLE");
+        device.getMaxCapacities().remove("STEEL_CAN");
         device.getMaxCapacities().remove("PLASTIC");
         device.getMaxCapacities().remove("CAN");
         device.getMaxCapacities().remove("GLASS");

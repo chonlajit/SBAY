@@ -71,6 +71,20 @@ public class AdminController {
         return deviceRepository.findAll();
     }
     
+    @PostMapping("/devices/{id}/reset")
+    public Map<String, String> resetDeviceBin(@RequestHeader("Authorization") String token, @PathVariable String id) {
+        validateAdmin(token);
+        com.example.iotbackend.model.Device device = deviceRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Device not found"));
+        
+        device.getWasteLevels().clear();
+        device.setIsFull(false);
+        device.setFullWasteType(null);
+        deviceRepository.save(device);
+        
+        return Map.of("message", "Device waste levels have been reset.");
+    }
+    
     @DeleteMapping("/user/{id}")
     public void deleteUser(@RequestHeader("Authorization") String token, @PathVariable String id) {
         validateAdmin(token);
