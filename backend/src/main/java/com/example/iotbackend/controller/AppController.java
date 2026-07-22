@@ -309,6 +309,9 @@ public class AppController {
         identifier = identifier.trim().toLowerCase();
         Optional<User> userOpt = userRepository.findByEmail(identifier);
         if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByUsername(identifier);
+        }
+        if (userOpt.isEmpty()) {
             String phone = identifier.replaceAll("[^0-9]", "");
             if (!phone.isEmpty()) {
                 userOpt = userRepository.findByPhoneNumber(phone);

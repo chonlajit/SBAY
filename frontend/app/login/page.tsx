@@ -66,7 +66,7 @@ function LoginContent() {
     // ── Password Login ──
     const handleLogin = async () => {
         if (!identifier.trim() || !password.trim()) {
-            setError('กรุณากรอกอีเมล/เบอร์โทร และ รหัสผ่าน');
+            setError('กรุณากรอกข้อมูลให้ครบถ้วน');
             return;
         }
 
@@ -148,7 +148,7 @@ function LoginContent() {
                             onClick={() => { setMethod('email'); setError(''); }}
                             className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${method === 'email' ? 'bg-white text-green-600 shadow' : 'text-gray-500 hover:text-gray-700'}`}
                         >
-                            อีเมล
+                            อีเมล / Username
                         </button>
                         <button
                             onClick={() => { setMethod('phone'); setError(''); }}
@@ -161,13 +161,13 @@ function LoginContent() {
                     {/* Identifer Input */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-600 mb-1.5">
-                            {method === 'email' ? '📧 อีเมลของคุณ' : '📱 เบอร์โทรศัพท์ของคุณ'}
+                            {method === 'email' ? '📧 อีเมล หรือ Username' : '📱 เบอร์โทรศัพท์ของคุณ'}
                         </label>
                         <input
-                            type={method === 'email' ? 'email' : 'tel'}
+                            type={method === 'email' ? 'text' : 'tel'}
                             value={identifier}
                             onChange={(e) => { setIdentifier(e.target.value); setError(''); }}
-                            placeholder={method === 'email' ? 'example@email.com' : '08X-XXX-XXXX'}
+                            placeholder={method === 'email' ? 'example@email.com หรือ user123' : '08X-XXX-XXXX'}
                             className="w-full border-2 border-gray-200 focus:border-green-500 rounded-xl px-4 py-3 text-gray-800 outline-none transition bg-gray-50 focus:bg-white"
                         />
                     </div>
