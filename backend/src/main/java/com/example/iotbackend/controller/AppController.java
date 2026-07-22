@@ -306,8 +306,8 @@ public class AppController {
             return Map.of("error", "Email/Phone and Password are required");
         }
 
-        String rawIdentifier = payload.get("identifier").trim();
-        String identifier = rawIdentifier.toLowerCase();
+        String rawIdentifier = identifier.trim();
+        identifier = rawIdentifier.toLowerCase();
         
         Optional<User> userOpt = userRepository.findByEmail(identifier);
         if (userOpt.isEmpty()) {
