@@ -5,3 +5,4 @@ numpy<2.0.0
 ultralytics
 python-dotenv
 Pillow
+rpi-lgpio
