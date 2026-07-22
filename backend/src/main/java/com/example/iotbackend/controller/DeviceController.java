@@ -4,6 +4,7 @@ import com.example.iotbackend.model.Device;
 import com.example.iotbackend.repository.DeviceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -15,6 +16,9 @@ public class DeviceController {
 
     @Autowired
     private DeviceRepository deviceRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @PostMapping("/{deviceId}/heartbeat")
     public ResponseEntity<?> heartbeat(
@@ -91,5 +95,45 @@ public class DeviceController {
 
         deviceRepository.save(device);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{deviceId}/reset")
+    public ResponseEntity<?> resetBin(@PathVariable String deviceId, @RequestBody(required = false) Map<String, String> payload) {
+        Device device = deviceRepository.findById(deviceId).orElseThrow(() -> new RuntimeException("Device not found"));
+        
+        String type = (payload != null) ? payload.get("type") : null;
+        
+        if (type != null && !type.equalsIgnoreCase("ALL")) {
+            // Reset specific type
+            device.getWasteLevels().put(type.toUpperCase(), 0.0);
+            
+            // Check if device is still full after this reset
+            boolean stillFull = false;
+            for (Map.Entry<String, Double> entry : device.getWasteLevels().entrySet()) {
+                Double max = device.getMaxCapacities().getOrDefault(entry.getKey(), 100.0);
+                if (entry.getValue() >= max) {
+                    stillFull = true;
+                    device.setFullWasteType(entry.getKey());
+                    break;
+                }
+            }
+            if (!stillFull) {
+                device.setIsFull(false);
+                device.setFullWasteType(null);
+            }
+        } else {
+            // Reset all
+            device.getWasteLevels().clear();
+            device.setIsFull(false);
+            device.setFullWasteType(null);
+        }
+        
+        deviceRepository.save(device);
+        
+        // Note: The frontend AdminPage refreshes automatically or on button click, 
+        // but broadcasting via WebSocket can update active screens immediately.
+        messagingTemplate.convertAndSend("/topic/status/" + deviceId, "Device Reset");
+        
+        return ResponseEntity.ok(Map.of("message", "Reset successful", "type", type != null ? type : "ALL"));
     }
 }

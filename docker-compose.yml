@@ -33,7 +33,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://143.14.36.198.nip.io/api
+      - NEXT_PUBLIC_API_URL=http://143.14.36.198/api
     depends_on:
       - backend
     restart: always
