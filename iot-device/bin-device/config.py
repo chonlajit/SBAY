@@ -32,6 +32,13 @@ IR_PIN = 17
 SERVO_SORT_PIN = 18
 SERVO_RELEASE_PIN = 19
 
+# --- Reset Buttons (GPIO) ---
+USE_RESET_BUTTONS = str(os.getenv("USE_RESET_BUTTONS", "true")).strip().lower() == "true"
+RESET_PIN_PLASTIC = 22
+RESET_PIN_CAN = 23
+RESET_PIN_CARTON = 24
+RESET_PIN_ALL = 25
+
 # --- AI Detection ---
 MODEL_PATH = os.getenv("MODEL_PATH", "bottle-v1-3.pt")
 CONF_THRESHOLD = 0.7

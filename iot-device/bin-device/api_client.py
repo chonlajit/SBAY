@@ -148,3 +148,25 @@ class ApiClient:
             return True
         except requests.RequestException:
             return False
+
+    def reset_bin(self, device_id, waste_type=None):
+        """ส่งคำสั่งรีเซ็ตปริมาณขยะไปยัง Backend (เรียกผ่าน DeviceController API)"""
+        try:
+            payload = {}
+            if waste_type:
+                payload["type"] = waste_type
+            else:
+                payload["type"] = "ALL"
+                
+            resp = requests.post(
+                f"{self.api_base}/devices/{device_id}/reset",
+                json=payload,
+                headers={"X-Device-Secret": DEVICE_SECRET},
+                timeout=5
+            )
+            resp.raise_for_status()
+            logger.info(f"Reset bin {device_id} for type {payload['type']} successfully")
+            return True
+        except requests.RequestException as e:
+            logger.error(f"Failed to reset bin: {e}")
+            return False

@@ -14,7 +14,7 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import DEVICE_ID, USE_GUI, USE_IR
+from config import DEVICE_ID, USE_GUI, USE_IR, USE_RESET_BUTTONS
 from api_client import ApiClient
 from heartbeat_service import HeartbeatService
 from session_manager import SessionManager
@@ -57,6 +57,49 @@ class SmartBinController:
         # GUI (optional)
         self.gui = None
         self.detecting = False
+        
+        # Reset buttons threads
+        if USE_RESET_BUTTONS:
+            self._start_reset_buttons_monitor()
+
+    def _start_reset_buttons_monitor(self):
+        try:
+            from gpiozero import Button
+            from config import RESET_PIN_PLASTIC, RESET_PIN_CAN, RESET_PIN_CARTON, RESET_PIN_ALL
+            
+            logger.info("Initializing Reset Buttons monitor...")
+            
+            self.btn_plastic = Button(RESET_PIN_PLASTIC, pull_up=True, hold_time=2.0)
+            self.btn_can = Button(RESET_PIN_CAN, pull_up=True, hold_time=2.0)
+            self.btn_carton = Button(RESET_PIN_CARTON, pull_up=True, hold_time=2.0)
+            self.btn_all = Button(RESET_PIN_ALL, pull_up=True, hold_time=2.0)
+            
+            self.btn_plastic.when_held = lambda: self._on_reset_btn_held("PLASTIC_BOTTLE", "ขวดพลาสติก")
+            self.btn_can.when_held = lambda: self._on_reset_btn_held("ALUMINUM_CAN", "กระป๋อง")
+            self.btn_carton.when_held = lambda: self._on_reset_btn_held("BEVERAGE_CARTON", "กล่องเครื่องดื่ม")
+            self.btn_all.when_held = lambda: self._on_reset_btn_held(None, "ทุกประเภท")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize reset buttons: {e}")
+
+    def _on_reset_btn_held(self, waste_type, th_name):
+        logger.info(f"Reset Button HELD for {th_name}. Triggering reset...")
+        if self.gui:
+            self.gui.schedule(self.gui.update_status, f"กำลังรีเซ็ตปริมาณขยะ ({th_name})...", "#f59e0b")
+            
+        success = self.api_client.reset_bin(DEVICE_ID, waste_type)
+        
+        if self.gui:
+            if success:
+                self.gui.schedule(self.gui.update_status, f"รีเซ็ตขยะ ({th_name}) สำเร็จ!", "#10b981")
+                # clear status back to standby after 3s
+                def clear_status():
+                    time.sleep(3)
+                    status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
+                    self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
+                threading.Thread(target=clear_status, daemon=True).start()
+            else:
+                self.gui.schedule(self.gui.update_status, f"รีเซ็ตขยะล้มเหลว ตรวจสอบอินเทอร์เน็ต", "#ef4444")
 
     def start(self):
         """เริ่มระบบทั้งหมด"""
