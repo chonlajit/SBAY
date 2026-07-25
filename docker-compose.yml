@@ -34,9 +34,15 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://143.14.36.198/api
+      - NODE_OPTIONS=--max-old-space-size=512 # ป้องกัน Node.js แรมเต็มจนค้าง
     depends_on:
       - backend
     restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   nginx:
     image: nginx:alpine
