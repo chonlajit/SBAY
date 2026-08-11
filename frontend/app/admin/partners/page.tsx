@@ -164,8 +164,13 @@ export default function AdminPartnersPage() {
                 setShowPartnerModal(false);
                 fetchPartners();
                 fetchUsers();
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                alert(`เกิดข้อผิดพลาดในการบันทึก: ${errorData.message || res.statusText || 'Unknown error'}`);
             }
-        } catch (e) { alert('เกิดข้อผิดพลาด'); }
+        } catch (e: any) { 
+            alert(`เกิดข้อผิดพลาดในการเชื่อมต่อ: ${e.message}`); 
+        }
         finally { setSaving(false); }
     };
     const deletePartner = async (id: string) => {
