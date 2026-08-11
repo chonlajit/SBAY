@@ -19,4 +19,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
         //         .addPathPatterns("/api/sessions/user/**")
         //         .addPathPatterns("/api/devices/**");
     }
+
+    @Override
+    public void addResourceHandlers(org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry registry) {
+        // Serve files from the uploads directory
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:uploads/");
+    }
 }

@@ -23,6 +23,10 @@ public class User {
     private String studentId;
     private String faculty;
     private String major;
+    private String academicYear;
+    private String address;
+    private Integer age;
+    private String profileImageUrl;
     
     private String password; // Added for password login
     

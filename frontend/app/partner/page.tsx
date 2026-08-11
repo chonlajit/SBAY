@@ -14,6 +14,7 @@ interface PartnerReward {
     imageUrl?: string;
     active: boolean;
     stock: number;
+    requiredFields?: string[];
 }
 
 interface Partner {
@@ -44,7 +45,7 @@ const REWARD_CATEGORY_ICONS: Record<string, string> = {
 };
 
 const emptyReward: Omit<PartnerReward, 'id'> = {
-    name: '', description: '', pointCost: 100, rewardType: 'DISCOUNT', category: 'สินค้า', imageUrl: '', active: true, stock: -1
+    name: '', description: '', pointCost: 100, rewardType: 'DISCOUNT', category: 'สินค้า', imageUrl: '', active: true, stock: -1, requiredFields: []
 };
 
 export default function PartnerPortalPage() {
@@ -196,7 +197,8 @@ export default function PartnerPortalPage() {
             category: reward.category || 'สินค้า',
             imageUrl: reward.imageUrl || '',
             active: reward.active,
-            stock: reward.stock
+            stock: reward.stock,
+            requiredFields: reward.requiredFields || []
         });
         setShowRewardModal(true);
     };
@@ -247,17 +249,55 @@ export default function PartnerPortalPage() {
         }
     };
 
+    const toggleRewardActive = async (reward: any) => {
+        try {
+            const res = await fetch(`${apiBase}/partner/me/rewards/${reward.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ ...reward, active: !reward.active })
+            });
+            if (res.ok) { fetchPartnerData(); }
+            else { alert('เกิดข้อผิดพลาดในการเปลี่ยนสถานะ'); }
+        } catch (e) { alert('เกิดข้อผิดพลาด'); }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const res = await fetch(`${apiBase?.replace('/api', '')}/api/upload`, {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                body: formData
+            });
+            const data = await res.json();
+            if (res.ok) {
+                const baseUrl = apiBase?.replace('/api', '') || '';
+                const fullUrl = `${baseUrl}${data.url}`;
+                setter(fullUrl);
+            } else {
+                alert('อัปโหลดไฟล์ล้มเหลว: ' + (data.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Upload error', error);
+            alert('เกิดข้อผิดพลาดในการอัปโหลดไฟล์');
+        }
+    };
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="min-h-screen flex items-center justify-center" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')", backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#64964E]"></div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
+            <div className="min-h-screen flex flex-col items-center justify-center p-4" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')", backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
                 <div className="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full">
                     <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span className="text-4xl text-red-500">🤝</span>
@@ -273,11 +313,11 @@ export default function PartnerPortalPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-20">
+        <div className="min-h-screen pb-20" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')", backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
             {/* Header / Store Profile */}
             {partner && (
-                <div className="bg-gradient-to-br from-indigo-700 via-purple-700 to-violet-800 text-white p-6 rounded-b-3xl shadow-xl">
-                    <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-6 pt-4 pb-2">
+                <div className="bg-[#64964E]/80 backdrop-blur-md text-white p-6 rounded-b-3xl shadow-xl border-b border-white/20">
+                    <div className="max-w-7xl xl:max-w-[95%] mx-auto flex flex-col md:flex-row items-center gap-6 pt-4 pb-2">
                         <div className="w-20 h-20 rounded-2xl bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-lg border-2 border-white/20">
                             {partner.logoUrl ? (
                                 <img src={partner.logoUrl} alt="" className="w-full h-full object-cover" />
@@ -314,26 +354,26 @@ export default function PartnerPortalPage() {
                     </div>
 
                     {/* Navigation Tabs */}
-                    <div className="flex gap-2 max-w-4xl mx-auto mt-6 bg-white/10 rounded-2xl p-1 backdrop-blur-sm">
+                    <div className="flex gap-2 max-w-7xl xl:max-w-[95%] mx-auto mt-6 bg-white/10 rounded-2xl p-1 backdrop-blur-sm">
                         <button
                             onClick={() => setActiveTab('rewards')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${activeTab === 'rewards' ? 'bg-white text-indigo-700 shadow-sm' : 'text-white/85 hover:text-white'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${activeTab === 'rewards' ? 'bg-white text-[#64964E] shadow-sm' : 'text-white/85 hover:text-white'}`}
                         >
                             <i className="fa-solid fa-gift"></i> จัดการของรางวัล
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'rewards' ? 'bg-indigo-100 text-indigo-700' : 'bg-white/20'}`}>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'rewards' ? 'bg-[#64964E]/20 text-[#64964E]' : 'bg-white/20'}`}>
                                 {partner.rewards?.length || 0}
                             </span>
                         </button>
                         <button
                             onClick={() => setActiveTab('settings')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${activeTab === 'settings' ? 'bg-white text-indigo-700 shadow-sm' : 'text-white/85 hover:text-white'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${activeTab === 'settings' ? 'bg-white text-[#64964E] shadow-sm' : 'text-white/85 hover:text-white'}`}
                         >
                             <i className="fa-solid fa-gears"></i> ตั้งค่าร้านค้า
                         </button>
                         {partner.category === 'สำหรับนักศึกษา' && (
                             <button
                                 onClick={() => setActiveTab('redemptions')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${activeTab === 'redemptions' ? 'bg-white text-indigo-700 shadow-sm' : 'text-white/85 hover:text-white'}`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${activeTab === 'redemptions' ? 'bg-white text-[#64964E] shadow-sm' : 'text-white/85 hover:text-white'}`}
                             >
                                 <i className="fa-solid fa-graduation-cap"></i> อนุมัติการแลกคะแนน
                                 {pendingRedemptions.length > 0 && (
@@ -348,7 +388,7 @@ export default function PartnerPortalPage() {
             )}
 
             {/* Content Area */}
-            <div className="max-w-4xl mx-auto px-4 pt-6">
+            <div className="max-w-7xl xl:max-w-[95%] mx-auto px-4 pt-6">
                 {partner && activeTab === 'rewards' && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
@@ -358,7 +398,7 @@ export default function PartnerPortalPage() {
                             </div>
                             <button
                                 onClick={openAddReward}
-                                className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition active:scale-95"
+                                className="flex items-center gap-2 bg-[#64964E] hover:bg-[#527d40] text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition active:scale-95"
                             >
                                 <i className="fa-solid fa-plus"></i> เพิ่มของรางวัล
                             </button>
@@ -388,11 +428,11 @@ export default function PartnerPortalPage() {
                                 {partner.rewards.map(reward => (
                                     <div key={reward.id} className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col justify-between hover:shadow-md transition">
                                         <div className="p-5 flex gap-4">
-                                            <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center overflow-hidden shrink-0 border border-indigo-100">
+                                            <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center overflow-hidden shrink-0 border border-green-100">
                                                 {reward.imageUrl ? (
                                                     <img src={reward.imageUrl} alt="" className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <i className="fa-solid fa-gift text-indigo-400 text-2xl"></i>
+                                                    <i className="fa-solid fa-gift text-green-500 text-2xl"></i>
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -419,9 +459,16 @@ export default function PartnerPortalPage() {
                                         <div className="bg-slate-50 px-5 py-3 border-t border-slate-50 flex items-center justify-between">
                                             <div>
                                                 <span className="text-xs text-slate-400 block leading-none">ต้องใช้</span>
-                                                <span className="text-lg font-black text-indigo-600">{reward.pointCost.toLocaleString()} <span className="text-xs text-indigo-400">แต้ม</span></span>
+                                                <span className="text-lg font-black text-green-600">{reward.pointCost.toLocaleString()} <span className="text-xs text-green-500">แต้ม</span></span>
                                             </div>
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-2 items-center">
+                                                <div 
+                                                    className={`w-9 h-5 rounded-full mr-2 cursor-pointer transition flex items-center ${reward.active ? 'bg-[#64964E]' : 'bg-slate-300'}`} 
+                                                    onClick={() => toggleRewardActive(reward)}
+                                                    title={reward.active ? 'ปิดการใช้งาน' : 'เปิดการใช้งาน'}
+                                                >
+                                                    <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${reward.active ? 'translate-x-[18px]' : 'translate-x-[2px]'}`}></div>
+                                                </div>
                                                 <button
                                                     onClick={() => openEditReward(reward)}
                                                     className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-500 flex items-center justify-center transition"
@@ -491,13 +538,17 @@ export default function PartnerPortalPage() {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 mb-1.5 block">URL รูปภาพโลโก้</label>
+                                    <label className="text-xs font-bold text-slate-500 mb-1.5 block">อัปโหลดโลโก้ร้านค้า</label>
+                                    {partnerForm.logoUrl && (
+                                        <div className="mb-2 w-16 h-16 rounded-full overflow-hidden border border-slate-200">
+                                            <img src={partnerForm.logoUrl} alt="Logo Preview" className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
                                     <input
-                                        type="text"
-                                        value={partnerForm.logoUrl}
-                                        onChange={e => setPartnerForm(p => ({ ...p, logoUrl: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-400"
-                                        placeholder="https://example.com/logo.png"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={e => handleFileUpload(e, url => setPartnerForm(p => ({ ...p, logoUrl: url })))}
+                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                                     />
                                 </div>
                             </div>
@@ -628,7 +679,7 @@ export default function PartnerPortalPage() {
                                 <input
                                     value={rewardForm.name}
                                     onChange={e => setRewardForm(r => ({ ...r, name: e.target.value }))}
-                                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                                     placeholder="เช่น ส่วนลด 20 บาท หรือ ชานม 1 แก้ว"
                                 />
                             </div>
@@ -638,7 +689,7 @@ export default function PartnerPortalPage() {
                                 <input
                                     value={rewardForm.description}
                                     onChange={e => setRewardForm(r => ({ ...r, description: e.target.value }))}
-                                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-400"
+                                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-green-400"
                                     placeholder="เช่น เฉพาะวันจันทร์-ศุกร์ เท่านั้น"
                                 />
                             </div>
@@ -652,12 +703,12 @@ export default function PartnerPortalPage() {
                                             key={cat}
                                             type="button"
                                             onClick={() => setRewardForm(r => ({ ...r, category: cat }))}
-                                            className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition text-center ${rewardForm.category === cat ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'}`}
+                                            className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition text-center ${rewardForm.category === cat ? 'border-[#64964E] bg-green-50' : 'border-slate-200 hover:border-slate-300'}`}
                                         >
-                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${rewardForm.category === cat ? 'bg-indigo-100' : 'bg-slate-100'}`}>
-                                                <i className={`fa-solid ${REWARD_CATEGORY_ICONS[cat]} text-sm ${rewardForm.category === cat ? 'text-indigo-600' : 'text-slate-400'}`}></i>
+                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${rewardForm.category === cat ? 'bg-green-100' : 'bg-slate-100'}`}>
+                                                <i className={`fa-solid ${REWARD_CATEGORY_ICONS[cat]} text-sm ${rewardForm.category === cat ? 'text-green-600' : 'text-slate-400'}`}></i>
                                             </div>
-                                            <span className={`text-xs font-bold leading-tight ${rewardForm.category === cat ? 'text-indigo-700' : 'text-slate-500'}`}>{cat}</span>
+                                            <span className={`text-xs font-bold leading-tight ${rewardForm.category === cat ? 'text-green-700' : 'text-slate-500'}`}>{cat}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -671,7 +722,7 @@ export default function PartnerPortalPage() {
                                         min={1}
                                         value={rewardForm.pointCost}
                                         onChange={e => setRewardForm(r => ({ ...r, pointCost: parseInt(e.target.value) || 0 }))}
-                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-400"
+                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-green-400"
                                     />
                                 </div>
                                 <div>
@@ -679,7 +730,7 @@ export default function PartnerPortalPage() {
                                     <select
                                         value={rewardForm.rewardType}
                                         onChange={e => setRewardForm(r => ({ ...r, rewardType: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-400 bg-white"
+                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-green-400 bg-white"
                                     >
                                         {REWARD_TYPES.map(t => (
                                             <option key={t} value={t}>{REWARD_TYPE_LABELS[t]}</option>
@@ -696,23 +747,63 @@ export default function PartnerPortalPage() {
                                         min={-1}
                                         value={rewardForm.stock}
                                         onChange={e => setRewardForm(r => ({ ...r, stock: parseInt(e.target.value) || -1 }))}
-                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-400"
+                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-green-400"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 mb-1 block">URL รูปภาพของรางวัล</label>
+                                    <label className="text-xs font-bold text-slate-500 mb-1 block">อัปโหลดรูปภาพของรางวัล</label>
+                                    {rewardForm.imageUrl && (
+                                        <div className="mb-2 h-20 w-32 rounded-lg overflow-hidden border border-slate-200">
+                                            <img src={rewardForm.imageUrl} alt="Reward Preview" className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
                                     <input
-                                        value={rewardForm.imageUrl}
-                                        onChange={e => setRewardForm(r => ({ ...r, imageUrl: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-400"
-                                        placeholder="https://..."
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={e => handleFileUpload(e, url => setRewardForm(r => ({ ...r, imageUrl: url })))}
+                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-green-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                                     />
+                                </div>
+                            </div>
+
+                            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 mt-2">
+                                <label className="text-sm font-bold text-slate-700 mb-3 block">ข้อมูลที่ต้องการจากลูกค้าตอนแลกรางวัล</label>
+                                <div className="grid grid-cols-2 gap-2 text-sm text-slate-600">
+                                    {[
+                                        { id: 'NAME', label: 'ชื่อ-นามสกุล' },
+                                        { id: 'ADDRESS', label: 'ที่อยู่' },
+                                        { id: 'AGE', label: 'อายุ' },
+                                        { id: 'PHONE', label: 'เบอร์โทร' },
+                                        { id: 'EMAIL', label: 'อีเมล' },
+                                        ...((partner?.category === 'ร้านสำหรับนักศึกษา' || rewardForm.category === 'สำหรับนักศึกษา') ? [
+                                            { id: 'STUDENT_ID', label: 'รหัสนักศึกษา' },
+                                            { id: 'FACULTY', label: 'คณะ' },
+                                            { id: 'MAJOR', label: 'สาขา' }
+                                        ] : [])
+                                    ].map(field => (
+                                        <label key={field.id} className="flex items-center gap-2 cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                className="w-4 h-4 text-[#64964E] focus:ring-[#64964E] border-gray-300 rounded"
+                                                checked={rewardForm.requiredFields?.includes(field.id)}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setRewardForm(prev => {
+                                                        const reqs = prev.requiredFields || [];
+                                                        if (checked) return { ...prev, requiredFields: [...reqs, field.id] };
+                                                        return { ...prev, requiredFields: reqs.filter(id => id !== field.id) };
+                                                    });
+                                                }}
+                                            />
+                                            <span>{field.label}</span>
+                                        </label>
+                                    ))}
                                 </div>
                             </div>
 
                             <label className="flex items-center gap-3 cursor-pointer pt-2">
                                 <div
-                                    className={`w-10 h-6 rounded-full transition ${rewardForm.active ? 'bg-indigo-600' : 'bg-slate-300'} relative`}
+                                    className={`w-10 h-6 rounded-full transition ${rewardForm.active ? 'bg-[#64964E]' : 'bg-slate-300'} relative`}
                                     onClick={() => setRewardForm(r => ({ ...r, active: !r.active }))}
                                 >
                                     <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${rewardForm.active ? 'translate-x-4' : ''}`}></div>
@@ -731,7 +822,7 @@ export default function PartnerPortalPage() {
                             <button
                                 onClick={saveReward}
                                 disabled={saving || !rewardForm.name || rewardForm.pointCost < 1}
-                                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:shadow-lg transition disabled:opacity-50"
+                                className="flex-1 py-3 rounded-xl bg-[#64964E] text-white font-bold hover:shadow-lg hover:bg-[#527d40] transition disabled:opacity-50"
                             >
                                 {saving ? 'กำลังบันทึก...' : 'บันทึกของรางวัล'}
                             </button>

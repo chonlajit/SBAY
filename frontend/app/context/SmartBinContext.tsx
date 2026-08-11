@@ -16,6 +16,10 @@ export interface User {
     studentId?: string;
     faculty?: string;
     major?: string;
+    academicYear?: string;
+    address?: string;
+    age?: number;
+    profileImageUrl?: string;
     points: number;
     volunteerHours?: number;
     activityCredits?: number;
@@ -23,9 +27,10 @@ export interface User {
 }
 
 export interface WasteType {
-    type: string;
-    label: string;
-    points: number;
+    type?: string;
+    label?: string;
+    points?: number;
+    [key: string]: any;
 }
 
 interface SmartBinContextType {
@@ -46,6 +51,7 @@ interface SmartBinContextType {
     loginWithGoogle: (accessToken: string, machineId: string) => Promise<{ success: boolean; message?: string; email?: string }>;
     // Register: Manual (Email OTP)
     sendRegisterOtp: (email: string) => Promise<{ success: boolean; message?: string }>;
+    sendForgotOtp: (email: string) => Promise<{ success: boolean; message?: string }>;
     register: (form: any) => Promise<{ success: boolean; message?: string }>;
     // Register: Google
     registerWithGoogle: (accessToken: string, extraInfo: any) => Promise<{ success: boolean; message?: string; email?: string }>;
@@ -285,6 +291,18 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
         } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
 
+    // Forgot Password: Email OTP (checks if email exists in database first)
+    const sendForgotOtp = async (email: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/otp/send`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.trim().toLowerCase() })
+            });
+            const data = await res.json();
+            return data.error ? { success: false, message: data.error } : { success: true, message: data.message };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
     const register = async (form: any): Promise<{ success: boolean; message?: string }> => {
         try {
             const res = await fetch(`${apiBase}/auth/register`, {
@@ -390,9 +408,8 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             user, sessionPoints, sessionHistory, latestSession, wasteTypes: wasteTypes,
             sendOtp, login,
             sendPhoneOtp, loginWithPhone,
-            loginWithPassword,
-            loginWithGoogle,
-            sendRegisterOtp, register,
+            loginWithPassword, loginWithGoogle,
+            sendRegisterOtp, sendForgotOtp, register,
             registerWithGoogle,
             sendForgotPasswordOtp,
             resetPassword,

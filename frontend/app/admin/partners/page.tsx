@@ -38,7 +38,8 @@ interface UserItem {
     partnerId?: string;
 }
 
-const STORE_CATEGORIES = ['อาหาร & เครื่องดื่ม', 'ร้านค้า', 'บริการ', 'ความงาม', 'ไอที & เทคโนโลยี', 'อื่นๆ', 'ร้านสำหรับนักศึกษา'];
+const GENERAL_STORE_CATEGORIES = ['ร้านขายของ', 'ร้านของสะสม', 'แฟชั่น', 'อาหาร เครื่องดื่ม', 'บริการ', 'ไอที เทคโนโลยี'];
+const STORE_CATEGORIES = [...GENERAL_STORE_CATEGORIES, 'ร้านสำหรับนักศึกษา'];
 const REWARD_CATEGORIES = ['สินค้า', 'ส่วนลดร้านค้า', 'สำหรับนักศึกษา'];
 const REWARD_TYPES = ['DISCOUNT', 'FREEBIE', 'VOUCHER', 'OTHER'];
 const REWARD_TYPE_LABELS: Record<string, string> = {
@@ -56,7 +57,7 @@ const REWARD_CATEGORY_ICONS: Record<string, string> = {
 };
 
 const emptyPartner: Omit<Partner, 'id' | 'rewards'> = {
-    name: '', description: '', logoUrl: '', category: 'อาหาร & เครื่องดื่ม', active: true
+    name: '', description: '', logoUrl: '', category: 'ร้านขายของ', active: true
 };
 const emptyReward: Omit<PartnerReward, 'id'> = {
     name: '', description: '', pointCost: 100, rewardType: 'DISCOUNT', category: 'สินค้า', imageUrl: '', active: true, stock: -1
@@ -76,6 +77,7 @@ export default function AdminPartnersPage() {
 
     // Partner form
     const [showPartnerModal, setShowPartnerModal] = useState(false);
+    const [partnerModalType, setPartnerModalType] = useState<'general' | 'student'>('general');
     const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
     const [selectedUserId, setSelectedUserId] = useState<string>('');
     const [partnerForm, setPartnerForm] = useState<typeof emptyPartner>({ ...emptyPartner });
@@ -124,14 +126,17 @@ export default function AdminPartnersPage() {
     useEffect(() => { fetchPartners(); fetchUsers(); }, [fetchPartners, fetchUsers]);
 
     // === Partner CRUD ===
-    const openAddPartner = () => {
+    const openAddPartner = (type: 'general' | 'student') => {
         setEditingPartner(null);
-        setPartnerForm({ ...emptyPartner });
+        setPartnerModalType(type);
+        const defaultCat = type === 'student' ? 'ร้านสำหรับนักศึกษา' : 'ร้านขายของ';
+        setPartnerForm({ ...emptyPartner, category: defaultCat });
         setSelectedUserId('');
         setShowPartnerModal(true);
     };
     const openEditPartner = (p: Partner) => {
         setEditingPartner(p);
+        setPartnerModalType(p.category === 'ร้านสำหรับนักศึกษา' ? 'student' : 'general');
         setPartnerForm({ name: p.name, description: p.description, logoUrl: p.logoUrl || '', category: p.category, active: p.active });
         setShowPartnerModal(true);
     };
@@ -173,7 +178,12 @@ export default function AdminPartnersPage() {
     const openAddReward = (partner: Partner) => {
         setSelectedPartner(partner);
         setEditingReward(null);
-        setRewardForm({ ...emptyReward });
+        const isStudent = partner.category === 'ร้านสำหรับนักศึกษา';
+        setRewardForm({ 
+            ...emptyReward,
+            category: isStudent ? 'สำหรับนักศึกษา' : 'สินค้า',
+            rewardType: isStudent ? 'ACTIVITY' : 'OTHER'
+        });
         setShowRewardModal(true);
     };
     const openEditReward = (partner: Partner, reward: PartnerReward) => {
@@ -243,10 +253,10 @@ export default function AdminPartnersPage() {
     const regularUsers = users.filter(u => u.role !== 'PARTNER' && u.role !== 'ADMIN');
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-20">
+        <div className="min-h-screen pb-20" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')", backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
             {/* Header */}
-            <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white p-6 rounded-b-3xl shadow-lg shadow-purple-200">
-                <div className="flex items-center justify-between max-w-5xl mx-auto">
+            <div className="bg-[#64964E]/80 backdrop-blur-md text-white p-6 rounded-b-3xl shadow-xl border-b border-white/20">
+                <div className="flex items-center justify-between max-w-7xl xl:max-w-[95%] mx-auto">
                     <div className="flex items-center gap-3">
                         <button onClick={() => router.push('/admin')} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
                             <i className="fa-solid fa-arrow-left text-sm"></i>
@@ -257,17 +267,25 @@ export default function AdminPartnersPage() {
                         </div>
                     </div>
                     {activeTab === 'partners' && (
-                        <button
-                            onClick={openAddPartner}
-                            className="flex items-center gap-2 bg-white text-purple-600 font-bold text-sm px-4 py-2.5 rounded-xl shadow-md hover:bg-purple-50 transition active:scale-95"
-                        >
-                            <i className="fa-solid fa-plus"></i> เพิ่มร้าน
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => openAddPartner('general')}
+                                className="flex items-center gap-1.5 bg-white text-purple-600 font-bold text-sm px-4 py-2 rounded-xl shadow-md hover:bg-purple-50 transition active:scale-95"
+                            >
+                                <i className="fa-solid fa-store"></i> เพิ่มร้านทั่วไป
+                            </button>
+                            <button
+                                onClick={() => openAddPartner('student')}
+                                className="flex items-center gap-1.5 bg-[#64964E] text-white font-bold text-sm px-4 py-2 rounded-xl shadow-md hover:bg-[#527d40] transition active:scale-95"
+                            >
+                                <i className="fa-solid fa-graduation-cap"></i> เพิ่มร้านนักศึกษา
+                            </button>
+                        </div>
                     )}
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-1 max-w-5xl mx-auto mt-5 bg-white/10 rounded-2xl p-1">
+                <div className="flex gap-1 max-w-7xl xl:max-w-[95%] mx-auto mt-5 bg-white/10 rounded-2xl p-1">
                     <button
                         onClick={() => setActiveTab('partners')}
                         className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition ${activeTab === 'partners' ? 'bg-white text-purple-700 shadow-sm' : 'text-white/80 hover:text-white'}`}
@@ -287,7 +305,7 @@ export default function AdminPartnersPage() {
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-4 pt-6 space-y-4">
+            <div className="max-w-7xl xl:max-w-[95%] mx-auto px-4 pt-6 space-y-4">
 
                 {/* === Tab: Partners === */}
                 {activeTab === 'partners' && (
@@ -443,7 +461,7 @@ export default function AdminPartnersPage() {
                                         return (
                                             <div key={u.id} className="flex items-center gap-4 px-5 py-3">
                                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center text-violet-700 font-black text-sm shrink-0">
-                                                    {u.firstName?.charAt(0) || '?'}
+                                                    {(u.firstName || u.username || '?').charAt(0).toUpperCase()}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-bold text-slate-800 text-sm">{u.firstName} {u.lastName}</div>
@@ -497,7 +515,7 @@ export default function AdminPartnersPage() {
                                     {regularUsers.map(u => (
                                         <div key={u.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition">
                                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-700 font-black text-xs shrink-0">
-                                                {u.firstName?.charAt(0) || '?'}
+                                                {(u.firstName || u.username || '?').charAt(0).toUpperCase()}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="font-bold text-slate-700 text-sm">{u.firstName} {u.lastName}</div>
@@ -521,53 +539,105 @@ export default function AdminPartnersPage() {
             {/* === Partner Modal === */}
             {showPartnerModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-                    <div className="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-3xl p-6 shadow-2xl">
-                        <div className="flex items-center justify-between mb-5">
-                            <h2 className="font-black text-lg text-slate-800">{editingPartner ? 'แก้ไขร้านค้า' : 'เพิ่มร้านค้าใหม่'}</h2>
-                            <button onClick={() => setShowPartnerModal(false)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center"><i className="fa-solid fa-times text-slate-500"></i></button>
+                    <div className="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden">
+                        {/* Header */}
+                        <div className={`px-6 py-4 flex items-center justify-between ${
+                            partnerModalType === 'student' ? 'bg-[#64964E] text-white' : 'bg-[#64964E] text-white'
+                        }`}>
+                            <div className="flex items-center gap-2">
+                                <h2 className="font-medium text-xl">
+                                    {editingPartner
+                                        ? 'แก้ไขร้านค้า'
+                                        : `เพิ่มร้านค้าใหม่ สำหรับ${partnerModalType === 'student' ? 'นักศึกษา' : 'ร้านทั่วไป'}`
+                                    }
+                                </h2>
+                            </div>
+                            <button onClick={() => setShowPartnerModal(false)} className="text-white hover:text-white/80 text-xl font-light">
+                                X
+                            </button>
                         </div>
-                        <div className="space-y-3">
+                        
+                        <div className="p-6 space-y-4">
                             <div>
-                                <label className="text-xs font-bold text-slate-500 mb-1 block">ชื่อร้าน *</label>
-                                <input value={partnerForm.name} onChange={e => setPartnerForm(p => ({ ...p, name: e.target.value }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100" placeholder="เช่น คาเฟ่ริมน้ำ" />
+                                <label className="text-sm text-gray-500 mb-1 block">
+                                    {partnerModalType === 'student' ? 'ชื่อสถานศึกษา' : 'ชื่อร้าน'}
+                                </label>
+                                <input value={partnerForm.name} onChange={e => setPartnerForm(p => ({ ...p, name: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none focus:border-[#64964E]" />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-slate-500 mb-1 block">คำอธิบาย</label>
-                                <textarea value={partnerForm.description} onChange={e => setPartnerForm(p => ({ ...p, description: e.target.value }))} rows={2} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 resize-none" placeholder="อธิบายร้านสั้นๆ" />
+                                <label className="text-sm text-gray-500 mb-1 flex items-center justify-between">
+                                    <span>คำอธิบายสั้นๆ <span className="text-xs text-gray-400 ml-1">(50 ตัวอักษร)</span></span>
+                                </label>
+                                <textarea value={partnerForm.description} onChange={e => setPartnerForm(p => ({ ...p, description: e.target.value.slice(0, 50) }))} rows={2} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none focus:border-[#64964E] resize-none" />
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
+                            
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 mb-1 block">ประเภทร้าน</label>
-                                    <select value={partnerForm.category} onChange={e => setPartnerForm(p => ({ ...p, category: e.target.value }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-400 bg-white">
-                                        {STORE_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                    </select>
+                                    <label className="text-sm text-[#64964E] mb-1 block">
+                                        {partnerModalType === 'student' ? 'ประเภทร้าน' : 'ประเภทร้านสำหรับร้านทั่วไป'}
+                                    </label>
+                                    {partnerModalType === 'student' ? (
+                                        <div className="w-full border border-emerald-300 bg-emerald-50 rounded-lg px-4 py-2 text-sm text-emerald-700 font-bold flex items-center justify-between">
+                                            ร้านสำหรับนักศึกษา
+                                        </div>
+                                    ) : (
+                                        <div className="relative">
+                                            <select value={partnerForm.category} onChange={e => setPartnerForm(p => ({ ...p, category: e.target.value }))} className="w-full border-none bg-[#64964E] text-white rounded-lg px-4 py-2 text-sm outline-none appearance-none cursor-pointer">
+                                                {GENERAL_STORE_CATEGORIES.map(cat => <option key={cat} value={cat} className="bg-[#64964E]">{cat}</option>)}
+                                            </select>
+                                            <i className="fa-solid fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none"></i>
+                                        </div>
+                                    )}
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold text-slate-500 mb-1 block">URL โลโก้</label>
-                                    <input value={partnerForm.logoUrl} onChange={e => setPartnerForm(p => ({ ...p, logoUrl: e.target.value }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-400" placeholder="https://..." />
-                        <div className="mt-3">
-                            <label className="text-xs font-bold text-slate-500 mb-1 block">ผู้ใช้ตัวแทน (เลือกจากผู้ใช้ที่ยังไม่เป็น Partner)</label>
-                            <select value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-400 bg-white">
-                                <option value="">ไม่มี (ไม่กำหนด)</option>
-                                {regularUsers.map(u => (
-                                    <option key={u.id} value={u.id}>{u.firstName} {u.lastName} {u.username ? `(@${u.username})` : `(${u.phoneNumber})`}</option>
-                                ))}
-                            </select>
-                        </div>
+                                <div className="flex flex-col">
+                                    <label className="text-sm text-[#64964E] mb-1 block leading-tight">URL โลโก้ร้าน <br/><span className="text-xs text-[#64964E] font-light">หรืออัปโหลดจากอุปกรณ์</span></label>
+                                    <div className="relative">
+                                        <input value={partnerForm.logoUrl} onChange={e => setPartnerForm(p => ({ ...p, logoUrl: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none focus:border-[#64964E] pr-24" />
+                                        <input type="file" accept="image/*" className="hidden" id="partnerLogoUpload" onChange={e => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (ev) => {
+                                                    setPartnerForm(p => ({ ...p, logoUrl: ev.target?.result as string }));
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }} />
+                                        <label htmlFor="partnerLogoUpload" className="absolute right-0 top-0 h-full px-3 bg-[#64964E] text-white rounded-r-lg text-xs font-bold tracking-wider hover:bg-[#527d40] transition flex items-center gap-1 cursor-pointer">
+                                            UPLOAD <i className="fa-solid fa-arrow-up"></i>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                            <label className="flex items-center gap-3 cursor-pointer">
-                                <div className={`w-10 h-6 rounded-full transition ${partnerForm.active ? 'bg-purple-500' : 'bg-slate-300'} relative`} onClick={() => setPartnerForm(p => ({ ...p, active: !p.active }))}>
+                            
+                            {!editingPartner && (
+                                <div className="w-1/2 ml-auto">
+                                    <label className="text-sm text-[#64964E] mb-1 block">กำหนดตัวแทนPartner จาก Username</label>
+                                    <div className="relative">
+                                        <select value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} className="w-full border-none bg-[#64964E] text-white rounded-lg px-4 py-2 text-sm outline-none appearance-none cursor-pointer">
+                                            <option value="" className="bg-[#64964E]">ไม่มี (ไม่กำหนด)</option>
+                                            {regularUsers.map(u => (
+                                                <option key={u.id} value={u.id} className="bg-[#64964E]">{u.firstName} {u.lastName} {u.username ? `(@${u.username})` : `(${u.phoneNumber})`}</option>
+                                            ))}
+                                        </select>
+                                        <i className="fa-solid fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none"></i>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <label className="flex items-center gap-3 cursor-pointer mt-4">
+                                <div className={`w-10 h-6 rounded-full transition ${partnerForm.active ? 'bg-[#64964E]' : 'bg-slate-300'} relative`} onClick={() => setPartnerForm(p => ({ ...p, active: !p.active }))}>
                                     <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${partnerForm.active ? 'translate-x-4' : ''}`}></div>
                                 </div>
                                 <span className="text-sm font-medium text-slate-700">เปิดให้แสดงในหน้าแลกคะแนน</span>
                             </label>
-                        </div>
-                        <div className="flex gap-3 mt-5">
-                            <button onClick={() => setShowPartnerModal(false)} className="flex-1 py-3 rounded-xl border-2 border-slate-200 font-bold text-slate-500 hover:bg-slate-50 transition">ยกเลิก</button>
-                            <button onClick={savePartner} disabled={saving || !partnerForm.name} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 text-white font-bold hover:shadow-lg transition disabled:opacity-50">
-                                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
-                            </button>
+
+                            <div className="flex gap-3 mt-6">
+                                <button onClick={() => setShowPartnerModal(false)} className="flex-1 py-3 rounded-xl border border-gray-300 font-bold text-gray-500 hover:bg-gray-50 transition">ยกเลิก</button>
+                                <button onClick={savePartner} disabled={saving || !partnerForm.name} className="flex-1 py-3 rounded-xl bg-[#64964E] text-white font-bold hover:bg-[#527d40] transition disabled:opacity-50">
+                                    {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -594,46 +664,61 @@ export default function AdminPartnersPage() {
                                 <input value={rewardForm.description} onChange={e => setRewardForm(r => ({ ...r, description: e.target.value }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400" placeholder="รายละเอียดของรางวัล" />
                             </div>
 
-                            {/* Category Selection — visual cards */}
-                            <div>
-                                <label className="text-xs font-bold text-slate-500 mb-2 block">หมวดหมู่ของรางวัล *</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {REWARD_CATEGORIES.map(cat => (
-                                        <button
-                                            key={cat}
-                                            type="button"
-                                            onClick={() => setRewardForm(r => ({ ...r, category: cat }))}
-                                            className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition text-center ${rewardForm.category === cat ? 'border-violet-500 bg-violet-50' : 'border-slate-200 hover:border-slate-300'}`}
-                                        >
-                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${rewardForm.category === cat ? 'bg-violet-100' : 'bg-slate-100'}`}>
-                                                <i className={`fa-solid ${REWARD_CATEGORY_ICONS[cat]} text-sm ${rewardForm.category === cat ? 'text-violet-600' : 'text-slate-400'}`}></i>
-                                            </div>
-                                            <span className={`text-xs font-bold leading-tight ${rewardForm.category === cat ? 'text-violet-700' : 'text-slate-500'}`}>{cat}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-xs font-bold text-slate-500 mb-1 block">ต้องใช้กี่แต้ม *</label>
-                                    <input type="number" min={1} value={rewardForm.pointCost} onChange={e => setRewardForm(r => ({ ...r, pointCost: parseInt(e.target.value) || 0 }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400" />
+                                    <input type="number" min={1} value={rewardForm.pointCost} onChange={e => setRewardForm(r => ({ ...r, pointCost: e.target.value === '' ? ('' as any) : parseInt(e.target.value) }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400" />
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-500 mb-1 block">ประเภทรางวัล</label>
-                                    <select value={rewardForm.rewardType} onChange={e => setRewardForm(r => ({ ...r, rewardType: e.target.value }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400 bg-white">
-                                        {REWARD_TYPES.map(t => <option key={t} value={t}>{REWARD_TYPE_LABELS[t]}</option>)}
+                                    <select 
+                                        value={rewardForm.rewardType === 'ACTIVITY' || rewardForm.rewardType === 'VOLUNTEER' ? rewardForm.rewardType : (rewardForm.category === 'ส่วนลดร้านค้า' ? 'DISCOUNT' : 'PRODUCT')}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            if (val === 'ACTIVITY') setRewardForm(r => ({ ...r, category: 'สำหรับนักศึกษา', rewardType: 'ACTIVITY' }));
+                                            else if (val === 'VOLUNTEER') setRewardForm(r => ({ ...r, category: 'สำหรับนักศึกษา', rewardType: 'VOLUNTEER' }));
+                                            else if (val === 'PRODUCT') setRewardForm(r => ({ ...r, category: 'สินค้า', rewardType: 'OTHER' }));
+                                            else if (val === 'DISCOUNT') setRewardForm(r => ({ ...r, category: 'ส่วนลดร้านค้า', rewardType: 'DISCOUNT' }));
+                                        }} 
+                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400 bg-white"
+                                    >
+                                        {selectedPartner?.category === 'ร้านสำหรับนักศึกษา' ? (
+                                            <>
+                                                <option value="ACTIVITY">หน่วยกิตกิจกรรม</option>
+                                                <option value="VOLUNTEER">ชั่วโมงจิตอาสา</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="PRODUCT">สินค้า</option>
+                                                <option value="DISCOUNT">ส่วนลด</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-xs font-bold text-slate-500 mb-1 block">จำนวน (-1 = ไม่จำกัด)</label>
-                                    <input type="number" min={-1} value={rewardForm.stock} onChange={e => setRewardForm(r => ({ ...r, stock: parseInt(e.target.value) || -1 }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400" />
+                                    <input type="number" min={-1} value={rewardForm.stock} onChange={e => setRewardForm(r => ({ ...r, stock: e.target.value === '' ? ('' as any) : parseInt(e.target.value) }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400" />
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-500 mb-1 block">URL รูปภาพ</label>
-                                    <input value={rewardForm.imageUrl} onChange={e => setRewardForm(r => ({ ...r, imageUrl: e.target.value }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400" placeholder="https://..." />
+                                    <div className="relative">
+                                        <input value={rewardForm.imageUrl} onChange={e => setRewardForm(r => ({ ...r, imageUrl: e.target.value }))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400 pr-24" placeholder="https://..." />
+                                        <input type="file" accept="image/*" className="hidden" id="adminRewardImageUpload" onChange={e => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (ev) => {
+                                                    setRewardForm(r => ({ ...r, imageUrl: ev.target?.result as string }));
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }} />
+                                        <label htmlFor="adminRewardImageUpload" className="absolute right-1.5 top-1.5 bottom-1.5 px-4 bg-emerald-100 text-emerald-600 rounded-lg text-xs font-bold flex items-center justify-center cursor-pointer hover:bg-emerald-200 transition">
+                                            อัปโหลด
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <label className="flex items-center gap-3 cursor-pointer">

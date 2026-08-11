@@ -86,8 +86,7 @@ public class OtpService {
         }
 
         if (stored.equals(otp.trim())) {
-            otpValues.remove(key);
-            otpStore.remove(key);
+            // Do not remove OTP immediately so it can be verified again in Step 3
             return true;
         }
 

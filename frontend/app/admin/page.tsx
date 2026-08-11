@@ -229,9 +229,9 @@ export default function AdminPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 font-sans pb-10 animate-pulse">
-                <div className="bg-gradient-to-br from-slate-800 to-slate-700 px-6 pt-8 pb-14 relative overflow-hidden">
-                    <div className="max-w-6xl mx-auto relative z-10 flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0">
+            <div className="min-h-screen font-sans pb-10 animate-pulse" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')", backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
+                <div className="bg-[#64964E]/80 backdrop-blur-md px-6 pt-8 pb-14 relative overflow-hidden border-b border-white/20">
+                    <div className="max-w-7xl xl:max-w-[95%] mx-auto relative z-10 flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0">
                         <div className="space-y-3">
                             <div className="flex items-center space-x-3">
                                 <div className="w-10 h-10 bg-slate-600 rounded-xl"></div>
@@ -245,7 +245,7 @@ export default function AdminPage() {
                         </div>
                     </div>
                 </div>
-                <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-10 space-y-6">
+                <div className="max-w-7xl xl:max-w-[95%] mx-auto px-4 -mt-8 relative z-10 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {[1, 2, 3, 4].map(i => (
                             <div key={i} className="bg-white rounded-2xl shadow-lg p-5 border border-slate-100">
@@ -273,7 +273,7 @@ export default function AdminPage() {
 
     if (error) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
+            <div className="min-h-screen flex flex-col items-center justify-center p-4" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')", backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
                 <div className="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full">
                     <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span className="text-4xl">⛔</span>
@@ -294,13 +294,13 @@ export default function AdminPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans pb-10">
+        <div className="min-h-screen font-sans pb-10" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')", backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
             {/* Admin Header */}
-            <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white px-6 pt-8 pb-14 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/20 rounded-full blur-2xl -ml-10 -mb-10" />
+            <div className="bg-[#64964E]/80 backdrop-blur-md text-white px-6 pt-8 pb-14 relative overflow-hidden border-b border-white/20">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -ml-20 -mb-20" />
                 
-                <div className="max-w-6xl mx-auto relative z-10 flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0">
+                <div className="max-w-7xl xl:max-w-[95%] mx-auto relative z-10 flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0">
                     <div>
                         <div className="flex items-center space-x-3 mb-2">
                             <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center border border-blue-400/30">
@@ -325,7 +325,7 @@ export default function AdminPage() {
             </div>
 
             {/* Main Content */}
-            <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-10 space-y-6">
+            <div className="max-w-7xl xl:max-w-[95%] mx-auto px-4 -mt-8 relative z-10 space-y-6">
                 
                 {/* Stats Cards */}
                 {summary && (

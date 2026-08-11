@@ -81,6 +81,18 @@ public class PartnerController {
         return partnerRepository.findByActiveTrue();
     }
 
+    /** ดึงจำนวนการแลกคะแนนต่อร้าน (สำหรับเรียงร้านตามความนิยม) */
+    @GetMapping("/api/partners/redemption-counts")
+    public Map<String, Long> getPartnerRedemptionCounts() {
+        List<Partner> allPartners = partnerRepository.findByActiveTrue();
+        Map<String, Long> counts = new java.util.HashMap<>();
+        for (Partner p : allPartners) {
+            long count = redemptionRepository.countByPartnerId(p.getId());
+            counts.put(p.getId(), count);
+        }
+        return counts;
+    }
+
     // ========== Admin Endpoints ==========
 
     /** ดึงร้านทั้งหมด (รวมที่ปิดอยู่) */
@@ -223,11 +235,30 @@ public class PartnerController {
         return partnerRepository.save(partner);
     }
 
-    /** ดึงรายการแลกแต้มของนักศึกษาที่รออนุมัติ (สำหรับ Partner หมวดนักศึกษา) */
+    /** ดึงรายการแลกแต้มของนักศึกษาที่รออนุมัติ */
     @GetMapping("/api/partner/redemptions/pending")
     public List<Redemption> getPartnerPendingRedemptions(@RequestHeader("Authorization") String token) {
-        validatePartnerAndGetPartnerId(token);
-        return redemptionRepository.findByStatusOrderByTimestampDesc("PENDING");
+        String partnerId = validatePartnerAndGetPartnerId(token);
+        List<Redemption> redemptions = redemptionRepository.findByPartnerIdAndStatusOrderByTimestampDesc(partnerId, "PENDING");
+        for (Redemption r : redemptions) {
+            if (r.getUsername() == null && r.getUserId() != null) {
+                userRepository.findById(r.getUserId()).ifPresent(u -> r.setUsername(u.getUsername()));
+            }
+        }
+        return redemptions;
+    }
+
+    /** ดึงรายการแลกแต้มที่อนุมัติแล้ว */
+    @GetMapping("/api/partner/redemptions/approved")
+    public List<Redemption> getPartnerApprovedRedemptions(@RequestHeader("Authorization") String token) {
+        String partnerId = validatePartnerAndGetPartnerId(token);
+        List<Redemption> redemptions = redemptionRepository.findByPartnerIdAndStatusOrderByTimestampDesc(partnerId, "APPROVED");
+        for (Redemption r : redemptions) {
+            if (r.getUsername() == null && r.getUserId() != null) {
+                userRepository.findById(r.getUserId()).ifPresent(u -> r.setUsername(u.getUsername()));
+            }
+        }
+        return redemptions;
     }
 
     /** Partner อนุมัติการแลกคะแนน */
@@ -244,10 +275,11 @@ public class PartnerController {
 
     /** Partner ปฏิเสธการแลกคะแนน */
     @PostMapping("/api/partner/redemptions/{id}/reject")
-    public Map<String, String> partnerRejectRedemption(@RequestHeader("Authorization") String token, @PathVariable("id") String id) {
+    public Map<String, String> partnerRejectRedemption(@RequestHeader("Authorization") String token, @PathVariable("id") String id, @RequestBody(required=false) Map<String, String> request) {
         validatePartnerAndGetPartnerId(token);
+        String reason = (request != null && request.containsKey("reason")) ? request.get("reason") : "ถูกปฏิเสธโดยร้านค้า";
         try {
-            recycleService.rejectRedemption(id);
+            recycleService.rejectRedemption(id, reason);
             return Map.of("success", "true", "message", "Redemption rejected");
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());

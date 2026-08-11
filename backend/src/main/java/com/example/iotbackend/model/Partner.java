@@ -18,4 +18,5 @@ public class Partner {
     private boolean active;        // เปิด/ปิด ร้านนี้
     private LocalDateTime createdAt;
     private List<PartnerReward> rewards; // รายการของรางวัลของร้านนี้
+    private double accumulatedPoints;    // แต้มสะสมของร้านค้า (หลังจากหัก 10%)
 }

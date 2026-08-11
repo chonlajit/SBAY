@@ -1,0 +1,6 @@
+[
+    { "type": "PLASTIC_BOTTLE", "size_ml": 500 },
+    { "type": "PLASTIC_BOTTLE", "size_ml": 1500 },
+    { "type": "ALUMINUM_CAN", "size_ml": 330 },
+    { "type": "BEVERAGE_CARTON", "size_ml": 250 }
+]

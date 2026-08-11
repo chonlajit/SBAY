@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Prompt } from "next/font/google";
 import "./globals.css";
 import { SmartBinProvider } from "./context/SmartBinContext";
 import MainLayout from "./components/MainLayout";
 import GoogleAuthProvider from "./components/GoogleAuthProvider";
 
-const inter = Inter({ subsets: ["latin"] });
+const prompt = Prompt({ subsets: ["latin", "thai"], weight: ["300", "400", "500", "600", "700"], variable: "--font-prompt" });
 
 export const metadata: Metadata = {
   title: "SBAY - Smart Recycling Platform",
@@ -27,7 +27,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
       </head>
-      <body className={inter.className}>
+      <body className={`${prompt.variable} ${prompt.className}`}>
         <GoogleAuthProvider>
           <SmartBinProvider>
             <MainLayout>

@@ -129,10 +129,11 @@ public class AdminController {
     }
 
     @PostMapping("/redemptions/{id}/reject")
-    public Map<String, String> rejectRedemption(@RequestHeader("Authorization") String token, @PathVariable String id) {
+    public Map<String, String> rejectRedemption(@RequestHeader("Authorization") String token, @PathVariable String id, @RequestBody(required=false) Map<String, String> request) {
         validateAdmin(token);
+        String reason = (request != null && request.containsKey("reason")) ? request.get("reason") : "ถูกปฏิเสธโดยผู้ดูแลระบบ";
         try {
-            recycleService.rejectRedemption(id);
+            recycleService.rejectRedemption(id, reason);
             return Map.of("success", "true", "message", "Redemption rejected");
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());

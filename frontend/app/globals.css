@@ -10,13 +10,14 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', Arial, Helvetica, sans-serif;
+  font-family: inherit;
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
 }
 
 /* Prevent iOS bounce scroll on body */
-html, body {
+html,
+body {
   overscroll-behavior: none;
 }
 
@@ -31,6 +32,9 @@ html, body {
 }
 
 /* Fix input zoom on iOS (font-size >= 16px prevents zoom) */
-input, select, textarea {
+input,
+select,
+textarea {
   font-size: 16px;
 }
+/* Force rebuild */

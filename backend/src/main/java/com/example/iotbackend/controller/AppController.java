@@ -474,15 +474,37 @@ public class AppController {
         double value = Double.parseDouble(String.valueOf(payload.get("value")));
         String details = (String) payload.get("details");
         
+        String username = (String) payload.get("username");
         String title = (String) payload.get("title");
         String firstName = (String) payload.get("firstName");
         String lastName = (String) payload.get("lastName");
         String studentId = (String) payload.get("studentId");
         String faculty = (String) payload.get("faculty");
         String major = (String) payload.get("major");
+        String academicYear = (String) payload.get("academicYear");
+
+        String address = (String) payload.get("address");
+        Integer age = null;
+        if (payload.containsKey("age")) {
+            Object ageObj = payload.get("age");
+            if (ageObj instanceof Integer) {
+                age = (Integer) ageObj;
+            } else if (ageObj instanceof String) {
+                try {
+                    age = Integer.parseInt((String) ageObj);
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        String email = (String) payload.get("email");
+        String phoneNumber = (String) payload.get("phoneNumber");
+
+        String partnerId = (String) payload.get("partnerId");
+        String partnerRewardId = (String) payload.get("partnerRewardId");
         
         recycleService.redeemPoints(userId, rewardType, cost, value, details, 
-                                    title, firstName, lastName, studentId, faculty, major);
+                                    username, title, firstName, lastName, studentId, faculty, major,
+                                    academicYear, address, age, email, phoneNumber,
+                                    partnerId, partnerRewardId);
     }
 
     @PutMapping("/user/{id}")
@@ -496,8 +518,21 @@ public class AppController {
         if (payload.containsKey("studentId")) existing.setStudentId((String) payload.get("studentId"));
         if (payload.containsKey("faculty")) existing.setFaculty((String) payload.get("faculty"));
         if (payload.containsKey("major")) existing.setMajor((String) payload.get("major"));
+        if (payload.containsKey("academicYear")) existing.setAcademicYear((String) payload.get("academicYear"));
         if (payload.containsKey("username")) existing.setUsername((String) payload.get("username"));
         if (payload.containsKey("phoneNumber")) existing.setPhoneNumber((String) payload.get("phoneNumber"));
+        if (payload.containsKey("address")) existing.setAddress((String) payload.get("address"));
+        if (payload.containsKey("profileImageUrl")) existing.setProfileImageUrl((String) payload.get("profileImageUrl"));
+        if (payload.containsKey("age")) {
+            Object ageObj = payload.get("age");
+            if (ageObj instanceof Integer) {
+                existing.setAge((Integer) ageObj);
+            } else if (ageObj instanceof String) {
+                try {
+                    existing.setAge(Integer.parseInt((String) ageObj));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
         
         return userRepository.save(existing);
     }
@@ -542,8 +577,8 @@ public class AppController {
         String otp = payload.get("otp");
         String newPassword = payload.get("newPassword");
         
-        if (identifier == null || otp == null || newPassword == null) {
-            return Map.of("error", "Missing required fields");
+        if (identifier == null || newPassword == null || newPassword.isBlank()) {
+            return Map.of("error", "กรุณากรอกข้อมูลให้ครบถ้วน");
         }
         
         String rawIdentifier = identifier.trim();
@@ -563,14 +598,67 @@ public class AppController {
         if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้ในระบบ");
         User user = userOpt.get();
         
-        String otpKey = user.getEmail() != null && !user.getEmail().isBlank() ? user.getEmail() : "phone:" + user.getPhoneNumber();
-        boolean valid = otpService.verifyOtp(otpKey, otp.trim());
-        
-        if (!valid) return Map.of("error", "OTP ไม่ถูกต้องหรือหมดอายุแล้ว");
-        
         user.setPassword(hashPassword(newPassword));
         userRepository.save(user);
         
         return Map.of("success", true, "message", "เปลี่ยนรหัสผ่านสำเร็จ");
+    }
+
+    // ─── Change Contact OTP ──────────────────────────────────────────────────
+    @PostMapping("/auth/request-change-contact")
+    public Object requestChangeContact(@RequestBody Map<String, String> payload) {
+        String type = payload.get("type"); // "email" or "phone"
+        String newValue = payload.get("newValue");
+        
+        if (type == null || newValue == null || newValue.isBlank()) {
+            return Map.of("error", "กรุณากรอกข้อมูลให้ครบถ้วน");
+        }
+        
+        if ("email".equals(type)) {
+            otpService.generateAndSendOtp(newValue);
+            return Map.of("success", true, "message", "รหัส OTP ถูกส่งไปยังอีเมลใหม่ของคุณแล้ว");
+        } else if ("phone".equals(type)) {
+            otpService.generateAndSendOtp("phone:" + newValue);
+            return Map.of("success", true, "message", "รหัส OTP ถูกส่งไปยังเบอร์โทรใหม่ของคุณแล้ว (จำลอง)");
+        } else {
+            return Map.of("error", "ประเภทไม่ถูกต้อง");
+        }
+    }
+
+    @PostMapping("/auth/confirm-change-contact")
+    public Object confirmChangeContact(@RequestBody Map<String, String> payload) {
+        String userId = payload.get("userId");
+        String type = payload.get("type"); // "email" or "phone"
+        String newValue = payload.get("newValue");
+        String otp = payload.get("otp");
+        
+        if (userId == null || type == null || newValue == null || otp == null) {
+            return Map.of("error", "กรุณากรอกข้อมูลให้ครบถ้วน");
+        }
+        
+        boolean isValid = false;
+        if ("email".equals(type)) {
+            isValid = otpService.verifyOtp(newValue, otp);
+        } else if ("phone".equals(type)) {
+            isValid = otpService.verifyOtp("phone:" + newValue, otp);
+        }
+        
+        if (!isValid) {
+            return Map.of("error", "รหัส OTP ไม่ถูกต้องหรือหมดอายุ");
+        }
+        
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return Map.of("error", "ไม่พบผู้ใช้งาน");
+        }
+        
+        if ("email".equals(type)) {
+            user.setEmail(newValue);
+        } else if ("phone".equals(type)) {
+            user.setPhoneNumber(newValue);
+        }
+        userRepository.save(user);
+        
+        return Map.of("success", true, "message", "อัปเดตข้อมูลสำเร็จ");
     }
 }

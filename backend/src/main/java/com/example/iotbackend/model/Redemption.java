@@ -19,10 +19,22 @@ public class Redemption {
     private LocalDateTime timestamp;
     
     // Academic details captured at redemption time
+    private String username;
     private String title;
     private String firstName;
     private String lastName;
+    private String rejectReason;
     private String studentId;
     private String faculty;
     private String major;
+    private String academicYear;
+    private String address;
+    private Integer age;
+    private String email;
+    private String phoneNumber;
+
+    // Partner redemption tracking
+    private String partnerId;
+    private String partnerRewardId;
+    private String referenceCode;
 }

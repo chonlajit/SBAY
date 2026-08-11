@@ -20,6 +20,7 @@ def main():
     try:
         # Try localhost:8080 (Nginx) first, then fallback to backend port 8080 directly
         urls = [
+            f"http://localhost:8070/api/auth/promote?email={urllib.parse.quote(email)}",
             f"http://localhost:8080/api/auth/promote?email={urllib.parse.quote(email)}",
             f"http://localhost:80/api/auth/promote?email={urllib.parse.quote(email)}",
         ]

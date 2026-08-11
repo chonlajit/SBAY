@@ -24,6 +24,9 @@ public class RecycleService {
     private com.example.iotbackend.repository.RedemptionRepository redemptionRepository;
 
     @Autowired
+    private com.example.iotbackend.repository.PartnerRepository partnerRepository;
+
+    @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
     // Map<MachineId, UserId>
@@ -86,13 +89,15 @@ public class RecycleService {
     }
 
     public void redeemPoints(String userId, String rewardType, int cost, double value, String details,
-                             String title, String firstName, String lastName,
-                             String studentId, String faculty, String major) {
+                             String username, String title, String firstName, String lastName,
+                             String studentId, String faculty, String major,
+                             String academicYear, String address, Integer age, String email, String phoneNumber,
+                             String partnerId, String partnerRewardId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (user.getPoints() < cost) {
-            throw new RuntimeException("Insufficient points");
+            throw new RuntimeException("Not enough points");
         }
 
         user.setPoints(user.getPoints() - cost);
@@ -105,14 +110,45 @@ public class RecycleService {
         redemption.setCost(cost);
         redemption.setValue(value);
         redemption.setDetails(details);
+        redemption.setUsername(username);
         redemption.setTitle(title);
         redemption.setFirstName(firstName);
         redemption.setLastName(lastName);
         redemption.setStudentId(studentId);
         redemption.setFaculty(faculty);
         redemption.setMajor(major);
+        redemption.setAcademicYear(academicYear);
+        redemption.setAddress(address);
+        redemption.setAge(age);
+        redemption.setEmail(email);
+        redemption.setPhoneNumber(phoneNumber);
+        redemption.setPartnerId(partnerId);
+        redemption.setPartnerRewardId(partnerRewardId);
         redemption.setStatus("PENDING");
         redemption.setTimestamp(LocalDateTime.now());
+        
+        // Generate referenceCode
+        String prefix = "ot-";
+        if (partnerId != null && partnerRewardId != null) {
+            java.util.Optional<com.example.iotbackend.model.Partner> partnerOpt = partnerRepository.findById(partnerId);
+            if (partnerOpt.isPresent()) {
+                for (com.example.iotbackend.model.PartnerReward r : partnerOpt.get().getRewards()) {
+                    if (r.getId().equals(partnerRewardId)) {
+                        if ("VOLUNTEER".equals(r.getRewardType())) prefix = "hr-";
+                        else if ("DISCOUNT".equals(r.getRewardType())) prefix = "dc-";
+                        else if ("ACTIVITY".equals(r.getRewardType())) prefix = "ac-";
+                        else prefix = "mc-";
+                        break;
+                    }
+                }
+            }
+        }
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        java.util.Random rnd = new java.util.Random();
+        StringBuilder sb = new StringBuilder(6);
+        for (int i = 0; i < 6; i++) sb.append(chars.charAt(rnd.nextInt(chars.length())));
+        redemption.setReferenceCode(prefix + sb.toString());
+
         redemptionRepository.save(redemption);
 
         // Record Transaction
@@ -149,10 +185,18 @@ public class RecycleService {
         redemption.setStatus("APPROVED");
         redemptionRepository.save(redemption);
 
+        if (redemption.getPartnerId() != null) {
+            partnerRepository.findById(redemption.getPartnerId()).ifPresent(partner -> {
+                double partnerEarned = redemption.getCost() * 0.9;
+                partner.setAccumulatedPoints(partner.getAccumulatedPoints() + partnerEarned);
+                partnerRepository.save(partner);
+            });
+        }
+
         messagingTemplate.convertAndSend("/topic/user/" + user.getId(), user);
     }
 
-    public void rejectRedemption(String redemptionId) {
+    public void rejectRedemption(String redemptionId, String reason) {
         com.example.iotbackend.model.Redemption redemption = redemptionRepository.findById(redemptionId)
                 .orElseThrow(() -> new RuntimeException("Redemption not found"));
         
@@ -167,6 +211,7 @@ public class RecycleService {
         user.setPoints(user.getPoints() + redemption.getCost());
         userRepository.save(user);
 
+        redemption.setRejectReason(reason);
         redemption.setStatus("REJECTED");
         redemptionRepository.save(redemption);
 

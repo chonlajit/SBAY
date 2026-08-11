@@ -13,4 +13,5 @@ public class PartnerReward {
     private String imageUrl;       // รูปของรางวัล
     private boolean active;        // เปิด/ปิด รายการนี้
     private int stock;             // -1 = ไม่จำกัด, 0+ = จำนวนคงเหลือ
+    private java.util.List<String> requiredFields; // ข้อมูลที่ต้องการจากผู้ใช้ตอนแลกรางวัล
 }
