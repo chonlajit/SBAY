@@ -250,7 +250,7 @@ export default function RedeemPage() {
         return (partner.rewards ?? []).filter(r => r.active && (rtFilter === null || r.rewardType === rtFilter));
     };
 
-    const currentRewardTabs = mode === 'general' ? GENERAL_REWARD_TABS : STUDENT_REWARD_TABS;
+    const currentRewardTabs: string[] = mode === 'general' ? [...GENERAL_REWARD_TABS] : [...STUDENT_REWARD_TABS];
 
     const activeRedeemRequiredFields = useMemo(() => {
         if (!redeemIntent) return [];
