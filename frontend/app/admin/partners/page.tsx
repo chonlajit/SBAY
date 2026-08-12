@@ -90,6 +90,10 @@ export default function AdminPartnersPage() {
 
     const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
 
+    // Filters
+    const [modalUserFilter, setModalUserFilter] = useState('');
+    const [assignUserFilter, setAssignUserFilter] = useState('');
+
     // Partner User assignment
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [assignUser, setAssignUser] = useState<UserItem | null>(null);
@@ -504,20 +508,37 @@ export default function AdminPartnersPage() {
 
                         {/* Assign Partner Role */}
                         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                            <div className="p-5 border-b border-slate-100 bg-emerald-50/50 flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
-                                    <i className="fa-solid fa-user-plus text-emerald-600 text-sm"></i>
+                            <div className="p-5 border-b border-slate-100 bg-emerald-50/50 flex items-center justify-between flex-wrap gap-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
+                                        <i className="fa-solid fa-user-plus text-emerald-600 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black text-slate-800 text-sm">กำหนดสิทธิ์ Partner</h3>
+                                        <p className="text-slate-400 text-xs">เลือก user ที่ต้องการให้จัดการร้านค้า</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-black text-slate-800 text-sm">กำหนดสิทธิ์ Partner</h3>
-                                    <p className="text-slate-400 text-xs">เลือก user ที่ต้องการให้จัดการร้านค้า</p>
+                                <div className="w-full md:w-64">
+                                    <input 
+                                        type="text" 
+                                        placeholder="ค้นหาชื่อ หรือ Username..." 
+                                        value={assignUserFilter}
+                                        onChange={(e) => setAssignUserFilter(e.target.value)}
+                                        className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg outline-none focus:border-emerald-400"
+                                    />
                                 </div>
                             </div>
                             {regularUsers.length === 0 ? (
                                 <div className="p-8 text-center text-slate-400 text-sm">ไม่มี user ที่สามารถกำหนดได้</div>
                             ) : (
                                 <div className="divide-y divide-slate-50 max-h-96 overflow-y-auto">
-                                    {regularUsers.map(u => (
+                                    {regularUsers.filter(u => 
+                                        (u.id && u.id.toLowerCase().includes(assignUserFilter.toLowerCase())) || 
+                                        (u.username && u.username.toLowerCase().includes(assignUserFilter.toLowerCase())) || 
+                                        (u.phoneNumber && u.phoneNumber.toLowerCase().includes(assignUserFilter.toLowerCase())) ||
+                                        (u.firstName && u.firstName.toLowerCase().includes(assignUserFilter.toLowerCase())) ||
+                                        (u.lastName && u.lastName.toLowerCase().includes(assignUserFilter.toLowerCase()))
+                                    ).map(u => (
                                         <div key={u.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition">
                                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-700 font-black text-xs shrink-0">
                                                 {(u.firstName || u.username || '?').charAt(0).toUpperCase()}
@@ -646,10 +667,23 @@ export default function AdminPartnersPage() {
                             {!editingPartner && (
                                 <div className="w-1/2 ml-auto">
                                     <label className="text-sm text-[#64964E] mb-1 block">กำหนดตัวแทนPartner จาก Username</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="ค้นหาชื่อ หรือ Username..." 
+                                        value={modalUserFilter} 
+                                        onChange={e => setModalUserFilter(e.target.value)} 
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none mb-2 focus:border-[#64964E]"
+                                    />
                                     <div className="relative">
                                         <select value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} className="w-full border-none bg-[#64964E] text-white rounded-lg px-4 py-2 text-sm outline-none appearance-none cursor-pointer">
                                             <option value="" className="bg-[#64964E]">ไม่มี (ไม่กำหนด)</option>
-                                            {regularUsers.map(u => (
+                                            {regularUsers.filter(u => 
+                                                (u.id && u.id.toLowerCase().includes(modalUserFilter.toLowerCase())) || 
+                                                (u.username && u.username.toLowerCase().includes(modalUserFilter.toLowerCase())) || 
+                                                (u.phoneNumber && u.phoneNumber.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
+                                                (u.firstName && u.firstName.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
+                                                (u.lastName && u.lastName.toLowerCase().includes(modalUserFilter.toLowerCase()))
+                                            ).map(u => (
                                                 <option key={u.id} value={u.id} className="bg-[#64964E]">{u.firstName} {u.lastName} {u.username ? `(@${u.username})` : `(${u.phoneNumber})`}</option>
                                             ))}
                                         </select>
