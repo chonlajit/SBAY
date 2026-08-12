@@ -23,6 +23,8 @@ services:
       - SMTP_PASSWORD=${SMTP_PASSWORD}
     depends_on:
       - mongodb
+    volumes:
+      - backend_uploads:/app/uploads
     restart: always
 
   frontend:
@@ -80,3 +82,4 @@ services:
 
 volumes:
   mongodb_data:
+  backend_uploads:

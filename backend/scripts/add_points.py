@@ -3,7 +3,6 @@ import requests
 import datetime
 import random
 from pymongo import MongoClient
-from pymongo.server_api import ServerApi
 
 # Configuration
 MONGO_URI = "mongodb://localhost:27017/"

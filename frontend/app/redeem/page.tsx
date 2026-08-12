@@ -699,8 +699,8 @@ function PartnerCard({ partner, rewards, userPoints, quantities, onSetQty, onRed
 
                                                         {reward.description ? (
                                                             <>
+                                                                <div className="text-[10px] opacity-80 mb-0.5">คำอธิบาย</div>
                                                                 <div className="text-[11px] leading-tight border-b border-white/30 pb-1 mb-1 truncate">{reward.description}</div>
-                                                                <div className="text-[10px] opacity-80">คำอธิบาย</div>
                                                             </>
                                                         ) : (
                                                             <div className="text-[11px] leading-tight border-b border-white/30 pb-1 mb-1 opacity-60">ไม่มีคำอธิบาย</div>

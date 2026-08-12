@@ -1,0 +1,50 @@
+[
+  {
+    "partner": "CJSSS",
+    "logoUrl_start": "data:image/jpeg;base64,/9j/4AA",
+    "rewards": [
+      {
+        "name": "New York Yankees MLB",
+        "imageUrl_start": "http://143.14.36.198/uploads/cafa3f76-a6f5-4bb7-a3"
+      },
+      {
+        "name": "เสื้อ RHCP",
+        "imageUrl_start": "http://143.14.36.198/uploads/ad342120-21b8-4c78-96"
+      },
+      {
+        "name": "กาเกง JNCO",
+        "imageUrl_start": "http://143.14.36.198/uploads/b4ec8de8-01af-403b-bd"
+      },
+      {
+        "name": "ส่วนลด40%",
+        "imageUrl_start": "http://143.14.36.198/uploads/70784c5f-b3fd-44fc-b3"
+      }
+    ]
+  },
+  {
+    "partner": "RMUTI KKC",
+    "logoUrl_start": "data:image/jpeg;base64,/9j/4AA",
+    "rewards": [
+      {
+        "name": "ชั่วโมงจิดอาสา 2 ชั่วโมง",
+        "imageUrl_start": "http://143.14.36.198/uploads/40c35b7e-3952-4a98-82"
+      },
+      {
+        "name": "หน่วยกิตกิจกรรม ด้านการบำเพ็ญประโยชน์หรือรักษาสิ่งแวดล้อม",
+        "imageUrl_start": "http://143.14.36.198/uploads/43ec6e45-5914-4cc1-a1"
+      },
+      {
+        "name": "หน่วยกิตกิจกรรม ด้านการส่งเสริมและพัฒนาสุขภาพกายและสุขภาพจิต",
+        "imageUrl_start": "http://143.14.36.198/uploads/a7a16398-f4f9-4bae-ac"
+      },
+      {
+        "name": "หน่วยกิตกิจกรรม ด้านการส่งเสริมและพัฒนาทักษะทางวิชาการหรือวิชาชีพ",
+        "imageUrl_start": "http://143.14.36.198/uploads/91766ace-3507-4bba-86"
+      },
+      {
+        "name": "หน่วยกิตกิจกรรม ด้านการส่งเสริมและอนุรักษ์ศิลปวัฒนธรรมและสิ่งแวดล้อม",
+        "imageUrl_start": "http://143.14.36.198/uploads/79df5554-31eb-42a3-bc"
+      }
+    ]
+  }
+]
