@@ -50,28 +50,29 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
             {/* ─── Top Header ─── */}
             <header className="bg-[#64964E] shadow-xl h-16 flex items-center justify-between px-4 md:px-6 shrink-0 z-20 sticky top-0 relative">
-                {/* Left side: Hamburger Button */}
-                <div className={`items-center z-10 ${pathname !== '/' ? 'hidden md:flex' : 'flex'}`}>
+                {/* Left side: Hamburger Button & Logo */}
+                <div className="flex items-center space-x-3 md:space-x-4 z-10">
+                    <div className={`items-center ${pathname !== '/' ? 'hidden md:flex' : 'flex'}`}>
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="flex flex-col justify-center items-center w-8 h-8 space-y-1.5 hover:opacity-80 transition group"
+                            aria-label="Open menu"
+                        >
+                            <span className="w-6 h-0.5 bg-white rounded-full transition-all group-hover:w-7"></span>
+                            <span className="w-6 h-0.5 bg-white rounded-full"></span>
+                            <span className="w-6 h-0.5 bg-white rounded-full transition-all group-hover:w-5"></span>
+                        </button>
+                    </div>
+                    
                     <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="flex flex-col justify-center items-center w-8 h-8 space-y-1.5 hover:opacity-80 transition group"
-                        aria-label="Open menu"
+                        onClick={() => router.push('/')}
+                        className="flex items-center space-x-2 sm:space-x-3 hover:opacity-80 transition"
                     >
-                        <span className="w-6 h-0.5 bg-white rounded-full transition-all group-hover:w-7"></span>
-                        <span className="w-6 h-0.5 bg-white rounded-full"></span>
-                        <span className="w-6 h-0.5 bg-white rounded-full transition-all group-hover:w-5"></span>
+                        <div className="w-9 h-9 md:w-10 md:h-10 bg-white flex items-center justify-center p-1.5 shadow-sm rounded-full shrink-0">
+                            <Logo color="#64964E" className="w-full h-full object-contain" />
+                        </div>
                     </button>
                 </div>
-
-                {/* Center: Logo & Brand Name */}
-                <button
-                    onClick={() => router.push('/')}
-                    className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-2 sm:space-x-3 hover:opacity-80 transition z-10"
-                >
-                    <div className="w-9 h-9 md:w-10 md:h-10 bg-white flex items-center justify-center p-1.5 shadow-sm rounded-full shrink-0">
-                        <Logo color="#64964E" className="w-full h-full object-contain" />
-                    </div>
-                </button>
 
                 {/* Right side: user chip or guest */}
                 <div className="flex items-center space-x-2 z-10">

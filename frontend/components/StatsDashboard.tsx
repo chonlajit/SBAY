@@ -69,6 +69,13 @@ export default function StatsDashboard() {
     };
 
     useEffect(() => {
+        const formatDateLocal = (d: Date) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
         const load = () => {
             const now = new Date();
             let start = new Date();
@@ -82,8 +89,8 @@ export default function StatsDashboard() {
             }
 
             if (timeframe !== 'custom') {
-                const startStr = start.toISOString().split('T')[0];
-                const endStr = now.toISOString().split('T')[0];
+                const startStr = formatDateLocal(start);
+                const endStr = formatDateLocal(now);
                 setStartDate(startStr);
                 setEndDate(endStr);
                 fetchStats(startStr, endStr);
