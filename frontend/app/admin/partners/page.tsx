@@ -168,8 +168,8 @@ export default function AdminPartnersPage() {
                 const errorData = await res.json().catch(() => ({}));
                 alert(`เกิดข้อผิดพลาดในการบันทึก: ${errorData.message || res.statusText || 'Unknown error'}`);
             }
-        } catch (e: any) { 
-            alert(`เกิดข้อผิดพลาดในการเชื่อมต่อ: ${e.message}`); 
+        } catch (e: any) {
+            alert(`เกิดข้อผิดพลาดในการเชื่อมต่อ: ${e.message}`);
         }
         finally { setSaving(false); }
     };
@@ -184,7 +184,7 @@ export default function AdminPartnersPage() {
         setSelectedPartner(partner);
         setEditingReward(null);
         const isStudent = partner.category === 'ร้านสำหรับนักศึกษา';
-        setRewardForm({ 
+        setRewardForm({
             ...emptyReward,
             category: isStudent ? 'สำหรับนักศึกษา' : 'สินค้า',
             rewardType: isStudent ? 'ACTIVITY' : 'OTHER'
@@ -546,9 +546,8 @@ export default function AdminPartnersPage() {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
                     <div className="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden">
                         {/* Header */}
-                        <div className={`px-6 py-4 flex items-center justify-between ${
-                            partnerModalType === 'student' ? 'bg-[#64964E] text-white' : 'bg-[#64964E] text-white'
-                        }`}>
+                        <div className={`px-6 py-4 flex items-center justify-between ${partnerModalType === 'student' ? 'bg-[#64964E] text-white' : 'bg-[#64964E] text-white'
+                            }`}>
                             <div className="flex items-center gap-2">
                                 <h2 className="font-medium text-xl">
                                     {editingPartner
@@ -561,7 +560,7 @@ export default function AdminPartnersPage() {
                                 X
                             </button>
                         </div>
-                        
+
                         <div className="p-6 space-y-4">
                             <div>
                                 <label className="text-sm text-gray-500 mb-1 block">
@@ -575,7 +574,7 @@ export default function AdminPartnersPage() {
                                 </label>
                                 <textarea value={partnerForm.description} onChange={e => setPartnerForm(p => ({ ...p, description: e.target.value.slice(0, 50) }))} rows={2} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none focus:border-[#64964E] resize-none" />
                             </div>
-                            
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-sm text-[#64964E] mb-1 block">
@@ -595,7 +594,7 @@ export default function AdminPartnersPage() {
                                     )}
                                 </div>
                                 <div className="flex flex-col">
-                                    <label className="text-sm text-[#64964E] mb-1 block leading-tight">URL โลโก้ร้าน <br/><span className="text-xs text-[#64964E] font-light">หรืออัปโหลดจากอุปกรณ์</span></label>
+                                    <label className="text-sm text-[#64964E] mb-1 block leading-tight">URL โลโก้ร้าน <br /><span className="text-xs text-[#64964E] font-light">หรืออัปโหลดจากอุปกรณ์</span></label>
                                     <div className="relative">
                                         <input value={partnerForm.logoUrl} onChange={e => setPartnerForm(p => ({ ...p, logoUrl: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none focus:border-[#64964E] pr-24" />
                                         <input type="file" accept="image/*" className="hidden" id="partnerLogoUpload" onChange={e => {
@@ -627,7 +626,7 @@ export default function AdminPartnersPage() {
                                                         canvas.height = height;
                                                         const ctx = canvas.getContext('2d');
                                                         ctx?.drawImage(img, 0, 0, width, height);
-                                                        
+
                                                         // Compress to 80% quality JPEG
                                                         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
                                                         setPartnerForm(p => ({ ...p, logoUrl: compressedBase64 }));
@@ -643,7 +642,7 @@ export default function AdminPartnersPage() {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {!editingPartner && (
                                 <div className="w-1/2 ml-auto">
                                     <label className="text-sm text-[#64964E] mb-1 block">กำหนดตัวแทนPartner จาก Username</label>
@@ -658,7 +657,7 @@ export default function AdminPartnersPage() {
                                     </div>
                                 </div>
                             )}
-                            
+
                             <label className="flex items-center gap-3 cursor-pointer mt-4">
                                 <div className={`w-10 h-6 rounded-full transition ${partnerForm.active ? 'bg-[#64964E]' : 'bg-slate-300'} relative`} onClick={() => setPartnerForm(p => ({ ...p, active: !p.active }))}>
                                     <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${partnerForm.active ? 'translate-x-4' : ''}`}></div>
@@ -705,7 +704,7 @@ export default function AdminPartnersPage() {
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-500 mb-1 block">ประเภทรางวัล</label>
-                                    <select 
+                                    <select
                                         value={rewardForm.rewardType === 'ACTIVITY' || rewardForm.rewardType === 'VOLUNTEER' ? rewardForm.rewardType : (rewardForm.category === 'ส่วนลดร้านค้า' ? 'DISCOUNT' : 'PRODUCT')}
                                         onChange={e => {
                                             const val = e.target.value;
@@ -713,7 +712,7 @@ export default function AdminPartnersPage() {
                                             else if (val === 'VOLUNTEER') setRewardForm(r => ({ ...r, category: 'สำหรับนักศึกษา', rewardType: 'VOLUNTEER' }));
                                             else if (val === 'PRODUCT') setRewardForm(r => ({ ...r, category: 'สินค้า', rewardType: 'OTHER' }));
                                             else if (val === 'DISCOUNT') setRewardForm(r => ({ ...r, category: 'ส่วนลดร้านค้า', rewardType: 'DISCOUNT' }));
-                                        }} 
+                                        }}
                                         className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400 bg-white"
                                     >
                                         {selectedPartner?.category === 'ร้านสำหรับนักศึกษา' ? (
