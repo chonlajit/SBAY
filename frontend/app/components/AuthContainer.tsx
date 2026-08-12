@@ -262,7 +262,9 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
 
                 if (result.success) {
                     const mech = searchParams.get('mech_id');
+                    const redirectUrl = searchParams.get('redirect');
                     if (mech) router.push(`/operation/${mech}`);
+                    else if (redirectUrl) router.push(redirectUrl);
                     else router.push('/dashboard');
                 } else {
                     if (result.email) {
@@ -296,7 +298,9 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
 
         if (result.success) {
             const mech = searchParams.get('mech_id');
+            const redirectUrl = searchParams.get('redirect');
             if (mech) router.push(`/operation/${mech}`);
+            else if (redirectUrl) router.push(redirectUrl);
             else router.push('/dashboard');
         } else {
             setLoginError(result.message || 'ข้อมูลเข้าสู่ระบบไม่ถูกต้อง');

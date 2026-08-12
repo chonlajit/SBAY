@@ -206,7 +206,7 @@ export default function Home() {
                             ) : (
                                 /* Guest Features */
                                 <div className="space-y-11 md:space-y-14 flex flex-col items-center md:items-start">
-                                    <Link href="/login" className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
+                                    <Link href="/login?redirect=/" className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
                                         <div className="group bg-black text-white hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center shadow-md shrink-0">
                                             <span className="text-xl md:text-5xl font-bold my-auto leading-none flex-1 text-center md:text-left md:group-hover:text-[55px]">เข้าสู่ระบบ</span>
                                             <div className="w-12 h-12 md:w-[96px] md:h-[96px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">

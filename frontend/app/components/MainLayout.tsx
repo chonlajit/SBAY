@@ -26,8 +26,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         ...(user.role === 'ADMIN' ? [{ href: '/admin', icon: <i className="fa-solid fa-user-gear"></i>, label: 'ผู้ดูแลระบบ (Admin)' }] : []),
     ] : [
         { href: '/', icon: <i className="fa-solid fa-house"></i>, label: 'หน้าหลัก' },
+        { href: '/redeem', icon: <i className="fa-solid fa-store"></i>, label: 'ร้านค้า' },
         { href: '/about', icon: <i className="fa-solid fa-circle-info"></i>, label: 'เกี่ยวกับเรา' },
-        { href: '/login', icon: <i className="fa-solid fa-right-to-bracket"></i>, label: 'เข้าสู่ระบบ' },
+        { href: `/login?redirect=${pathname === '/login' || pathname === '/register' ? '/' : pathname}`, icon: <i className="fa-solid fa-right-to-bracket"></i>, label: 'เข้าสู่ระบบ' },
         { href: '/register', icon: <i className="fa-solid fa-user-plus"></i>, label: 'สมัครสมาชิก' },
     ];
 
@@ -93,7 +94,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         </div>
                     ) : (
                         <Link
-                            href="/login"
+                            href={`/login?redirect=${pathname === '/login' || pathname === '/register' ? '/' : pathname}`}
                             className="bg-gray-300 text-gray-700 font-bold text-xs md:text-sm px-4 md:px-6 py-1.5 md:py-2 rounded-full shadow-sm hover:bg-gray-200 transition active:scale-95"
                         >
                             เข้าสู่ระบบ
