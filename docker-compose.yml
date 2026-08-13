@@ -36,7 +36,7 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://143.14.36.198/api
-      - NODE_OPTIONS=--max-old-space-size=512 # ป้องกัน Node.js แรมเต็มจนค้าง
+      - NODE_OPTIONS=--max-old-space-size=1024 # เพิ่มแรมให้ Node.js กันเว็บกระตุก/ค้าง
     depends_on:
       - backend
     restart: always
@@ -66,8 +66,8 @@ services:
     environment:
       - ME_CONFIG_MONGODB_SERVER=mongodb
       - ME_CONFIG_MONGODB_PORT=27017
-      - ME_CONFIG_BASICAUTH_USERNAME=sbay_admin
-      - ME_CONFIG_BASICAUTH_PASSWORD=SBAY@adminpass277ac478#!
+      - ME_CONFIG_BASICAUTH_USERNAME=${ME_USERNAME}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${ME_PASSWORD}
 
     depends_on:
       - mongodb

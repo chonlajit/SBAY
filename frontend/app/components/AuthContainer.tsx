@@ -222,7 +222,7 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
         email: '',
         password: '',
         confirmPassword: '',
-        faculty: 'วิศวกรรมศาสตร์',
+        faculty: '',
         major: ''
     });
 
