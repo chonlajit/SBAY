@@ -27,7 +27,7 @@ export default function Home() {
                 <div className="lg:w-5/12 flex flex-col min-h-[calc(100vh-4rem)] lg:min-h-0 justify-between bg-white lg:bg-[linear-gradient(to_right,white_50%,#64964E_50%)]">
                     {/* Hero section with bg_loginregis.jpg background */}
                     <div
-                        className="bg-cover bg-center bg-no-repeat flex flex-col px-4 md:px-8 xl:px-10 pt-10 md:pt-14 pb-[20px] md:pb-[30px] rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden"
+                        className="bg-[#64964E] bg-cover bg-center bg-no-repeat flex flex-col px-4 md:px-8 xl:px-10 pt-10 md:pt-14 pb-[20px] md:pb-[30px] rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden"
                         style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                     >
                         {/* Dual-Layer Inner Shadow Overlay over Background Image */}

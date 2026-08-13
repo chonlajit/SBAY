@@ -400,7 +400,47 @@ export default function RedeemPage() {
                 {/* ── Partner Cards ── */}
                 <div className="space-y-6">
                     {partnersLoading && (
-                        <div className="text-white text-center py-10 animate-pulse text-2xl font-bold">กำลังโหลด...</div>
+                        <div className="space-y-6 animate-pulse">
+                            {[...Array(2)].map((_, i) => (
+                                <div key={i} className="flex flex-col relative w-full mb-10">
+                                    {/* Partner Header Skeleton */}
+                                    <div className="flex bg-gray-200 rounded-t-xl overflow-hidden h-[90px] border border-white/50 relative z-20">
+                                        <div className="w-[120px] bg-gray-300 p-3 flex flex-col items-center justify-center border-r border-white/50">
+                                            <div className="w-12 h-12 bg-gray-200 rounded-full mb-1"></div>
+                                        </div>
+                                        <div className="flex-1 p-4 flex flex-col justify-center">
+                                            <div className="w-48 h-6 bg-gray-300 rounded mb-2"></div>
+                                            <div className="w-full max-w-sm h-3 bg-gray-300 rounded"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Rewards Grid Skeleton */}
+                                    <div className="bg-white/40 backdrop-blur-sm p-4 md:p-6 rounded-br-xl relative z-20 border border-white/50">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                                            {[...Array(3)].map((_, j) => (
+                                                <div key={j} className="bg-white rounded-2xl overflow-hidden border border-gray-100 flex flex-col h-full">
+                                                    <div className="bg-gray-200 h-24 flex items-center justify-center">
+                                                        <div className="w-12 h-12 bg-gray-300 rounded"></div>
+                                                    </div>
+                                                    <div className="p-3 bg-gray-50 flex-1 flex flex-col">
+                                                        <div className="w-32 h-5 bg-gray-200 rounded mb-2"></div>
+                                                        <div className="w-full h-3 bg-gray-200 rounded mb-1"></div>
+                                                        <div className="w-2/3 h-3 bg-gray-200 rounded"></div>
+                                                    </div>
+                                                    <div className="bg-gray-200 p-3 flex justify-between">
+                                                        <div className="w-20 h-6 bg-gray-300 rounded"></div>
+                                                        <div className="w-24 h-8 bg-gray-300 rounded"></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Footer Strip Skeleton */}
+                                    <div className="bg-gray-300 h-[70px] border border-white/50 relative z-10 rounded-bl-xl rounded-br-[60px]" />
+                                </div>
+                            ))}
+                        </div>
                     )}
 
                     {!partnersLoading && filteredPartners.length === 0 && (

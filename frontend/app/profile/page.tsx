@@ -175,7 +175,42 @@ export default function ProfilePage() {
         }
     };
 
-    if (!isInitialized || !user) return <div className="min-h-screen bg-slate-50 animate-pulse" />;
+    if (!isInitialized || !user) {
+        return (
+            <div style={BG_STYLE} className="pt-24 pb-12 font-sans px-4 min-h-screen animate-pulse">
+                <div className="max-w-3xl mx-auto space-y-6">
+                    {/* Header Area */}
+                    <div className="flex items-center space-x-4 mb-8">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                        <div className="w-40 h-8 bg-gray-200 rounded"></div>
+                    </div>
+
+                    {/* Main Profile Form Skeleton */}
+                    <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+                        <div className="h-24 bg-gray-200"></div>
+                        <div className="px-6 pb-8 relative">
+                            <div className="absolute -top-12 left-6">
+                                <div className="w-24 h-24 rounded-full bg-gray-300 border-4 border-white"></div>
+                            </div>
+                            <div className="pt-16 space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {[...Array(6)].map((_, i) => (
+                                        <div key={i} className="space-y-2">
+                                            <div className="w-20 h-4 bg-gray-200 rounded"></div>
+                                            <div className="w-full h-12 bg-gray-200 rounded-xl"></div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex justify-end pt-4">
+                                    <div className="w-32 h-12 bg-gray-300 rounded-xl"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={BG_STYLE} className="pt-24 pb-12 font-sans px-4">

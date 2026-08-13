@@ -231,10 +231,56 @@ export default function DashboardPage() {
 
     if (!isInitialized || loading || !user) {
         return (
-            <div className="min-h-full flex items-center justify-center bg-gray-100">
-                <div className="animate-pulse flex space-x-4">
-                    <div className="w-16 h-16 bg-white/30 rounded-2xl"></div>
-                    <div className="h-6 bg-white/30 rounded w-48"></div>
+            <div className="min-h-full px-2 sm:px-6 lg:px-8 py-4 md:py-2 lg:py-6 font-sans flex flex-col relative z-0 animate-pulse">
+                <div className="fixed inset-0 -z-10 bg-cover bg-center md:bg-fixed" style={{ backgroundImage: "url('/images/bg-white.jpg')" }}></div>
+                <div className="bg-white/30 backdrop-blur-md p-2 sm:p-4 lg:p-8 rounded-3xl lg:rounded-[3rem] shadow-2xl max-w-[1500px] mx-auto w-full border border-white/50 flex-1 flex flex-col relative overflow-visible">
+                    <div className="max-w-[1440px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch flex-1 relative z-10 lg:h-[550px] xl:h-[600px]">
+                        <div className="absolute inset-0 rounded-2xl lg:rounded-[2.5rem] -z-10 shadow-xl border border-white/20 bg-gray-200 shadow-inner"></div>
+                        
+                        {/* LEFT COLUMN SKELETON */}
+                        <div className="lg:col-span-7 bg-white/60 backdrop-blur-md rounded-2xl lg:rounded-[2rem] p-3 sm:p-6 space-y-3 md:space-y-5 flex flex-col justify-between relative z-20">
+                            {/* Top Banner Skeleton */}
+                            <div className="bg-gray-300 shadow-inner rounded-2xl lg:rounded-[2rem] p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">
+                                <div className="flex items-center space-x-3 sm:space-x-4">
+                                    <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 shadow-inner rounded-xl md:rounded-2xl"></div>
+                                    <div className="w-32 md:w-48 h-8 bg-gray-200 shadow-inner rounded-lg"></div>
+                                </div>
+                                <div className="bg-white rounded-xl md:rounded-[1.4rem] px-3 py-2 md:px-5 md:py-3 w-full sm:w-40 h-20 shadow-inner"></div>
+                            </div>
+                            
+                            {/* Tabs Skeleton */}
+                            <div className="flex space-x-2 bg-gray-300 shadow-inner p-1.5 md:p-2 rounded-2xl">
+                                <div className="flex-1 h-10 bg-gray-200 shadow-inner rounded-xl"></div>
+                                <div className="flex-1 h-10 bg-gray-200 shadow-inner rounded-xl"></div>
+                            </div>
+
+                            {/* 4 Cards Skeleton */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 flex-1">
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="bg-white rounded-2xl md:rounded-3xl p-4 md:p-6 shadow-inner border border-gray-100 flex flex-col justify-between">
+                                        <div className="w-24 h-5 bg-gray-200 shadow-inner rounded mb-4 mx-auto"></div>
+                                        <div className="flex justify-between items-end mt-auto">
+                                            <div className="w-20 h-10 bg-gray-200 shadow-inner rounded"></div>
+                                            <div className="w-24 h-4 bg-gray-200 shadow-inner rounded"></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* RIGHT COLUMN SKELETON */}
+                        <div className="lg:col-span-5 bg-white/80 backdrop-blur-md rounded-2xl lg:rounded-[2rem] p-3 sm:p-5 flex flex-col relative z-20 overflow-hidden shadow-inner border border-white/50">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="w-32 h-6 bg-gray-200 shadow-inner rounded"></div>
+                                <div className="w-8 h-8 bg-gray-200 shadow-inner rounded-full"></div>
+                            </div>
+                            <div className="space-y-3">
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className="h-14 bg-gray-200 shadow-inner rounded-xl"></div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );

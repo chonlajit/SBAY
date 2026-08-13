@@ -289,8 +289,45 @@ export default function PartnerPortalPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')", backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#64964E]"></div>
+            <div className="min-h-screen pb-20 animate-pulse" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')", backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
+                {/* Header Skeleton */}
+                <div className="bg-gray-200/80 backdrop-blur-md p-6 rounded-b-3xl border-b border-white/20">
+                    <div className="max-w-7xl xl:max-w-[95%] mx-auto flex flex-col md:flex-row items-center gap-6 pt-4 pb-2">
+                        <div className="w-24 h-24 rounded-2xl bg-gray-300"></div>
+                        <div className="text-center md:text-left flex-1 space-y-3">
+                            <div className="w-48 h-8 bg-gray-300 rounded mx-auto md:mx-0"></div>
+                            <div className="w-64 h-4 bg-gray-300 rounded mx-auto md:mx-0"></div>
+                        </div>
+                        <div className="bg-gray-300 p-4 rounded-2xl flex flex-col items-center justify-center w-full md:w-auto md:min-w-[150px]">
+                            <div className="w-20 h-4 bg-gray-400 rounded mb-2"></div>
+                            <div className="w-16 h-8 bg-gray-400 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabs Skeleton */}
+                <div className="max-w-7xl xl:max-w-[95%] mx-auto mt-6 px-4">
+                    <div className="flex gap-2 p-1 bg-white/20 backdrop-blur-md rounded-xl overflow-x-auto border border-white/30">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="flex-1 min-w-[100px] h-12 bg-gray-200 rounded-lg"></div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Table Skeleton */}
+                <div className="max-w-7xl xl:max-w-[95%] mx-auto mt-6 px-4">
+                    <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-white/40">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                            <div className="w-48 h-8 bg-gray-200 rounded"></div>
+                            <div className="w-full md:w-64 h-10 bg-gray-200 rounded-xl"></div>
+                        </div>
+                        <div className="space-y-4">
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="h-16 bg-gray-200 rounded-xl"></div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
