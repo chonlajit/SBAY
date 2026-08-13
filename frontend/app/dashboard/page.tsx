@@ -429,28 +429,38 @@ export default function DashboardPage() {
                                                 </div>
                                                 {isExpanded && session.items && (
                                                     <div className="p-3 bg-gray-50/50 space-y-2 border-t border-gray-100">
-                                                        {session.items.map((item: any, iIndex: number) => {
-                                                            const w = wasteTypes.find((wt: any) => wt.id === item.wasteTypeId);
-                                                            let name = w ? w.name : (item.wasteType || item.type);
-                                                            
-                                                            // Translate constants to Thai if they are the raw English strings
-                                                            const thMapping: Record<string, string> = {
-                                                                'PLASTIC_BOTTLE': 'ขวดพลาสติก',
-                                                                'ALUMINUM_CAN': 'กระป๋องอลูมิเนียม',
-                                                                'BEVERAGE_CARTON': 'กล่องเครื่องดื่ม'
-                                                            };
-                                                            if (name && thMapping[name.toUpperCase()]) {
-                                                                name = thMapping[name.toUpperCase()];
-                                                            }
-                                                            
-                                                            return (
+                                                        {(() => {
+                                                            const groupedItems: Record<string, { count: number, points: number }> = {};
+                                                            session.items.forEach((item: any) => {
+                                                                const w = wasteTypes.find((wt: any) => wt.id === item.wasteTypeId);
+                                                                let name = w ? w.name : (item.wasteType || item.type);
+                                                                
+                                                                const thMapping: Record<string, string> = {
+                                                                    'PLASTIC_BOTTLE': 'ขวดพลาสติก',
+                                                                    'ALUMINUM_CAN': 'กระป๋องอลูมิเนียม',
+                                                                    'BEVERAGE_CARTON': 'กล่องเครื่องดื่ม'
+                                                                };
+                                                                if (name && thMapping[name.toUpperCase()]) {
+                                                                    name = thMapping[name.toUpperCase()];
+                                                                }
+                                                                if (!name) name = 'อื่นๆ';
+
+                                                                const pts = Number(item.points || item.score || 0);
+                                                                if (!groupedItems[name]) {
+                                                                    groupedItems[name] = { count: 0, points: 0 };
+                                                                }
+                                                                groupedItems[name].count += 1;
+                                                                groupedItems[name].points += pts;
+                                                            });
+
+                                                            return Object.entries(groupedItems).map(([name, data], iIndex) => (
                                                                 <div key={iIndex} className="flex justify-between items-center text-xs">
                                                                     <span className="text-gray-600 font-medium w-1/3">{name}</span>
-                                                                    <span className="text-gray-500 w-1/3 text-center">ขนาด {item.size || (item.ml ? item.ml + 'ml' : '-')}</span>
-                                                                    <span className="text-green-600 font-bold w-1/3 text-right">{Number(item.points || item.score || 0).toFixed(2).replace(/\.00$/, '')} P</span>
+                                                                    <span className="text-gray-500 w-1/3 text-center">{data.count.toLocaleString()} ชิ้น</span>
+                                                                    <span className="text-green-600 font-bold w-1/3 text-right">รวม {data.points.toFixed(2).replace(/\.00$/, '')} P</span>
                                                                 </div>
-                                                            );
-                                                        })}
+                                                            ));
+                                                        })()}
                                                     </div>
                                                 )}
                                             </div>
