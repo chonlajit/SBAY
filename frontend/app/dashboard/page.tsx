@@ -141,13 +141,38 @@ export default function DashboardPage() {
     useEffect(() => {
         if (userId) {
             const fetchData = async () => {
+                const cacheKey1 = `sbay_history_${userId}`;
+                const cacheKey2 = `sbay_redemptions_${userId}`;
+                
+                try {
+                    const cachedHistory = localStorage.getItem(cacheKey1);
+                    const cachedRedemptions = localStorage.getItem(cacheKey2);
+                    
+                    if (cachedHistory) setHistory(JSON.parse(cachedHistory));
+                    if (cachedRedemptions) setRedemptions(JSON.parse(cachedRedemptions));
+                    
+                    if (cachedHistory && cachedRedemptions) {
+                        setLoading(false); // โหลดข้อมูลจาก Cache ทันทีไม่ต้องรอหมุน
+                    }
+                } catch (e) {
+                    // Ignore JSON parse errors
+                }
+
                 try {
                     const [res1, res2] = await Promise.all([
                         fetch(`${apiBase}/sessions/history/${userId}`),
                         fetch(`${apiBase}/redemptions/user/${userId}`)
                     ]);
-                    if (res1.ok) setHistory(await res1.json());
-                    if (res2.ok) setRedemptions(await res2.json());
+                    if (res1.ok) {
+                        const data1 = await res1.json();
+                        setHistory(data1);
+                        localStorage.setItem(cacheKey1, JSON.stringify(data1));
+                    }
+                    if (res2.ok) {
+                        const data2 = await res2.json();
+                        setRedemptions(data2);
+                        localStorage.setItem(cacheKey2, JSON.stringify(data2));
+                    }
                     await refreshUser();
                 } catch (e) {
                     console.error("Fetch error", e);
