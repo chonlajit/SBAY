@@ -6,4 +6,4 @@ ultralytics
 python-dotenv
 Pillow
 rpi-lgpio
-pigpio
+gpiozero

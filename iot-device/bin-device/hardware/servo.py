@@ -1,7 +1,15 @@
 import time
 import os
 import sys
-import pigpio
+from gpiozero import AngularServo
+from gpiozero.pins.lgpio import LGPIOFactory
+from gpiozero import Device
+
+# ตั้งค่าให้ gpiozero ใช้ LGPIO เป็น Backend (รองรับ Raspberry Pi 5 รหัสบอร์ด c04170)
+try:
+    Device.pin_factory = LGPIOFactory()
+except Exception as e:
+    print(f"Warning: Could not set LGPIOFactory: {e}")
 
 # ดึงค่า Config จากโฟลเดอร์หลัก
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -32,36 +40,29 @@ SERVO_SORT_PIN = 18
 SERVO_RELEASE_PIN = 19
 
 # กำหนดว่าจะให้มอเตอร์มีแรงต้าน (Torque) ตลอดเวลาหรือไม่
-# True = มอเตอร์เกร็งสู้แรงตลอดเวลา (แก้ปัญหาองศาเคลื่อนเวลามีขยะหล่นทับ แต่กินไฟและมอเตอร์อาจจะร้อนถ้าฝืด)
-# False = มอเตอร์ฟรีหลังจากหมุนเสร็จ (เหมือนของเดิม)
+# True = มอเตอร์เกร็งสู้แรงตลอดเวลา (แก้ปัญหาแผ่นรองขยะตกเวลารับน้ำหนัก)
+# False = มอเตอร์ฟรีหลังจากหมุนเสร็จ
 KEEP_TORQUE = True
 
-print("[Servo] Connecting to pigpio daemon...")
-pi = pigpio.pi()
-if not pi.connected:
-    print("==========================================================")
-    print(" ❌ ERROR: Cannot connect to pigpiod.")
-    print(" คุณต้องเปิด Terminal ใหม่และรันคำสั่ง:")
-    print("    sudo systemctl start pigpiod")
-    print(" หรือพิมพ์ 'sudo pigpiod' ก่อนรันโปรแกรมนี้")
-    print("==========================================================")
-    sys.exit(1)
+# สร้าง Object ของ Servo โดยระบุช่วงคลื่น 500-2500 us สำหรับ 0-180 องศา
+try:
+    sort_servo = AngularServo(SERVO_SORT_PIN, min_angle=0, max_angle=180, min_pulse_width=0.0005, max_pulse_width=0.0025)
+    release_servo = AngularServo(SERVO_RELEASE_PIN, min_angle=0, max_angle=180, min_pulse_width=0.0005, max_pulse_width=0.0025)
+except Exception as e:
+    print(f"Failed to initialize servos: {e}")
+    sort_servo = None
+    release_servo = None
 
 def set_angle(pin, angle):
-    if not pi.connected:
+    target = sort_servo if pin == SERVO_SORT_PIN else release_servo
+    if not target:
         return
         
-    # แปลงองศา 0-180 เป็น Pulse Width (ไมโครวินาที)
-    # มาตรฐาน Servo ทั่วไปคือ 500 - 2500 us
-    pulsewidth = int(500 + (angle / 180.0) * 2000)
-    
-    # สั่งหมุนไปตามองศาที่กำหนด
-    pi.set_servo_pulsewidth(pin, pulsewidth)
+    target.angle = angle
     time.sleep(1.0)  # ให้เวลา Servo หมุนไปถึงเป้าหมาย 1 วินาที
     
     if not KEEP_TORQUE:
-        # ตัดสัญญาณเพื่อไม่ให้มอเตอร์คราง แต่จะสูญเสียแรงต้าน
-        pi.set_servo_pulsewidth(pin, 0)
+        target.detach() # ตัดสัญญาณ PWM (เทียบเท่า pwm.ChangeDutyCycle(0))
 
 def reset_position():
     set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)
@@ -90,7 +91,7 @@ def release_item(label="PLASTIC_BOTTLE"):
     set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)       # คืนค่าตัวปัดคัดแยกกลับมาตรงกลาง
 
 def cleanup():
-    if pi.connected:
-        pi.set_servo_pulsewidth(SERVO_SORT_PIN, 0)
-        pi.set_servo_pulsewidth(SERVO_RELEASE_PIN, 0)
-        pi.stop()
+    if sort_servo:
+        sort_servo.detach()
+    if release_servo:
+        release_servo.detach()
