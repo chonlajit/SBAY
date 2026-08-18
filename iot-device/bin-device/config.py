@@ -34,16 +34,16 @@ SERVO_RELEASE_PIN = 19
 
 # --- Servo Angles Configuration ---
 # สามารถปรับแก้ตัวเลขเหล่านี้ได้ที่เดียวเพื่อให้มีผลกับระบบทั้งหมด
-DEFAULT_SORT_ANGLE = int(os.getenv("DEFAULT_SORT_ANGLE", 180))
-DEFAULT_RELEASE_ANGLE = int(os.getenv("DEFAULT_RELEASE_ANGLE", 90))
+DEFAULT_SORT_ANGLE = int(os.getenv("DEFAULT_SORT_ANGLE", 260))
+DEFAULT_RELEASE_ANGLE = int(os.getenv("DEFAULT_RELEASE_ANGLE", 82))
 
-SORT_ANGLE_PLASTIC = int(os.getenv("SORT_ANGLE_PLASTIC", DEFAULT_SORT_ANGLE))
-SORT_ANGLE_CAN = int(os.getenv("SORT_ANGLE_CAN", 60))
-SORT_ANGLE_CARTON = int(os.getenv("SORT_ANGLE_CARTON", 300))
+SORT_ANGLE_PLASTIC = int(os.getenv("SORT_ANGLE_PLASTIC", 260))
+SORT_ANGLE_CAN = int(os.getenv("SORT_ANGLE_CAN", 200))
+SORT_ANGLE_CARTON = int(os.getenv("SORT_ANGLE_CARTON", 320))
 
-RELEASE_ANGLE_PLASTIC = int(os.getenv("RELEASE_ANGLE_PLASTIC", 45))
-RELEASE_ANGLE_CAN = int(os.getenv("RELEASE_ANGLE_CAN", 135))
-RELEASE_ANGLE_CARTON = int(os.getenv("RELEASE_ANGLE_CARTON", 135))
+RELEASE_ANGLE_PLASTIC = int(os.getenv("RELEASE_ANGLE_PLASTIC", 104))
+RELEASE_ANGLE_CAN = int(os.getenv("RELEASE_ANGLE_CAN", 60))
+RELEASE_ANGLE_CARTON = int(os.getenv("RELEASE_ANGLE_CARTON", 60))
 
 # --- Reset Buttons (GPIO) ---
 USE_RESET_BUTTONS = str(os.getenv("USE_RESET_BUTTONS", "true")).strip().lower() == "true"
