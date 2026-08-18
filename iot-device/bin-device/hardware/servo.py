@@ -1,15 +1,6 @@
 import time
 import os
 import sys
-from gpiozero import AngularServo
-from gpiozero.pins.lgpio import LGPIOFactory
-from gpiozero import Device
-
-# ตั้งค่าให้ gpiozero ใช้ LGPIO เป็น Backend (รองรับ Raspberry Pi 5 รหัสบอร์ด c04170)
-try:
-    Device.pin_factory = LGPIOFactory()
-except Exception as e:
-    print(f"Warning: Could not set LGPIOFactory: {e}")
 
 # ดึงค่า Config จากโฟลเดอร์หลัก
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,43 +17,63 @@ try:
     RELEASE_ANGLE_CAN = config.RELEASE_ANGLE_CAN
     RELEASE_ANGLE_CARTON = config.RELEASE_ANGLE_CARTON
 except ImportError:
-    # Fallback กรณีรันเทสต์แยกไฟล์
-    DEFAULT_SORT_ANGLE = 90
+    DEFAULT_SORT_ANGLE = 180
     DEFAULT_RELEASE_ANGLE = 90
-    SORT_ANGLE_PLASTIC = 90
-    SORT_ANGLE_CAN = 30
-    SORT_ANGLE_CARTON = 150
+    SORT_ANGLE_PLASTIC = 180
+    SORT_ANGLE_CAN = 60
+    SORT_ANGLE_CARTON = 300
     RELEASE_ANGLE_PLASTIC = 45
     RELEASE_ANGLE_CAN = 135
     RELEASE_ANGLE_CARTON = 135
 
 SERVO_SORT_PIN = 18
 SERVO_RELEASE_PIN = 19
-
-# กำหนดว่าจะให้มอเตอร์มีแรงต้าน (Torque) ตลอดเวลาหรือไม่
-# True = มอเตอร์เกร็งสู้แรงตลอดเวลา (แก้ปัญหาแผ่นรองขยะตกเวลารับน้ำหนัก)
-# False = มอเตอร์ฟรีหลังจากหมุนเสร็จ
 KEEP_TORQUE = False
 
-# สร้าง Object ของ Servo โดยระบุช่วงคลื่น 500-2500 us สำหรับ 0-180 องศา
+# ========================================================
+# การใช้ True Hardware PWM (rpi-hardware-pwm) สำหรับ Pi 5
+# ต้องเปิด dtoverlay=pwm-2chan ใน /boot/firmware/config.txt
+# Channel 2 = GPIO 18, Channel 3 = GPIO 19
+# ========================================================
 try:
-    sort_servo = AngularServo(SERVO_SORT_PIN, min_angle=0, max_angle=360, min_pulse_width=0.0005, max_pulse_width=0.0025)
-    release_servo = AngularServo(SERVO_RELEASE_PIN, min_angle=0, max_angle=180, min_pulse_width=0.0005, max_pulse_width=0.0025)
+    from rpi_hardware_pwm import HardwarePWM
+    
+    # 50 Hz สำหรับ Servo ทั่วไป
+    sort_servo = HardwarePWM(pwm_channel=2, hz=50)
+    release_servo = HardwarePWM(pwm_channel=3, hz=50)
+    
+    sort_servo.start(0)
+    release_servo.start(0)
+    HARDWARE_PWM_ENABLED = True
 except Exception as e:
-    print(f"Failed to initialize servos: {e}")
-    sort_servo = None
-    release_servo = None
+    print("==========================================================")
+    print(" ❌ ERROR: ไม่สามารถเรียกใช้ Hardware PWM ได้")
+    print(f" ข้อผิดพลาด: {e}")
+    print(" คุณต้องรันคำสั่ง 'sudo nano /boot/firmware/config.txt'")
+    print(" แล้วเพิ่มบรรทัดนี้ไปท้ายไฟล์: dtoverlay=pwm-2chan")
+    print(" จากนั้นสั่งรีบูตเครื่อง 1 รอบครับ (sudo reboot)")
+    print("==========================================================")
+    HARDWARE_PWM_ENABLED = False
+    sys.exit(1)
 
 def set_angle(pin, angle):
-    target = sort_servo if pin == SERVO_SORT_PIN else release_servo
-    if not target:
+    if not HARDWARE_PWM_ENABLED:
         return
         
-    target.angle = angle
-    time.sleep(1.0)  # ให้เวลา Servo หมุนไปถึงเป้าหมาย 1 วินาที
+    target = sort_servo if pin == SERVO_SORT_PIN else release_servo
+    max_angle_scale = 360.0 if pin == SERVO_SORT_PIN else 180.0
+    
+    # คำนวณ Duty Cycle สำหรับ 50Hz (20ms period)
+    # 500 us = 2.5% duty cycle
+    # 2500 us = 12.5% duty cycle
+    # ช่วงต่างคือ 10.0%
+    duty_cycle = 2.5 + (angle / max_angle_scale) * 10.0
+    
+    target.change_duty_cycle(duty_cycle)
+    time.sleep(1.0)
     
     if not KEEP_TORQUE:
-        target.detach() # ตัดสัญญาณ PWM (เทียบเท่า pwm.ChangeDutyCycle(0))
+        target.change_duty_cycle(0)
 
 def reset_position():
     set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)
@@ -85,13 +96,12 @@ def release_item(label="PLASTIC_BOTTLE"):
     }
     angle = mapping.get(label, 45)
     
-    set_angle(SERVO_RELEASE_PIN, angle)   # หมุนลงเพื่อปล่อยขยะ
+    set_angle(SERVO_RELEASE_PIN, angle)
     time.sleep(1)
-    set_angle(SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE) # คืนค่าตัวแผ่นรองกลับมาตำแหน่งเริ่มต้น
-    set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)       # คืนค่าตัวปัดคัดแยกกลับมาตรงกลาง
+    set_angle(SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE)
+    set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)
 
 def cleanup():
-    if sort_servo:
-        sort_servo.detach()
-    if release_servo:
-        release_servo.detach()
+    if HARDWARE_PWM_ENABLED:
+        sort_servo.stop()
+        release_servo.stop()

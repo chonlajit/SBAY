@@ -34,12 +34,12 @@ SERVO_RELEASE_PIN = 19
 
 # --- Servo Angles Configuration ---
 # สามารถปรับแก้ตัวเลขเหล่านี้ได้ที่เดียวเพื่อให้มีผลกับระบบทั้งหมด
-DEFAULT_SORT_ANGLE = int(os.getenv("DEFAULT_SORT_ANGLE", 90))
+DEFAULT_SORT_ANGLE = int(os.getenv("DEFAULT_SORT_ANGLE", 180))
 DEFAULT_RELEASE_ANGLE = int(os.getenv("DEFAULT_RELEASE_ANGLE", 90))
 
 SORT_ANGLE_PLASTIC = int(os.getenv("SORT_ANGLE_PLASTIC", DEFAULT_SORT_ANGLE))
-SORT_ANGLE_CAN = int(os.getenv("SORT_ANGLE_CAN", 30))
-SORT_ANGLE_CARTON = int(os.getenv("SORT_ANGLE_CARTON", 150))
+SORT_ANGLE_CAN = int(os.getenv("SORT_ANGLE_CAN", 60))
+SORT_ANGLE_CARTON = int(os.getenv("SORT_ANGLE_CARTON", 300))
 
 RELEASE_ANGLE_PLASTIC = int(os.getenv("RELEASE_ANGLE_PLASTIC", 45))
 RELEASE_ANGLE_CAN = int(os.getenv("RELEASE_ANGLE_CAN", 135))
