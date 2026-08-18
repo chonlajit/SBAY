@@ -34,7 +34,7 @@ def run_calibration():
                     break
                 
                 try:
-                    angle = int(angle_str)
+                    angle = float(angle_str)
                     if 0 <= angle <= 180:
                         print(f"กำลังหมุน {servo_name} ไปที่ {angle} องศา...")
                         servo.set_angle(target_pin, angle)
