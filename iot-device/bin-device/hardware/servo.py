@@ -1,7 +1,7 @@
-import RPi.GPIO as GPIO
 import time
 import os
 import sys
+import pigpio
 
 # ดึงค่า Config จากโฟลเดอร์หลัก
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,26 +31,38 @@ except ImportError:
 SERVO_SORT_PIN = 18
 SERVO_RELEASE_PIN = 19
 
-GPIO.setmode(GPIO.BCM)
+# กำหนดว่าจะให้มอเตอร์มีแรงต้าน (Torque) ตลอดเวลาหรือไม่
+# True = มอเตอร์เกร็งสู้แรงตลอดเวลา (แก้ปัญหาองศาเคลื่อนเวลามีขยะหล่นทับ แต่กินไฟและมอเตอร์อาจจะร้อนถ้าฝืด)
+# False = มอเตอร์ฟรีหลังจากหมุนเสร็จ (เหมือนของเดิม)
+KEEP_TORQUE = True
 
-GPIO.setup(SERVO_SORT_PIN, GPIO.OUT)
-GPIO.setup(SERVO_RELEASE_PIN, GPIO.OUT)
+print("[Servo] Connecting to pigpio daemon...")
+pi = pigpio.pi()
+if not pi.connected:
+    print("==========================================================")
+    print(" ❌ ERROR: Cannot connect to pigpiod.")
+    print(" คุณต้องรันคำสั่ง 'sudo pigpiod' บน Raspberry Pi ก่อนรันโปรแกรม")
+    print("==========================================================")
 
-sort_pwm = GPIO.PWM(SERVO_SORT_PIN, 50)
-release_pwm = GPIO.PWM(SERVO_RELEASE_PIN, 50)
-
-sort_pwm.start(0)
-release_pwm.start(0)
-
-def set_angle(pwm, angle):
-    duty = 2 + (angle / 18)
-    pwm.ChangeDutyCycle(duty)
-    time.sleep(1.0)  # เพิ่มเวลาเป็น 1 วินาที ให้เซอร์โวมีเวลาหมุนไปถึงจุดหมายก่อนตัดสัญญาณ
-    pwm.ChangeDutyCycle(0)
+def set_angle(pin, angle):
+    if not pi.connected:
+        return
+        
+    # แปลงองศา 0-180 เป็น Pulse Width (ไมโครวินาที)
+    # อิงจากโค้ดเดิม RPi.GPIO ใช้ 2% - 12% (400 - 2400 us)
+    pulsewidth = int(400 + (angle / 180.0) * 2000)
+    
+    # สั่งหมุนไปตามองศาที่กำหนด
+    pi.set_servo_pulsewidth(pin, pulsewidth)
+    time.sleep(1.0)  # ให้เวลา Servo หมุนไปถึงเป้าหมาย 1 วินาที
+    
+    if not KEEP_TORQUE:
+        # ตัดสัญญาณเพื่อไม่ให้มอเตอร์คราง แต่จะสูญเสียแรงต้าน
+        pi.set_servo_pulsewidth(pin, 0)
 
 def reset_position():
-    set_angle(sort_pwm, DEFAULT_SORT_ANGLE)
-    set_angle(release_pwm, DEFAULT_RELEASE_ANGLE)
+    set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)
+    set_angle(SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE)
 
 def sort_item(label):
     mapping = {
@@ -59,7 +71,7 @@ def sort_item(label):
         "BEVERAGE_CARTON": SORT_ANGLE_CARTON
     }
     angle = mapping.get(label, DEFAULT_SORT_ANGLE)
-    set_angle(sort_pwm, angle)
+    set_angle(SERVO_SORT_PIN, angle)
 
 def release_item(label="PLASTIC_BOTTLE"):
     mapping = {
@@ -69,12 +81,13 @@ def release_item(label="PLASTIC_BOTTLE"):
     }
     angle = mapping.get(label, 45)
     
-    set_angle(release_pwm, angle)   # หมุนลงเพื่อปล่อยขยะ
+    set_angle(SERVO_RELEASE_PIN, angle)   # หมุนลงเพื่อปล่อยขยะ
     time.sleep(1)
-    set_angle(release_pwm, DEFAULT_RELEASE_ANGLE) # คืนค่าตัวแผ่นรองกลับมาตำแหน่งเริ่มต้น
-    set_angle(sort_pwm, DEFAULT_SORT_ANGLE)       # คืนค่าตัวปัดคัดแยกกลับมาตรงกลาง
+    set_angle(SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE) # คืนค่าตัวแผ่นรองกลับมาตำแหน่งเริ่มต้น
+    set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)       # คืนค่าตัวปัดคัดแยกกลับมาตรงกลาง
 
 def cleanup():
-    sort_pwm.stop()
-    release_pwm.stop()
-    GPIO.cleanup()
+    if pi.connected:
+        pi.set_servo_pulsewidth(SERVO_SORT_PIN, 0)
+        pi.set_servo_pulsewidth(SERVO_RELEASE_PIN, 0)
+        pi.stop()
