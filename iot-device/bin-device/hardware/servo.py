@@ -41,16 +41,19 @@ pi = pigpio.pi()
 if not pi.connected:
     print("==========================================================")
     print(" ❌ ERROR: Cannot connect to pigpiod.")
-    print(" คุณต้องรันคำสั่ง 'sudo pigpiod' บน Raspberry Pi ก่อนรันโปรแกรม")
+    print(" คุณต้องเปิด Terminal ใหม่และรันคำสั่ง:")
+    print("    sudo systemctl start pigpiod")
+    print(" หรือพิมพ์ 'sudo pigpiod' ก่อนรันโปรแกรมนี้")
     print("==========================================================")
+    sys.exit(1)
 
 def set_angle(pin, angle):
     if not pi.connected:
         return
         
     # แปลงองศา 0-180 เป็น Pulse Width (ไมโครวินาที)
-    # อิงจากโค้ดเดิม RPi.GPIO ใช้ 2% - 12% (400 - 2400 us)
-    pulsewidth = int(400 + (angle / 180.0) * 2000)
+    # มาตรฐาน Servo ทั่วไปคือ 500 - 2500 us
+    pulsewidth = int(500 + (angle / 180.0) * 2000)
     
     # สั่งหมุนไปตามองศาที่กำหนด
     pi.set_servo_pulsewidth(pin, pulsewidth)
