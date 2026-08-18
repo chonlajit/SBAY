@@ -78,6 +78,7 @@ def run_test():
         print("\n\n🛑 ยกเลิกการทดสอบ")
     finally:
         servo.cleanup()
+        GPIO.cleanup()
         print("👋 คืนค่า GPIO และปิดโปรแกรมเรียบร้อย")
 
 if __name__ == "__main__":

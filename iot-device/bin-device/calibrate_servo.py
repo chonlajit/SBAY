@@ -24,7 +24,7 @@ def run_calibration():
                 print("❌ กรุณาเลือก 1 หรือ 2 เท่านั้น")
                 continue
 
-            target_servo = servo.sort_pwm if choice == '1' else servo.release_pwm
+            target_pin = servo.SERVO_SORT_PIN if choice == '1' else servo.SERVO_RELEASE_PIN
             servo_name = "Sort (ตัวปัด)" if choice == '1' else "Release (ตัวแผ่นรอง)"
 
             while True:
@@ -37,7 +37,7 @@ def run_calibration():
                     angle = int(angle_str)
                     if 0 <= angle <= 180:
                         print(f"กำลังหมุน {servo_name} ไปที่ {angle} องศา...")
-                        servo.set_angle(target_servo, angle)
+                        servo.set_angle(target_pin, angle)
                         print("✅ หมุนเสร็จสิ้น ลองสังเกตหน้างานดูว่าพอดีกับช่องหรือยัง")
                     else:
                         print("❌ กรุณาใส่ตัวเลขระหว่าง 0 ถึง 180 เท่านั้น")
