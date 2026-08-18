@@ -26,21 +26,22 @@ def run_calibration():
 
             target_pin = servo.SERVO_SORT_PIN if choice == '1' else servo.SERVO_RELEASE_PIN
             servo_name = "Sort (ตัวปัด)" if choice == '1' else "Release (ตัวแผ่นรอง)"
+            max_angle = 360 if choice == '1' else 180
 
             while True:
-                angle_str = input(f"[{servo_name}] 👉 ป้อนค่าองศา (0 - 180) หรือพิมพ์ 'q' เพื่อกลับไปเลือกใหม่: ").strip()
+                angle_str = input(f"[{servo_name}] 👉 ป้อนค่าองศา (0 - {max_angle}) หรือพิมพ์ 'q' เพื่อกลับไปเลือกใหม่: ").strip()
                 
                 if angle_str.lower() == 'q':
                     break
                 
                 try:
                     angle = float(angle_str)
-                    if 0 <= angle <= 180:
+                    if 0 <= angle <= max_angle:
                         print(f"กำลังหมุน {servo_name} ไปที่ {angle} องศา...")
                         servo.set_angle(target_pin, angle)
                         print("✅ หมุนเสร็จสิ้น ลองสังเกตหน้างานดูว่าพอดีกับช่องหรือยัง")
                     else:
-                        print("❌ กรุณาใส่ตัวเลขระหว่าง 0 ถึง 180 เท่านั้น")
+                        print(f"❌ กรุณาใส่ตัวเลขระหว่าง 0 ถึง {max_angle} เท่านั้น")
                 except ValueError:
                     print("❌ กรุณาใส่เป็นตัวเลขเท่านั้น")
 
