@@ -46,7 +46,7 @@ KEEP_TORQUE = False
 
 # สร้าง Object ของ Servo โดยระบุช่วงคลื่น 500-2500 us สำหรับ 0-180 องศา
 try:
-    sort_servo = AngularServo(SERVO_SORT_PIN, min_angle=0, max_angle=180, min_pulse_width=0.0005, max_pulse_width=0.0025)
+    sort_servo = AngularServo(SERVO_SORT_PIN, min_angle=0, max_angle=360, min_pulse_width=0.0005, max_pulse_width=0.0025)
     release_servo = AngularServo(SERVO_RELEASE_PIN, min_angle=0, max_angle=180, min_pulse_width=0.0005, max_pulse_width=0.0025)
 except Exception as e:
     print(f"Failed to initialize servos: {e}")
