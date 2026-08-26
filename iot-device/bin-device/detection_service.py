@@ -138,10 +138,8 @@ class DetectionService:
                 logger.warning("Camera frame read failed")
                 return None, 0
 
-        # ตัดขอบซ้ายขวาทิ้งให้ภาพกลายเป็น "สี่เหลี่ยมผืนผ้าแนวตั้ง" (Portrait)
-        # ภาพเดิมกว้าง 640 สูง 480 -> ตัดเหลือ กว้าง 360 สูง 480 (เอาตรงกลาง)
-        # แกน 0 คือ ความสูง (0-480), แกน 1 คือ ความกว้าง (140-500)
-        frame = frame[:, 140:500]
+        # นำการตัดขอบ (Crop) ออก เพื่อให้กล้องใช้ความกว้างจริงทั้งหมดตามที่ต้องการ
+        # frame = frame[:, 140:500]
         # 3. อัปเดตเฟรมล่าสุดสำหรับ GUI (ทำทุกรอบ ไม่ว่าจะ cooldown หรือไม่)
         display_frame = frame.copy()
         self.latest_frame = display_frame
