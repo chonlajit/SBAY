@@ -138,8 +138,12 @@ class DetectionService:
                 logger.warning("Camera frame read failed")
                 return None, 0
 
-        # นำการตัดขอบ (Crop) ออก เพื่อให้กล้องใช้ความกว้างจริงทั้งหมดตามที่ต้องการ
-        # frame = frame[:, 140:500]
+        # ซูมภาพ (Crop) เข้าไปที่ถาดรับขยะตรงกลาง เพื่อตัดสภาพแวดล้อมรอบๆ (เพดาน, ห้อง) ออก
+        h, w = frame.shape[:2]
+        # ตัดขอบบนล่างทิ้ง 15% และขอบซ้ายขวาทิ้ง 25% (สามารถปรับตัวเลขเพื่อซูมเข้า/ออกได้)
+        y1, y2 = int(h * 0.15), int(h * 0.85)
+        x1, x2 = int(w * 0.25), int(w * 0.75)
+        frame = frame[y1:y2, x1:x2]
         # 3. อัปเดตเฟรมล่าสุดสำหรับ GUI (ทำทุกรอบ ไม่ว่าจะ cooldown หรือไม่)
         display_frame = frame.copy()
         self.latest_frame = display_frame
