@@ -31,7 +31,7 @@ def test_camera():
             print(f"  📷 กล้องที่ {i}: {cam}")
             
         print("\n⏳ กำลังพยายามเปิดกล้องและตั้งค่า...")
-        config = picam.create_preview_configuration(main={"format": "BGR888", "size": (640, 480)})
+        config = picam.create_preview_configuration(main={"format": "BGR888", "size": (3280, 2464)})
         picam.configure(config)
         picam.start()
         print("✅ เปิดกล้องสำเร็จ (Hardware รันได้)")
