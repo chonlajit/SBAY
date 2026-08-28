@@ -97,7 +97,8 @@ def set_angle(pin, angle):
     target.change_duty_cycle(duty_cycle)
     time.sleep(1.0)
     
-    if not KEEP_TORQUE:
+    # ห้ามปิดสัญญาณ (Duty Cycle 0) สำหรับมอเตอร์ 360 องศาเด็ดขาด เพราะจะทำให้มันหมุนเองจาก Noise
+    if not KEEP_TORQUE and pin not in [SERVO_DROP_PIN, SERVO_RETURN_PIN]:
         target.change_duty_cycle(0)
 
 def reset_position():
