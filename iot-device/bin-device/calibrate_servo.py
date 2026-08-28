@@ -36,12 +36,18 @@ def run_calibration():
                 max_angle = 180
             elif choice == '3':
                 target_pin = servo.SERVO_DROP_PIN
-                servo_name = "Drop (ตัวรับขวด)"
+                servo_name = "Drop (ตัวรับขวด - มอเตอร์ 360 องศา)"
                 max_angle = 180
             else:
                 target_pin = servo.SERVO_RETURN_PIN
-                servo_name = "Return (ตัวคืนขวด)"
+                servo_name = "Return (ตัวคืนขวด - มอเตอร์ 360 องศา)"
                 max_angle = 180
+                
+            if choice in ['3', '4']:
+                print("\n⚠️ มอเตอร์นี้เป็นแบบ 360 องศา:")
+                print("- พิมพ์ '90' เพื่อให้มอเตอร์ หยุดนิ่ง")
+                print("- พิมพ์ '0' หรือ '180' เพื่อให้มอเตอร์หมุน")
+                print("- (เมื่อหมุนเสร็จ ต้องพิมพ์ '90' เพื่อหยุด)\n")
 
             while True:
                 angle_str = input(f"[{servo_name}] 👉 ป้อนค่าองศา (0 - {max_angle}) หรือพิมพ์ 'q' เพื่อกลับไปเลือกใหม่: ").strip()
