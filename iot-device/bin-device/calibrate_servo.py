@@ -14,19 +14,34 @@ def run_calibration():
             print("\nเลือก Servo ที่ต้องการทดสอบ:")
             print("1. Servo Sort (ตัวปัดคัดแยกขยะ)")
             print("2. Servo Release (ตัวแผ่นรองปล่อยขยะ)")
-            print("3. ออกจากโปรแกรม (หรือกด Ctrl+C)")
-            choice = input("👉 ใส่ตัวเลข (1-3): ").strip()
+            print("3. Servo Drop (ตัวเปิดรับขวด)")
+            print("4. Servo Return (ตัวคืนขวด - อนาคต)")
+            print("5. ออกจากโปรแกรม (หรือกด Ctrl+C)")
+            choice = input("👉 ใส่ตัวเลข (1-5): ").strip()
 
-            if choice == '3':
+            if choice == '5':
                 break
             
-            if choice not in ['1', '2']:
-                print("❌ กรุณาเลือก 1 หรือ 2 เท่านั้น")
+            if choice not in ['1', '2', '3', '4']:
+                print("❌ กรุณาเลือก 1-4 เท่านั้น")
                 continue
 
-            target_pin = servo.SERVO_SORT_PIN if choice == '1' else servo.SERVO_RELEASE_PIN
-            servo_name = "Sort (ตัวปัด)" if choice == '1' else "Release (ตัวแผ่นรอง)"
-            max_angle = 360 if choice == '1' else 180
+            if choice == '1':
+                target_pin = servo.SERVO_SORT_PIN
+                servo_name = "Sort (ตัวปัด)"
+                max_angle = 360
+            elif choice == '2':
+                target_pin = servo.SERVO_RELEASE_PIN
+                servo_name = "Release (ตัวแผ่นรอง)"
+                max_angle = 180
+            elif choice == '3':
+                target_pin = servo.SERVO_DROP_PIN
+                servo_name = "Drop (ตัวรับขวด)"
+                max_angle = 180
+            else:
+                target_pin = servo.SERVO_RETURN_PIN
+                servo_name = "Return (ตัวคืนขวด)"
+                max_angle = 180
 
             while True:
                 angle_str = input(f"[{servo_name}] 👉 ป้อนค่าองศา (0 - {max_angle}) หรือพิมพ์ 'q' เพื่อกลับไปเลือกใหม่: ").strip()

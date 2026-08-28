@@ -110,16 +110,29 @@ class SmartBinController:
         logger.info("=" * 50)
 
         from config import USE_HARDWARE, USE_SERVO
-        if USE_HARDWARE and USE_SERVO:
+        if USE_HARDWARE:
+            if USE_SERVO:
+                try:
+                    from hardware.servo import reset_position
+                    logger.info("Resetting servos to default positions...")
+                    reset_position()
+                except Exception as e:
+                    logger.error(f"Failed to reset servos: {e}")
+            
             try:
-                from hardware.servo import reset_position
-                logger.info("Resetting servos to default positions...")
-                reset_position()
+                from hardware.led import set_bin_full_status, cleanup as cleanup_leds
+                self.heartbeat.on_full_status_change = set_bin_full_status
+                self.cleanup_leds = cleanup_leds
             except Exception as e:
-                logger.error(f"Failed to reset servos: {e}")
+                logger.error(f"Failed to init LED status callback: {e}")
+                self.cleanup_leds = lambda: None
 
         # Start heartbeat
         self.heartbeat.start()
+        
+        import atexit
+        if hasattr(self, 'cleanup_leds'):
+            atexit.register(self.cleanup_leds)
 
         if USE_GUI:
             self._start_with_gui()
@@ -169,8 +182,21 @@ class SmartBinController:
         logger.info("Detection loop started (waiting for IR)")
 
         while self.detecting:
-            if self.detection.is_item_present():
+            # ถ้า USE_IR=False กล้องจะเปิดตลอดและไม่ต้องรอ Drop Servo
+            if not USE_IR:
                 if not self.detection.running:
+                    if self.gui:
+                        self.gui.schedule(self.gui.update_status, "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)...", "#94a3b8")
+                    self.detection.start_camera()
+                    time.sleep(1.0)
+            
+            if not USE_IR or self.detection.is_item_present():
+                if USE_IR and not self.detection.running:
+                    if self.gui:
+                        self.gui.schedule(self.gui.update_status, "กำลังรับขยะเข้าสู่ช่องวิเคราะห์...", "#eab308")
+                    
+                    self.detection.drop_item()
+                    
                     if self.gui:
                         self.gui.schedule(self.gui.update_status, "กำลังเปิดกล้องและวิเคราะห์...", "#eab308")
                     self.detection.start_camera()
@@ -199,7 +225,9 @@ class SmartBinController:
                             result["score"]
                         )
                     
-                    self.detection.stop_camera()
+                    if USE_IR:
+                        self.detection.stop_camera()
+                        
                     if self.gui:
                         status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
                         self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")

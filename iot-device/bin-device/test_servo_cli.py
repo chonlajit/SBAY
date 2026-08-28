@@ -19,10 +19,12 @@ def run_cli():
             print("1. ขวดพลาสติก (PLASTIC_BOTTLE)")
             print("2. กระป๋อง (ALUMINUM_CAN)")
             print("3. กล่องกระดาษ (BEVERAGE_CARTON)")
+            print("d. ทดสอบ Servo รับขวด (Drop Servo)")
+            print("u. ทดสอบ Servo คืนขวด (Return Servo)")
             print("r. รีเซ็ตมอเตอร์ (Reset Position)")
             print("q. ออกจากโปรแกรม (Quit)")
             
-            choice = input("👉 ใส่ตัวเลือก (1/2/3/r/q): ").strip().lower()
+            choice = input("👉 ใส่ตัวเลือก (1/2/3/d/u/r/q): ").strip().lower()
             
             if choice == 'q':
                 print("👋 กำลังออกจากโปรแกรม...")
@@ -30,6 +32,14 @@ def run_cli():
             elif choice == 'r':
                 print("🔄 กำลังรีเซ็ตมอเตอร์กลับสู่จุดศูนย์...")
                 servo.reset_position()
+                time.sleep(1)
+            elif choice == 'd':
+                print("⏬ จำลองการรับขวด (เปิดแล้วปิด)")
+                servo.drop_item()
+                time.sleep(1)
+            elif choice == 'u':
+                print("🔙 จำลองการคืนขวด (เปิดแล้วปิด)")
+                servo.return_item()
                 time.sleep(1)
             elif choice == '1':
                 print("♻️ จำลองการทิ้ง: ขวดพลาสติก")

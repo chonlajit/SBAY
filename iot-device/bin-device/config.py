@@ -31,11 +31,17 @@ USE_SERVO = os.getenv("USE_SERVO", "true").lower() == "true"
 IR_PIN = 17
 SERVO_SORT_PIN = 18
 SERVO_RELEASE_PIN = 19
+SERVO_DROP_PIN = 12
+SERVO_RETURN_PIN = 13
 
 # --- Servo Angles Configuration ---
 # สามารถปรับแก้ตัวเลขเหล่านี้ได้ที่เดียวเพื่อให้มีผลกับระบบทั้งหมด
 DEFAULT_SORT_ANGLE = int(os.getenv("DEFAULT_SORT_ANGLE", 260))
 DEFAULT_RELEASE_ANGLE = int(os.getenv("DEFAULT_RELEASE_ANGLE", 82))
+DROP_ANGLE_CLOSED = int(os.getenv("DROP_ANGLE_CLOSED", 0))
+DROP_ANGLE_OPEN = int(os.getenv("DROP_ANGLE_OPEN", 90))
+RETURN_ANGLE_CLOSED = int(os.getenv("RETURN_ANGLE_CLOSED", 0))
+RETURN_ANGLE_OPEN = int(os.getenv("RETURN_ANGLE_OPEN", 90))
 
 SORT_ANGLE_PLASTIC = int(os.getenv("SORT_ANGLE_PLASTIC", 260))
 SORT_ANGLE_CAN = int(os.getenv("SORT_ANGLE_CAN", 200))
@@ -45,12 +51,15 @@ RELEASE_ANGLE_PLASTIC = int(os.getenv("RELEASE_ANGLE_PLASTIC", 104))
 RELEASE_ANGLE_CAN = int(os.getenv("RELEASE_ANGLE_CAN", 60))
 RELEASE_ANGLE_CARTON = int(os.getenv("RELEASE_ANGLE_CARTON", 60))
 
-# --- Reset Buttons (GPIO) ---
+# --- Reset Buttons & LEDs (GPIO) ---
 USE_RESET_BUTTONS = str(os.getenv("USE_RESET_BUTTONS", "true")).strip().lower() == "true"
 RESET_PIN_PLASTIC = 22
 RESET_PIN_CAN = 23
 RESET_PIN_CARTON = 24
 RESET_PIN_ALL = 25
+
+# ไฟ LED แจ้งเตือนสถานะถังเต็ม
+LED_BIN_FULL_PIN = 7
 
 # --- AI Detection ---
 MODEL_PATH = os.getenv("MODEL_PATH", "bottle-v1-3.pt")

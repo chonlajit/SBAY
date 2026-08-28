@@ -26,10 +26,11 @@ if USE_HARDWARE:
         def ir_detected(): return True
         
     if USE_SERVO:
-        from hardware.servo import sort_item, release_item
+        from hardware.servo import sort_item, release_item, drop_item
     else:
         def sort_item(label): logger.debug(f"[SIMULATE] sort → {label}")
         def release_item(): logger.debug("[SIMULATE] release")
+        def drop_item(): logger.debug("[SIMULATE] drop item")
 else:
     def ir_detected():
         return True
@@ -37,6 +38,8 @@ else:
         logger.debug(f"[SIMULATE] sort → {label}")
     def release_item():
         logger.debug("[SIMULATE] release")
+    def drop_item():
+        logger.debug("[SIMULATE] drop item")
 
 
 class DetectionService:
@@ -227,3 +230,7 @@ class DetectionService:
     def is_item_present(self):
         """ตรวจว่ามีวัตถุอยู่หน้า IR sensor หรือไม่"""
         return ir_detected()
+
+    def drop_item(self):
+        """สั่งเปิดเซ็นเซอร์รับขวดเพื่อให้หล่นลงมาวิเคราะห์"""
+        drop_item()

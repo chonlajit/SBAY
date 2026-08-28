@@ -139,15 +139,21 @@ class ApiClient:
                 "name": DEVICE_NAME,
                 "location": DEVICE_LOCATION
             }
-            requests.post(
+            resp = requests.post(
                 f"{self.api_base}/devices/{device_id}/heartbeat",
                 json=payload,
                 headers={"X-Device-Secret": DEVICE_SECRET},
                 timeout=3
             )
-            return True
+            resp.raise_for_status()
+            
+            # Check if backend reports this bin as FULL
+            data = resp.json()
+            is_full = data.get("isFull", False) if isinstance(data, dict) else False
+            
+            return True, is_full
         except requests.RequestException:
-            return False
+            return False, False
 
     def reset_bin(self, device_id, waste_type=None):
         """ส่งคำสั่งรีเซ็ตปริมาณขยะไปยัง Backend (เรียกผ่าน DeviceController API)"""

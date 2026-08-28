@@ -33,9 +33,11 @@ class HeartbeatService:
 
     def _run(self):
         while self.running:
-            ok = self.api_client.send_heartbeat(self.device_id)
+            ok, is_full = self.api_client.send_heartbeat(self.device_id)
             if ok:
-                logger.debug(f"Heartbeat OK → {self.device_id}")
+                logger.debug(f"Heartbeat OK → {self.device_id} (isFull: {is_full})")
+                if hasattr(self, 'on_full_status_change'):
+                    self.on_full_status_change(is_full)
             else:
                 logger.warning(f"Heartbeat FAIL → {self.device_id}")
             time.sleep(self.interval)
