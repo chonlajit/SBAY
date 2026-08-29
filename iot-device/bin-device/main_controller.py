@@ -181,8 +181,11 @@ class SmartBinController:
         """Background thread: วนตรวจจับขยะจากกล้องและ IR Sensor"""
         logger.info("Detection loop started (waiting for IR)")
 
+        processing_item = False
+        processing_start_time = 0
+
         while self.detecting:
-            # ถ้า USE_IR=False กล้องจะเปิดตลอดและไม่ต้องรอ Drop Servo
+            # ถ้า USE_IR=False กล้องจะเปิดตลอด
             if not USE_IR:
                 if not self.detection.running:
                     if self.gui:
@@ -190,18 +193,26 @@ class SmartBinController:
                     self.detection.start_camera()
                     time.sleep(1.0)
             
-            if not USE_IR or self.detection.is_item_present():
-                if USE_IR and not self.detection.running:
+            # 1. เช็คว่ามีของใหม่มาจ่อเซ็นเซอร์ไหม (เฉพาะตอนที่ยังไม่ได้กำลังวิเคราะห์ของเก่าอยู่)
+            if not processing_item and (not USE_IR or self.detection.is_item_present()):
+                if USE_IR:
                     if self.gui:
                         self.gui.schedule(self.gui.update_status, "กำลังรับขยะเข้าสู่ช่องวิเคราะห์...", "#eab308")
                     
-                    self.detection.drop_item()
+                    self.detection.drop_item()  # เปิดบานพับให้ของตกเข้ามา
                     
                     if self.gui:
                         self.gui.schedule(self.gui.update_status, "กำลังเปิดกล้องและวิเคราะห์...", "#eab308")
+                    
                     self.detection.start_camera()
                     time.sleep(1.0) # Wait for camera warmup
+                
+                # เปลี่ยนสถานะว่า "กำลังมีของอยู่ข้างในตู้ ให้กล้องวิเคราะห์ต่อไปเรื่อยๆ"
+                processing_item = True
+                processing_start_time = time.time()
 
+            # 2. ถ้ามีของอยู่ข้างใน (หรือเปิดกล้องตลอดเวลา) ให้วิเคราะห์ AI
+            if processing_item or not USE_IR:
                 result = self.detection.detect_once()
 
                 if self.gui and self.detection.latest_frame is not None:
@@ -209,6 +220,7 @@ class SmartBinController:
                     self.gui.schedule(self.gui.update_camera_frame, frame_to_show)
 
                 if result:
+                    # 🎯 AI ตรวจเจอขยะสำเร็จและเสถียรแล้ว
                     item = self.session.add_item(
                         item_type=result["type"],
                         size_ml=result["size_ml"],
@@ -216,7 +228,6 @@ class SmartBinController:
                         score=result["score"]
                     )
 
-                    # Update GUI (thread-safe)
                     if self.gui:
                         self.gui.schedule(
                             self.gui.add_detected_item,
@@ -231,14 +242,32 @@ class SmartBinController:
                     if self.gui:
                         status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
                         self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
-                    time.sleep(2.0) # Wait for item to drop and IR to clear
-            else:
-                if self.detection.running:
-                    self.detection.stop_camera()
-                    if self.gui:
-                        status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
-                        self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
                         self.gui.schedule(self.gui.update_camera_frame, None)
+                    
+                    time.sleep(2.0) # Wait for item to sort/release completely
+                    processing_item = False # กลับไปรอรับของชิ้นใหม่ได้
+                    
+                else:
+                    # ⏳ AI ยังหาไม่เจอ หรือยังไม่เสถียร เช็คว่าหมดเวลา (Timeout) หรือยัง
+                    # ถ้าของเข้ามาข้างในเกิน 10 วินาทีแล้ว AI ยังอ่านไม่ออก ให้ยอมแพ้แล้วทิ้งของไป
+                    if USE_IR and (time.time() - processing_start_time > 10.0):
+                        logger.warning("Detection timeout - no item found by AI")
+                        self.detection.stop_camera()
+                        
+                        # สั่งเคลียร์ของทิ้งไปเลย (หรือส่งคืน)
+                        try:
+                            from hardware.servo import release_item
+                            release_item("UNKNOWN")
+                        except:
+                            pass
+                        
+                        if self.gui:
+                            self.gui.schedule(self.gui.update_status, "วิเคราะห์ไม่สำเร็จ หรือเป็นขยะที่รับไม่ได้...", "#ef4444")
+                            time.sleep(3.0)
+                            self.gui.schedule(self.gui.update_status, "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)", "#94a3b8")
+                            self.gui.schedule(self.gui.update_camera_frame, None)
+                            
+                        processing_item = False
 
             time.sleep(0.1)  # Prevent CPU spike
 
