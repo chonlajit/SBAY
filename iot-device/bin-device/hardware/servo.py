@@ -165,15 +165,43 @@ def release_item(label="PLASTIC_BOTTLE"):
     set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)
 
 def drop_item():
-    """เปิดเพื่อให้ขวดหล่นลงมาในกล่อง จากนั้นปิดกลับ"""
+    """เปิดเพื่อให้ขวดหล่นลงมาในกล่อง (และหมุนปิดกลับถ้าตั้งค่าไว้)"""
+    try:
+        spin_time = getattr(config, "DROP_SPIN_TIME", 1.0)
+        auto_reverse = getattr(config, "DROP_AUTO_REVERSE", True)
+        reverse_angle = getattr(config, "DROP_ANGLE_REVERSE", 180)
+    except NameError:
+        spin_time = 1.0
+        auto_reverse = True
+        reverse_angle = 180
+        
     set_angle(SERVO_DROP_PIN, DROP_ANGLE_OPEN)
-    time.sleep(1)
+    time.sleep(spin_time)
+    
+    if auto_reverse:
+        set_angle(SERVO_DROP_PIN, reverse_angle)
+        time.sleep(spin_time)
+        
     set_angle(SERVO_DROP_PIN, DROP_ANGLE_CLOSED)
 
 def return_item():
-    """เปิดเพื่อคืนขวดให้ผู้ใช้ จากนั้นปิดกลับ (สำหรับอนาคต)"""
+    """เปิดเพื่อคืนขวดให้ผู้ใช้ (และหมุนปิดกลับถ้าตั้งค่าไว้)"""
+    try:
+        spin_time = getattr(config, "RETURN_SPIN_TIME", 1.0)
+        auto_reverse = getattr(config, "RETURN_AUTO_REVERSE", True)
+        reverse_angle = getattr(config, "RETURN_ANGLE_REVERSE", 180)
+    except NameError:
+        spin_time = 1.0
+        auto_reverse = True
+        reverse_angle = 180
+        
     set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_OPEN)
-    time.sleep(1)
+    time.sleep(spin_time)
+    
+    if auto_reverse:
+        set_angle(SERVO_RETURN_PIN, reverse_angle)
+        time.sleep(spin_time)
+        
     set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_CLOSED)
 
 def cleanup():
