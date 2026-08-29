@@ -49,16 +49,12 @@ KEEP_TORQUE = False
 try:
     from rpi_hardware_pwm import HardwarePWM
     
-    # 50 Hz สำหรับ Servo ทั่วไป
+    # 50 Hz สำหรับ Servo ทั่วไป (Sort/Release ใช้ Hardware PWM เพื่อความแม่นยำ 180 องศา)
     sort_servo = HardwarePWM(pwm_channel=2, hz=50)
     release_servo = HardwarePWM(pwm_channel=3, hz=50)
-    drop_servo = HardwarePWM(pwm_channel=0, hz=50)
-    return_servo = HardwarePWM(pwm_channel=1, hz=50)
     
     sort_servo.start(0)
     release_servo.start(0)
-    drop_servo.start(0)
-    return_servo.start(0)
     HARDWARE_PWM_ENABLED = True
 except Exception as e:
     print("==========================================================")
@@ -71,35 +67,74 @@ except Exception as e:
     HARDWARE_PWM_ENABLED = False
     sys.exit(1)
 
+# ========================================================
+# ใช้ Software PWM (gpiozero) สำหรับมอเตอร์ 360 องศา (Drop/Return)
+# เพื่อแก้ปัญหาขา 12/13 ไม่ยอมส่ง Hardware PWM
+# ========================================================
+from gpiozero import Servo
+from gpiozero.pins.lgpio import LGPIOFactory
+from gpiozero import Device
+import warnings
+
+# ปิด warning ของ gpiozero
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    try:
+        # ใช้ lgpio เพื่อความเสถียรใน Pi 5
+        Device.pin_factory = LGPIOFactory()
+    except:
+        pass
+
+# กำหนด pulse width: 1.5ms = หยุด, 1.0ms = หมุนซ้าย, 2.0ms = หมุนขวา
+try:
+    drop_motor = Servo(SERVO_DROP_PIN, min_pulse_width=1.0/1000, max_pulse_width=2.0/1000)
+    return_motor = Servo(SERVO_RETURN_PIN, min_pulse_width=1.0/1000, max_pulse_width=2.0/1000)
+    SOFTWARE_PWM_ENABLED = True
+except Exception as e:
+    print(f"❌ ERROR: ไม่สามารถสร้าง Software PWM ได้: {e}")
+    SOFTWARE_PWM_ENABLED = False
+
+
 def set_angle(pin, angle):
-    if not HARDWARE_PWM_ENABLED:
-        return
+    # กรณีเป็น Drop/Return (มอเตอร์ 360 องศา) ใช้ gpiozero
+    if pin in [SERVO_DROP_PIN, SERVO_RETURN_PIN]:
+        if not SOFTWARE_PWM_ENABLED:
+            return
         
-    if pin == SERVO_SORT_PIN:
-        target = sort_servo
-        max_angle_scale = 360.0
-    elif pin == SERVO_DROP_PIN:
-        target = drop_servo
-        max_angle_scale = 180.0
-    elif pin == SERVO_RETURN_PIN:
-        target = return_servo
-        max_angle_scale = 180.0
+        target = drop_motor if pin == SERVO_DROP_PIN else return_motor
+        
+        # แปลงองศา 0-180 ให้เป็นค่า -1 ถึง 1 สำหรับ gpiozero.Servo
+        # 90 องศา = 0 (หยุดนิ่ง)
+        # 0 องศา = -1 (หมุนซ้าย)
+        # 180 องศา = 1 (หมุนขวา)
+        val = (angle - 90.0) / 90.0
+        
+        # จำกัดค่าไม่ให้เกิน -1.0 ถึง 1.0
+        val = max(min(val, 1.0), -1.0)
+        
+        target.value = val
+        time.sleep(1.0)
+        
+        # ห้ามปิดสัญญาณเด็ดขาดสำหรับ 360 องศา
+        # ปล่อยให้มันคงค่า 90 องศา (value 0) แช่ไว้เพื่อไม่ให้หมุนเองจากคลื่นรบกวน
+        
+    # กรณีเป็น Sort/Release (มอเตอร์ 180 องศา) ใช้ Hardware PWM
     else:
-        target = release_servo
-        max_angle_scale = 180.0
-    
-    # คำนวณ Duty Cycle สำหรับ 50Hz (20ms period)
-    # 500 us = 2.5% duty cycle
-    # 2500 us = 12.5% duty cycle
-    # ช่วงต่างคือ 10.0%
-    duty_cycle = 2.5 + (angle / max_angle_scale) * 10.0
-    
-    target.change_duty_cycle(duty_cycle)
-    time.sleep(1.0)
-    
-    # ห้ามปิดสัญญาณ (Duty Cycle 0) สำหรับมอเตอร์ 360 องศาเด็ดขาด เพราะจะทำให้มันหมุนเองจาก Noise
-    if not KEEP_TORQUE and pin not in [SERVO_DROP_PIN, SERVO_RETURN_PIN]:
-        target.change_duty_cycle(0)
+        if not HARDWARE_PWM_ENABLED:
+            return
+            
+        target = sort_servo if pin == SERVO_SORT_PIN else release_servo
+        max_angle_scale = 360.0 if pin == SERVO_SORT_PIN else 180.0
+        
+        # คำนวณ Duty Cycle สำหรับ 50Hz (20ms period)
+        duty_cycle = 2.5 + (angle / max_angle_scale) * 10.0
+        
+        target.change_duty_cycle(duty_cycle)
+        time.sleep(1.0)
+        
+        # ตัดสัญญาณไฟเพื่อไม่ให้มอเตอร์ร้อน (สำหรับ 180 องศาเท่านั้น)
+        if not KEEP_TORQUE:
+            target.change_duty_cycle(0)
 
 def reset_position():
     set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)
@@ -145,5 +180,6 @@ def cleanup():
     if HARDWARE_PWM_ENABLED:
         sort_servo.stop()
         release_servo.stop()
-        drop_servo.stop()
-        return_servo.stop()
+    if SOFTWARE_PWM_ENABLED:
+        drop_motor.close()
+        return_motor.close()
