@@ -68,10 +68,10 @@ except Exception as e:
     sys.exit(1)
 
 # ========================================================
-# ใช้ Software PWM (gpiozero) สำหรับมอเตอร์ 360 องศา (Drop/Return)
+# ใช้ Software PWM (gpiozero) สำหรับมอเตอร์ 180 องศา (Drop/Return)
 # เพื่อแก้ปัญหาขา 12/13 ไม่ยอมส่ง Hardware PWM
 # ========================================================
-from gpiozero import Servo
+from gpiozero import AngularServo
 from gpiozero.pins.lgpio import LGPIOFactory
 from gpiozero import Device
 import warnings
@@ -85,10 +85,10 @@ with warnings.catch_warnings():
     except:
         pass
 
-# กำหนด pulse width: 1.5ms = หยุด, 1.0ms = หมุนซ้าย, 2.0ms = หมุนขวา
+# มอเตอร์ 180 องศา (MG996R) มักจะใช้ pulse width 0.5ms ถึง 2.5ms (หรือใกล้เคียง)
 try:
-    drop_motor = Servo(SERVO_DROP_PIN, min_pulse_width=1.0/1000, max_pulse_width=2.0/1000)
-    return_motor = Servo(SERVO_RETURN_PIN, min_pulse_width=1.0/1000, max_pulse_width=2.0/1000)
+    drop_motor = AngularServo(SERVO_DROP_PIN, min_angle=0, max_angle=180, min_pulse_width=0.5/1000, max_pulse_width=2.5/1000)
+    return_motor = AngularServo(SERVO_RETURN_PIN, min_angle=0, max_angle=180, min_pulse_width=0.5/1000, max_pulse_width=2.5/1000)
     SOFTWARE_PWM_ENABLED = True
 except Exception as e:
     print(f"❌ ERROR: ไม่สามารถสร้าง Software PWM ได้: {e}")
@@ -96,29 +96,20 @@ except Exception as e:
 
 
 def set_angle(pin, angle):
-    # กรณีเป็น Drop/Return (มอเตอร์ 360 องศา) ใช้ gpiozero
+    # กรณีเป็น Drop/Return (มอเตอร์ 180 องศาที่ใช้ gpiozero)
     if pin in [SERVO_DROP_PIN, SERVO_RETURN_PIN]:
         if not SOFTWARE_PWM_ENABLED:
             return
         
         target = drop_motor if pin == SERVO_DROP_PIN else return_motor
-        
-        # แปลงองศา 0-180 ให้เป็นค่า -1 ถึง 1 สำหรับ gpiozero.Servo
-        # 90 องศา = 0 (หยุดนิ่ง)
-        # 0 องศา = -1 (หมุนซ้าย)
-        # 180 องศา = 1 (หมุนขวา)
-        val = (angle - 90.0) / 90.0
-        
-        # จำกัดค่าไม่ให้เกิน -1.0 ถึง 1.0
-        val = max(min(val, 1.0), -1.0)
-        
-        target.value = val
+        target.angle = angle
         time.sleep(1.0)
         
-        # ห้ามปิดสัญญาณเด็ดขาดสำหรับ 360 องศา
-        # ปล่อยให้มันคงค่า 90 องศา (value 0) แช่ไว้เพื่อไม่ให้หมุนเองจากคลื่นรบกวน
-        
-    # กรณีเป็น Sort/Release (มอเตอร์ 180 องศา) ใช้ Hardware PWM
+        # ปิดสัญญาณ PWM เพื่อลดความร้อนมอเตอร์เมื่อไปถึงจุดที่ต้องการแล้ว
+        if not KEEP_TORQUE:
+            target.value = None
+            
+    # กรณีเป็น Sort/Release (มอเตอร์ 180 องศาที่ใช้ Hardware PWM)
     else:
         if not HARDWARE_PWM_ENABLED:
             return
@@ -132,7 +123,7 @@ def set_angle(pin, angle):
         target.change_duty_cycle(duty_cycle)
         time.sleep(1.0)
         
-        # ตัดสัญญาณไฟเพื่อไม่ให้มอเตอร์ร้อน (สำหรับ 180 องศาเท่านั้น)
+        # ตัดสัญญาณไฟเพื่อไม่ให้มอเตอร์ร้อน
         if not KEEP_TORQUE:
             target.change_duty_cycle(0)
 
@@ -165,43 +156,15 @@ def release_item(label="PLASTIC_BOTTLE"):
     set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)
 
 def drop_item():
-    """เปิดเพื่อให้ขวดหล่นลงมาในกล่อง (และหมุนปิดกลับถ้าตั้งค่าไว้)"""
-    try:
-        spin_time = getattr(config, "DROP_SPIN_TIME", 1.0)
-        auto_reverse = getattr(config, "DROP_AUTO_REVERSE", True)
-        reverse_angle = getattr(config, "DROP_ANGLE_REVERSE", 180)
-    except NameError:
-        spin_time = 1.0
-        auto_reverse = True
-        reverse_angle = 180
-        
+    """เปิดเพื่อให้ขวดหล่นลงมาในกล่อง จากนั้นปิดกลับ (สำหรับมอเตอร์ 180 องศา)"""
     set_angle(SERVO_DROP_PIN, DROP_ANGLE_OPEN)
-    time.sleep(spin_time)
-    
-    if auto_reverse:
-        set_angle(SERVO_DROP_PIN, reverse_angle)
-        time.sleep(spin_time)
-        
+    time.sleep(1.0)
     set_angle(SERVO_DROP_PIN, DROP_ANGLE_CLOSED)
 
 def return_item():
-    """เปิดเพื่อคืนขวดให้ผู้ใช้ (และหมุนปิดกลับถ้าตั้งค่าไว้)"""
-    try:
-        spin_time = getattr(config, "RETURN_SPIN_TIME", 1.0)
-        auto_reverse = getattr(config, "RETURN_AUTO_REVERSE", True)
-        reverse_angle = getattr(config, "RETURN_ANGLE_REVERSE", 180)
-    except NameError:
-        spin_time = 1.0
-        auto_reverse = True
-        reverse_angle = 180
-        
+    """เปิดเพื่อคืนขวดให้ผู้ใช้ จากนั้นปิดกลับ (สำหรับมอเตอร์ 180 องศา)"""
     set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_OPEN)
-    time.sleep(spin_time)
-    
-    if auto_reverse:
-        set_angle(SERVO_RETURN_PIN, reverse_angle)
-        time.sleep(spin_time)
-        
+    time.sleep(1.0)
     set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_CLOSED)
 
 def cleanup():

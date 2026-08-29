@@ -38,17 +38,11 @@ SERVO_RETURN_PIN = 13
 # สามารถปรับแก้ตัวเลขเหล่านี้ได้ที่เดียวเพื่อให้มีผลกับระบบทั้งหมด
 DEFAULT_SORT_ANGLE = int(os.getenv("DEFAULT_SORT_ANGLE", 260))
 DEFAULT_RELEASE_ANGLE = int(os.getenv("DEFAULT_RELEASE_ANGLE", 82))
-DROP_ANGLE_CLOSED = int(os.getenv("DROP_ANGLE_CLOSED", 90)) # 90 คือ หยุด
-DROP_ANGLE_OPEN = int(os.getenv("DROP_ANGLE_OPEN", 180))    # 180 คือ หมุนเปิด (ทวนเข็ม/ตามเข็ม ขึ้นกับมอเตอร์)
-DROP_ANGLE_REVERSE = int(os.getenv("DROP_ANGLE_REVERSE", 0)) # 0 คือ หมุนกลับอีกทางเพื่อปิด
-DROP_SPIN_TIME = float(os.getenv("DROP_SPIN_TIME", 1.0))  # เวลาที่ใช้หมุน (วินาที)
-DROP_AUTO_REVERSE = str(os.getenv("DROP_AUTO_REVERSE", "true")).strip().lower() == "true" # ให้หมุนกลับอัตโนมัติหรือไม่
+DROP_ANGLE_CLOSED = int(os.getenv("DROP_ANGLE_CLOSED", 90))
+DROP_ANGLE_OPEN = int(os.getenv("DROP_ANGLE_OPEN", 180))
 
 RETURN_ANGLE_CLOSED = int(os.getenv("RETURN_ANGLE_CLOSED", 90))
 RETURN_ANGLE_OPEN = int(os.getenv("RETURN_ANGLE_OPEN", 180))
-RETURN_ANGLE_REVERSE = int(os.getenv("RETURN_ANGLE_REVERSE", 0))
-RETURN_SPIN_TIME = float(os.getenv("RETURN_SPIN_TIME", 1.0))
-RETURN_AUTO_REVERSE = str(os.getenv("RETURN_AUTO_REVERSE", "true")).strip().lower() == "true"
 
 SORT_ANGLE_PLASTIC = int(os.getenv("SORT_ANGLE_PLASTIC", 260))
 SORT_ANGLE_CAN = int(os.getenv("SORT_ANGLE_CAN", 200))
