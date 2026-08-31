@@ -6,7 +6,7 @@ import cv2
 # เพิ่ม Path ให้มองเห็นโฟลเดอร์ปัจจุบัน
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import MODEL_PATH
+from config import MODEL_PATH, CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT
 from vision.detector import Detector
 
 print("="*50)
@@ -42,10 +42,10 @@ try:
     # สลับสี BGR กลับเป็น RGB ตามที่โมเดลคาดหวัง
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
-    # ครอปภาพ (Crop) ตามค่าใหม่
+    # ครอปภาพ (Crop) ตามค่าคงที่จาก config.py
     h, w = frame.shape[:2]
-    y1, y2 = int(h * 0.24), int(h * 0.86)
-    x1, x2 = int(w * 0.25), int(w * 0.81)
+    y1, y2 = int(h * CROP_TOP_PCT), int(h * CROP_BOTTOM_PCT)
+    x1, x2 = int(w * CROP_LEFT_PCT), int(w * CROP_RIGHT_PCT)
     frame = frame[y1:y2, x1:x2]
 
     # รัน AI

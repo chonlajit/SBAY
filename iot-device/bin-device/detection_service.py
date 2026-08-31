@@ -13,7 +13,8 @@ from size.estimator import SizeEstimator
 from scoring.calculator import ScoreCalculator
 from config import (
     MODEL_PATH, CONF_THRESHOLD, STABLE_FRAMES,
-    COOLDOWN, DETECT_TIMEOUT, USE_HARDWARE, USE_IR, USE_SERVO, USE_CAMERA
+    COOLDOWN, DETECT_TIMEOUT, USE_HARDWARE, USE_IR, USE_SERVO, USE_CAMERA,
+    CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT
 )
 
 logger = logging.getLogger("detection")
@@ -143,9 +144,9 @@ class DetectionService:
 
         # ซูมภาพ (Crop) ระดับ 2 (ซูมลึกเข้าไปที่ถาดดำตรงกลาง)
         h, w = frame.shape[:2]
-        # ตัดขอบตามค่าใหม่ที่ปรับตั้งไว้
-        y1, y2 = int(h * 0.24), int(h * 0.86)
-        x1, x2 = int(w * 0.25), int(w * 0.81)
+        # ตัดขอบตามค่าใน config
+        y1, y2 = int(h * CROP_TOP_PCT), int(h * CROP_BOTTOM_PCT)
+        x1, x2 = int(w * CROP_LEFT_PCT), int(w * CROP_RIGHT_PCT)
         frame = frame[y1:y2, x1:x2]
         # 3. อัปเดตเฟรมล่าสุดสำหรับ GUI (ทำทุกรอบ ไม่ว่าจะ cooldown หรือไม่)
         display_frame = frame.copy()

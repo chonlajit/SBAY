@@ -6,7 +6,7 @@ import cv2
 # เพิ่ม Path ให้มองเห็นโฟลเดอร์ปัจจุบัน
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import MODEL_PATH
+from config import MODEL_PATH, CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT
 from vision.detector import Detector
 
 def nothing(x):
@@ -44,11 +44,11 @@ def main():
     cv2.namedWindow("Settings")
     cv2.resizeWindow("Settings", 400, 250)
     
-    # ค่าเริ่มต้น
-    cv2.createTrackbar("Top (%)", "Settings", 25, 100, nothing)
-    cv2.createTrackbar("Bottom (%)", "Settings", 75, 100, nothing)
-    cv2.createTrackbar("Left (%)", "Settings", 33, 100, nothing)
-    cv2.createTrackbar("Right (%)", "Settings", 67, 100, nothing)
+    # ค่าเริ่มต้น (ดึงจาก config.py)
+    cv2.createTrackbar("Top (%)", "Settings", int(CROP_TOP_PCT * 100), 100, nothing)
+    cv2.createTrackbar("Bottom (%)", "Settings", int(CROP_BOTTOM_PCT * 100), 100, nothing)
+    cv2.createTrackbar("Left (%)", "Settings", int(CROP_LEFT_PCT * 100), 100, nothing)
+    cv2.createTrackbar("Right (%)", "Settings", int(CROP_RIGHT_PCT * 100), 100, nothing)
 
     print("🎥 กำลังแสดงผลภาพสด... (กด 'q' ที่หน้าต่างภาพเพื่อออก)")
     print("👉 คุณสามารถปรับแถบเลื่อนในหน้าต่าง 'Settings' เพื่อดูผลลัพธ์การครอปภาพได้เลย")
