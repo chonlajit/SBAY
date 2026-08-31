@@ -70,11 +70,11 @@ COOLDOWN = 3             # วินาที ระหว่างการ det
 DETECT_TIMEOUT = 10      # วินาที ถ้า detect ไม่ได้ให้ timeout
 
 # --- AI Detection Crop Area & Camera ---
-CAMERA_ROTATION = int(os.getenv("CAMERA_ROTATION", 0))  # 0, 90, 180, 270
-CROP_TOP_PCT = float(os.getenv("CROP_TOP_PCT", 0.24))
-CROP_BOTTOM_PCT = float(os.getenv("CROP_BOTTOM_PCT", 0.86))
-CROP_LEFT_PCT = float(os.getenv("CROP_LEFT_PCT", 0.25))
-CROP_RIGHT_PCT = float(os.getenv("CROP_RIGHT_PCT", 0.81))
+CAMERA_ROTATION = int(os.getenv("CAMERA_ROTATION", 270))  # 0, 90, 180, 270
+CROP_TOP_PCT = float(os.getenv("CROP_TOP_PCT", 0.23))
+CROP_BOTTOM_PCT = float(os.getenv("CROP_BOTTOM_PCT", 0.70))
+CROP_LEFT_PCT = float(os.getenv("CROP_LEFT_PCT", 0.26))
+CROP_RIGHT_PCT = float(os.getenv("CROP_RIGHT_PCT", 0.83))
 
 # --- Size Estimation ---
 K = 80  # ค่าคงที่คำนวณ Score
