@@ -71,7 +71,7 @@ class DetectionService:
                 logger.info("Starting Picamera2...")
                 from picamera2 import Picamera2
                 self.picam = Picamera2()
-                cfg = self.picam.create_preview_configuration(main={"format": "BGR888", "size": (3280, 2464)})
+                cfg = self.picam.create_preview_configuration(main={"format": "BGR888", "size": (1280, 720)})
                 self.picam.configure(cfg)
                 self.picam.start()
                 import time as _t
