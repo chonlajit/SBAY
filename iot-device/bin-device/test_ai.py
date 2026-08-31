@@ -42,10 +42,10 @@ try:
     # สลับสี BGR กลับเป็น RGB ตามที่โมเดลคาดหวัง
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
-    # ครอปภาพ (Crop) ให้เหมือนกับตอนที่ระบบจริงทำงาน
+    # ครอปภาพ (Crop) ตามค่าใหม่
     h, w = frame.shape[:2]
-    y1, y2 = int(h * 0.25), int(h * 0.75)
-    x1, x2 = int(w * 0.33), int(w * 0.67)
+    y1, y2 = int(h * 0.24), int(h * 0.86)
+    x1, x2 = int(w * 0.25), int(w * 0.81)
     frame = frame[y1:y2, x1:x2]
 
     # รัน AI
