@@ -14,7 +14,7 @@ from scoring.calculator import ScoreCalculator
 from config import (
     MODEL_PATH, CONF_THRESHOLD, STABLE_FRAMES,
     COOLDOWN, DETECT_TIMEOUT, USE_HARDWARE, USE_IR, USE_SERVO, USE_CAMERA,
-    CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT
+    CAMERA_ROTATION, CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT
 )
 
 logger = logging.getLogger("detection")
@@ -141,6 +141,14 @@ class DetectionService:
             if not ret:
                 logger.warning("Camera frame read failed")
                 return None, 0
+
+        # ทำการหมุนภาพตามที่ตั้งไว้ใน config
+        if CAMERA_ROTATION == 90:
+            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+        elif CAMERA_ROTATION == 180:
+            frame = cv2.rotate(frame, cv2.ROTATE_180)
+        elif CAMERA_ROTATION == 270:
+            frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
         # ซูมภาพ (Crop) ระดับ 2 (ซูมลึกเข้าไปที่ถาดดำตรงกลาง)
         h, w = frame.shape[:2]

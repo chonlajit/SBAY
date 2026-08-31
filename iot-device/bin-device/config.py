@@ -69,7 +69,8 @@ STABLE_FRAMES = 5       # ต้อง detect ซ้ำกี่เฟรมถ�
 COOLDOWN = 3             # วินาที ระหว่างการ detect แต่ละชิ้น
 DETECT_TIMEOUT = 10      # วินาที ถ้า detect ไม่ได้ให้ timeout
 
-# --- AI Detection Crop Area ---
+# --- AI Detection Crop Area & Camera ---
+CAMERA_ROTATION = int(os.getenv("CAMERA_ROTATION", 0))  # 0, 90, 180, 270
 CROP_TOP_PCT = float(os.getenv("CROP_TOP_PCT", 0.24))
 CROP_BOTTOM_PCT = float(os.getenv("CROP_BOTTOM_PCT", 0.86))
 CROP_LEFT_PCT = float(os.getenv("CROP_LEFT_PCT", 0.25))

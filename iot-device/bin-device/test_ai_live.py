@@ -60,6 +60,15 @@ def main():
             
             # สลับสี BGR กลับเป็น RGB ตามที่โมเดลคาดหวัง
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            # หมุนกล้องตาม config
+            if CAMERA_ROTATION == 90:
+                frame_rgb = cv2.rotate(frame_rgb, cv2.ROTATE_90_CLOCKWISE)
+            elif CAMERA_ROTATION == 180:
+                frame_rgb = cv2.rotate(frame_rgb, cv2.ROTATE_180)
+            elif CAMERA_ROTATION == 270:
+                frame_rgb = cv2.rotate(frame_rgb, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                
             h, w = frame_rgb.shape[:2]
 
             # อ่านค่าจาก Trackbars

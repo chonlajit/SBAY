@@ -6,7 +6,7 @@ import cv2
 # เพิ่ม Path ให้มองเห็นโฟลเดอร์ปัจจุบัน
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import MODEL_PATH, CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT
+from config import MODEL_PATH, CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT, CAMERA_ROTATION
 from vision.detector import Detector
 
 print("="*50)
@@ -41,6 +41,14 @@ try:
     
     # สลับสี BGR กลับเป็น RGB ตามที่โมเดลคาดหวัง
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
+    # หมุนกล้องตาม config
+    if CAMERA_ROTATION == 90:
+        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+    elif CAMERA_ROTATION == 180:
+        frame = cv2.rotate(frame, cv2.ROTATE_180)
+    elif CAMERA_ROTATION == 270:
+        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
     
     # ครอปภาพ (Crop) ตามค่าคงที่จาก config.py
     h, w = frame.shape[:2]
