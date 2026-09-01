@@ -1,7 +1,7 @@
 "use client"
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSmartBin } from '../../context/SmartBinContext';
+import { useSmartBin } from '../context/SmartBinContext';
 
 interface PartnerReward {
     id: string;
