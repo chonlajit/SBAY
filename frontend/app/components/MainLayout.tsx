@@ -22,7 +22,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         { href: '/dashboard', icon: <i className="fa-solid fa-chart-column"></i>, label: 'สถิติและประวัติ' },
         { href: '/redeem', icon: <i className="fa-solid fa-gift"></i>, label: 'แลกของรางวัล' },
         { href: '/about', icon: <i className="fa-solid fa-circle-info"></i>, label: 'เกี่ยวกับเรา' },
-        ...(user.role === 'PARTNER' ? [{ href: '/partner/products', icon: <i className="fa-solid fa-store"></i>, label: 'ร้านของฉัน' }] : []),
+        ...(user.role === 'PARTNER' ? [{ href: '/partner', icon: <i className="fa-solid fa-store"></i>, label: 'ร้านของฉัน' }] : []),
         ...(user.role === 'ADMIN' ? [{ href: '/admin', icon: <i className="fa-solid fa-user-gear"></i>, label: 'ผู้ดูแลระบบ (Admin)' }] : []),
     ] : [
         { href: '/', icon: <i className="fa-solid fa-house"></i>, label: 'หน้าหลัก' },
@@ -191,7 +191,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 { href: '/profile', icon: <i className="fa-solid fa-user-edit text-black"></i>, label: 'แก้ไขโปรไฟล์' },
                                 { href: '/dashboard', icon: <i className="fa-solid fa-chart-bar text-black"></i>, label: 'สถิติและแต้มสะสม' },
                                 { href: '/redeem', icon: <i className="fa-solid fa-gift text-black"></i>, label: 'แลกของรางวัล' },
-                                ...(user.role === 'PARTNER' ? [{ href: '/partner/products', icon: <i className="fa-solid fa-store text-black"></i>, label: 'จัดการหน้าร้าน' }] : []),
+                                ...(user.role === 'PARTNER' ? [{ href: '/partner', icon: <i className="fa-solid fa-store text-black"></i>, label: 'จัดการหน้าร้าน' }] : []),
                                 ...(user.role === 'ADMIN' ? [{ href: '/admin', icon: <i className="fa-solid fa-tools text-black"></i>, label: 'Admin Dashboard' }] : []),
                             ].map(item => (
                                 <Link

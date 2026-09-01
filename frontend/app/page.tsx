@@ -21,13 +21,21 @@ export default function Home() {
                 - Left (gray, col-span-5): normal height, rounded-bl-[2.5rem]
                 - Right (green, col-span-7): taller — extends down overlapping middle section, rounded-bl-[2.5rem]
             */}
-            <div id="top-section" className="flex flex-col lg:flex-row">
-
+            <div id="top-section" className="flex flex-col lg:flex-row relative z-0 bg-white">
                 {/* ─── Left Column Wrapper ─── */}
-                <div className="lg:w-5/12 flex flex-col min-h-[calc(100vh-4rem)] lg:min-h-0 justify-between bg-white lg:bg-[linear-gradient(to_right,white_50%,#64964E_50%)]">
-                    {/* Hero section with bg_loginregis.jpg background */}
-                    <div
-                        className="bg-[#64964E] bg-cover bg-center bg-no-repeat flex flex-col px-4 md:px-8 xl:px-10 pt-10 md:pt-14 pb-[20px] md:pb-[30px] rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden"
+                <div className="w-full lg:w-5/12 shrink-0 flex flex-col min-h-[calc(100vh-4rem)] lg:min-h-0 justify-between relative z-10">
+                    
+                    {/* Gap filler for the right edge gaps */}
+                    <div 
+                        className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 bg-cover bg-center z-0"
+                        style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
+                    >
+                        <div className="absolute inset-0 bg-[#64964E]/30 backdrop-blur-md"></div>
+                    </div>
+
+                    {/* Hero section (Opaque with its own background image to completely hide the gap filler) */}
+                    <div 
+                        className="flex flex-col px-4 md:px-8 xl:px-10 pt-10 md:pt-14 pb-[20px] md:pb-[30px] rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden bg-cover bg-center z-10"
                         style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                     >
                         {/* Dual-Layer Inner Shadow Overlay over Background Image */}
@@ -82,8 +90,8 @@ export default function Home() {
                     </div>
 
                     {/* White section (Feature tab) — top-right rounded curve against green background */}
-                    <div className="bg-white lg:bg-[#64964E]">
-                        <div id="features-section" className="flex bg-white rounded-tr-[2.5rem] rounded-br-none flex-col justify-center px-4 md:px-8 xl:px-10 pt-8 md:pt-10 pb-4 md:pb-5 relative shrink-0">
+                    <div className="relative z-10">
+                        <div id="features-section" className="flex w-full bg-white rounded-tr-[2.5rem] rounded-br-none flex-col justify-center px-4 md:px-8 xl:px-10 pt-8 md:pt-10 pb-4 md:pb-5 relative shrink-0 z-10">
                             <button
                                 type="button"
                                 onClick={(e) => {
@@ -105,29 +113,33 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* ─── Right Column (green, extends lower) ─── */}
-                <div className="lg:w-7/12 bg-[#64964E] flex flex-col justify-between px-4 md:px-8 lg:pl-10 xl:pl-12 pr-4 md:pr-8 xl:pr-10 pt-4 md:pt-6 pb-4 md:pb-5 rounded-bl-[2.5rem] relative z-10 lg:mb-[-0px] shadow-[0_25px_15px_-18px_rgba(0,0,0,0.35)]">
-                    <div className="w-full rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.2)]">
+                {/* ─── Right Column (glass panel) ─── */}
+                <div 
+                    className="w-full lg:w-7/12 shrink-0 bg-cover bg-center flex flex-col justify-between px-4 md:px-8 lg:pl-10 xl:pl-12 pr-4 md:pr-8 xl:pr-10 pt-4 md:pt-6 pb-4 md:pb-5 rounded-bl-[2.5rem] relative z-10 lg:mb-[-0px]"
+                    style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
+                >
+                    <div className="absolute inset-0 bg-[#64964E]/30 backdrop-blur-md rounded-bl-[2.5rem] z-0"></div>
+                    <div className="w-full rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
                         <StatsDashboard />
                     </div>
 
                     {/* Sponsors */}
-                    <div className="flex justify-end space-x-4 pt-1 pr-2 pb-0.5">
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-gray-300 rounded-lg shadow flex items-center justify-center text-gray-500 text-xs"></div>
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-gray-300 rounded-lg shadow flex flex-col items-center justify-center text-gray-500">
-                            <span className="text-[10px] mt-1">(sponsor)</span>
+                    <div className="flex justify-end space-x-4 pt-1 pr-2 pb-0.5 relative z-10">
+                        <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
+                        <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
+                            <span className="text-[10px] mt-1 font-semibold text-gray-700/80">(sponsor)</span>
                         </div>
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-gray-300 rounded-lg shadow flex items-center justify-center text-gray-500 text-xs"></div>
+                        <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
                     </div>
 
                     {/* Statistics Tab — Button to scroll back up to Top Section (Mobile & Desktop) */}
-                    <div className="pt-1.5 w-full flex justify-center">
+                    <div className="pt-1.5 w-full flex justify-center relative z-10">
                         <button
                             id="mobile-back-button"
                             onClick={() => {
                                 document.getElementById('top-section')?.scrollIntoView({ behavior: 'smooth' });
                             }}
-                            className="w-full bg-white hover:bg-gray-200 active:scale-[0.99] transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-3 md:py-4 shadow-[0_25px_30px_-15px_rgba(0,0,0,0.25),0_10px_15px_-5px_rgba(0,0,0,0.4)] cursor-pointer mt-8 md:mt-10 scroll-mt-4"
+                            className="w-full bg-white/80 hover:bg-white active:scale-[0.99] backdrop-blur-md transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-3 md:py-4 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-8 md:mt-10 scroll-mt-4"
                         >
                             <span className="text-lg md:text-2xl xl:text-3xl font-bold text-[#64964E]">Back</span>
                             <i className="fa-solid fa-caret-up text-xl md:text-3xl text-[#64964E] absolute right-6 md:right-8"></i>
@@ -277,7 +289,7 @@ export default function Home() {
                 };
 
                 return (
-                    <div className="w-full relative h-[450px] md:h-[550px] lg:h-[620px] flex items-center justify-center overflow-hidden group" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}>
+                    <div className="w-full relative h-[450px] md:h-[550px] lg:h-[620px] flex items-center justify-center overflow-hidden group" style={{ backgroundImage: "url('/images/bg-white.jpg')" }}>
                         {/* Slide Content */}
                         {slides.map((slide, index) => (
                             <div

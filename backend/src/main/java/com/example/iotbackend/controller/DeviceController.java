@@ -64,7 +64,7 @@ public class DeviceController {
         
         // Save or update
         deviceRepository.save(device);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(device);
     }
 
     @PostMapping("/{deviceId}/level")
