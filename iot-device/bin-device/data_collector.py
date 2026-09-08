@@ -52,6 +52,11 @@ class DataCollectorApp:
         self.picam = None
         try:
             from picamera2 import Picamera2
+            self.picam = Picamera2()
+            cfg = self.picam.create_preview_configuration(main={"format": "RGB888", "size": (1280, 720)})
+            self.picam.configure(cfg)
+            self.picam.start()
+            time.sleep(1) # รอวอร์มกล้อง
         except Exception as e:
             messagebox.showerror("Error", f"ไม่สามารถเปิดกล้อง Picamera2 ได้:\n{e}")
             print(f"❌ Error starting camera: {e}")
