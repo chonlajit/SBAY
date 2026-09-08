@@ -52,15 +52,12 @@ class DataCollectorApp:
         self.picam = None
         try:
             from picamera2 import Picamera2
-            self.picam = Picamera2()
-            cfg = self.picam.create_preview_configuration(main={"format": "RGB888", "size": (1280, 720)})
-            self.picam.configure(cfg)
-            self.picam.start()
-            time.sleep(1) # รอวอร์มกล้อง
         except Exception as e:
             messagebox.showerror("Error", f"ไม่สามารถเปิดกล้อง Picamera2 ได้:\n{e}")
             print(f"❌ Error starting camera: {e}")
             
+        self.swap_color = tk.BooleanVar(value=True) # ค่าเริ่มต้นให้สลับสี
+        
         # UI Elements
         self.setup_ui()
 
@@ -100,14 +97,21 @@ class DataCollectorApp:
             font=("Helvetica", 16, "bold"), bg="#22c55e", fg="white", 
             padx=10, relief="flat"
         )
-        self.btn_capture.pack(side=tk.RIGHT, padx=20)
+        self.btn_capture.pack(side=tk.RIGHT, padx=10)
+        
+        self.chk_color = tk.Checkbutton(
+            control_frame, text="สลับสี (แก้สีเพี้ยน)", 
+            variable=self.swap_color, font=("Helvetica", 14),
+            bg="#0f172a", fg="white", selectcolor="#334155"
+        )
+        self.chk_color.pack(side=tk.RIGHT, padx=5)
         
         self.chk_auto = tk.Checkbutton(
-            control_frame, text="🤖 Auto Capture (เมื่อวัตถุนิ่ง)", 
+            control_frame, text="🤖 Auto Capture", 
             variable=self.auto_capture, font=("Helvetica", 14),
             bg="#0f172a", fg="white", selectcolor="#334155"
         )
-        self.chk_auto.pack(side=tk.RIGHT, padx=10)
+        self.chk_auto.pack(side=tk.RIGHT, padx=5)
 
         # พื้นที่แสดงวิดีโอ
         self.canvas = tk.Canvas(self.root, bg="black")
@@ -198,8 +202,9 @@ class DataCollectorApp:
         cv2.putText(display_frame, f"Save to: {self.selected_category.get()}", (20, int(80 * font_scale) + 10), 
                     cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 255), thickness)
 
-        # รูปเป็น RGB อยู่แล้ว ไม่ต้องแปลง
-        # display_frame = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
+        if self.swap_color.get():
+            display_frame = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
+
         self.photo = ImageTk.PhotoImage(image=Image.fromarray(display_frame))
         
         if canvas_width > 10:
@@ -229,8 +234,12 @@ class DataCollectorApp:
         filename = f"{cat}_{timestamp}.jpg"
         filepath = os.path.join(self.base_dir, cat, filename)
         
-        # ตอนบันทึกรูป OpenCV ใช้ BGR ต้องแปลงจาก RGB -> BGR เพื่อไม่ให้สีเพี้ยน
-        cv2.imwrite(filepath, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+        if self.swap_color.get():
+            frame_to_save = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        else:
+            frame_to_save = frame
+            
+        cv2.imwrite(filepath, frame_to_save)
         self.last_capture_time = time.time()
         print(f"✅ บันทึกรูป: {filepath}")
         
