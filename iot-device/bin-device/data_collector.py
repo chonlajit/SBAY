@@ -11,6 +11,12 @@ from dotenv import load_dotenv
 # โหลดค่าจากไฟล์ .env
 load_dotenv()
 
+# โหลดค่าการครอบภาพ (Crop) จาก config.py
+try:
+    from config import CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT
+except ImportError:
+    CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT = 0.0, 1.0, 0.0, 1.0
+
 # ดึงค่าขนาดหน้าจอจาก .env ถ้าไม่มีใช้ค่าเริ่มต้น
 WINDOW_WIDTH = int(os.getenv("WINDOW_WIDTH", "800"))
 WINDOW_HEIGHT = int(os.getenv("WINDOW_HEIGHT", "480"))
@@ -47,7 +53,7 @@ class DataCollectorApp:
         try:
             from picamera2 import Picamera2
             self.picam = Picamera2()
-            cfg = self.picam.create_preview_configuration(main={"format": "BGR888", "size": (640, 480)})
+            cfg = self.picam.create_preview_configuration(main={"format": "BGR888", "size": (1280, 720)})
             self.picam.configure(cfg)
             self.picam.start()
             time.sleep(1) # รอวอร์มกล้อง
@@ -116,6 +122,19 @@ class DataCollectorApp:
             return cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
         return frame
 
+    def get_cropped_frame(self, frame):
+        h, w = frame.shape[:2]
+        y1 = int(h * CROP_TOP_PCT)
+        y2 = int(h * CROP_BOTTOM_PCT)
+        x1 = int(w * CROP_LEFT_PCT)
+        x2 = int(w * CROP_RIGHT_PCT)
+        
+        # ป้องกัน error จากค่าผิดพลาด
+        if y1 >= y2 or x1 >= x2 or y2 > h or x2 > w:
+            return frame 
+            
+        return frame[y1:y2, x1:x2]
+
     def update_frame(self):
         if self.picam is None:
             # ถ้ากล้องไม่ทำงานให้หยุดการอัปเดตเฟรม
@@ -130,6 +149,7 @@ class DataCollectorApp:
             return
 
         frame = self.get_rotated_frame(frame)
+        frame = self.get_cropped_frame(frame)
         current_time = time.time()
         
         # --- ตรรกะ Auto Capture ---
@@ -197,6 +217,7 @@ class DataCollectorApp:
                 try:
                     frame = self.picam.capture_array()
                     frame = self.get_rotated_frame(frame)
+                    frame = self.get_cropped_frame(frame)
                 except Exception as e:
                     print("Error manual capture:", e)
                     return
