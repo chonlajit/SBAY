@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import os
+import sys
 import time
 import datetime
 from dotenv import load_dotenv
@@ -14,7 +15,6 @@ load_dotenv()
 WINDOW_WIDTH = int(os.getenv("WINDOW_WIDTH", "800"))
 WINDOW_HEIGHT = int(os.getenv("WINDOW_HEIGHT", "480"))
 IS_FULLSCREEN = str(os.getenv("GUI_FULLSCREEN", "false")).lower() == "true"
-CAMERA_ID = int(os.getenv("CAMERA_ID", "0"))
 CAMERA_ROTATION = int(os.getenv("CAMERA_ROTATION", "0")) # 0, 90, 180, 270
 
 class DataCollectorApp:
@@ -42,10 +42,18 @@ class DataCollectorApp:
         self.selected_category = tk.StringVar(value=self.categories[0])
         self.auto_capture = tk.BooleanVar(value=False)
 
-        # เริ่มต้นกล้อง
-        self.vid = cv2.VideoCapture(CAMERA_ID)
-        if not self.vid.isOpened():
-            messagebox.showerror("Error", "ไม่สามารถเปิดกล้องได้")
+        # เริ่มต้นกล้องผ่าน Picamera2 แทน OpenCV ธรรมดาเพื่อให้เข้ากับระบบ Pi ใหม่ๆ
+        self.picam = None
+        try:
+            from picamera2 import Picamera2
+            self.picam = Picamera2()
+            cfg = self.picam.create_preview_configuration(main={"format": "BGR888", "size": (640, 480)})
+            self.picam.configure(cfg)
+            self.picam.start()
+            time.sleep(1) # รอวอร์มกล้อง
+        except Exception as e:
+            messagebox.showerror("Error", f"ไม่สามารถเปิดกล้อง Picamera2 ได้:\n{e}")
+            print(f"❌ Error starting camera: {e}")
             
         # UI Elements
         self.setup_ui()
@@ -109,71 +117,79 @@ class DataCollectorApp:
         return frame
 
     def update_frame(self):
-        ret, frame = self.vid.read()
-        if ret:
-            frame = self.get_rotated_frame(frame)
-            current_time = time.time()
+        if self.picam is None:
+            # ถ้ากล้องไม่ทำงานให้หยุดการอัปเดตเฟรม
+            return
             
-            # --- ตรรกะ Auto Capture ---
-            if self.auto_capture.get() and (current_time - self.last_capture_time > 2.0): # ป้องกันถ่ายรัวเกินไป
-                # แปลงเป็นขาวดำและเบลอเพื่อลด noise
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                gray = cv2.GaussianBlur(gray, (21, 21), 0)
+        try:
+            # ดึงภาพจาก Picamera2
+            frame = self.picam.capture_array()
+        except Exception as e:
+            print("Capture error:", e)
+            self.root.after(self.delay, self.update_frame)
+            return
+
+        frame = self.get_rotated_frame(frame)
+        current_time = time.time()
+        
+        # --- ตรรกะ Auto Capture ---
+        if self.auto_capture.get() and (current_time - self.last_capture_time > 2.0): # ป้องกันถ่ายรัวเกินไป
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            gray = cv2.GaussianBlur(gray, (21, 21), 0)
+            
+            if self.last_frame_gray is not None:
+                frame_delta = cv2.absdiff(self.last_frame_gray, gray)
+                thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
                 
-                if self.last_frame_gray is not None:
-                    # หาความแตกต่างของเฟรมปัจจุบันกับเฟรมก่อนหน้า
-                    frame_delta = cv2.absdiff(self.last_frame_gray, gray)
-                    thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
-                    
-                    # คำนวณปริมาณการเคลื่อนไหว
-                    motion_level = cv2.countNonZero(thresh)
-                    
-                    if motion_level > 500: # ถ้าขยับเกินค่าที่กำหนด
+                motion_level = cv2.countNonZero(thresh)
+                
+                if motion_level > 500: 
+                    self.motion_detected_time = current_time
+                else:
+                    if current_time - self.motion_detected_time > self.still_time_required:
+                        self.capture(frame=frame)
                         self.motion_detected_time = current_time
-                    else:
-                        # ถ้าอยู่นิ่งนานพอ
-                        if current_time - self.motion_detected_time > self.still_time_required:
-                            self.capture(frame=frame)
-                            self.motion_detected_time = current_time # รีเซ็ตเวลาหลังถ่ายเสร็จ
-                            
-                self.last_frame_gray = gray
+                        
+            self.last_frame_gray = gray
 
-            # วาดสถานะบนหน้าจอ
-            display_frame = frame.copy()
-            if self.auto_capture.get():
-                is_still = (current_time - self.motion_detected_time > 0.5)
-                status_text = "AUTO: " + ("STILL" if is_still else "MOTION")
-                color = (0, 255, 0) if is_still else (0, 0, 255)
-                cv2.putText(display_frame, status_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
-            
-            # แสดงโฟลเดอร์ปัจจุบันที่บันทึก
-            cv2.putText(display_frame, f"Save to: {self.selected_category.get()}", (20, 80), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+        # วาดสถานะบนหน้าจอ
+        display_frame = frame.copy()
+        if self.auto_capture.get():
+            is_still = (current_time - self.motion_detected_time > 0.5)
+            status_text = "AUTO: " + ("STILL" if is_still else "MOTION")
+            color = (0, 255, 0) if is_still else (0, 0, 255)
+            cv2.putText(display_frame, status_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        
+        cv2.putText(display_frame, f"Save to: {self.selected_category.get()}", (20, 80), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
 
-            # แปลงภาพสำหรับแสดงบน Tkinter
-            display_frame = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
-            self.photo = ImageTk.PhotoImage(image=Image.fromarray(display_frame))
-            
-            # คำนวณให้อยู่กึ่งกลาง canvas
-            canvas_width = self.canvas.winfo_width()
-            canvas_height = self.canvas.winfo_height()
-            
-            # ถ้า canvas โหลดแล้ว
-            if canvas_width > 10:
-                x = (canvas_width - display_frame.shape[1]) // 2
-                y = (canvas_height - display_frame.shape[0]) // 2
-                self.canvas.create_image(max(0, x), max(0, y), image=self.photo, anchor=tk.NW)
-            else:
-                self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
+        # แปลงภาพสำหรับแสดงบน Tkinter
+        display_frame = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
+        self.photo = ImageTk.PhotoImage(image=Image.fromarray(display_frame))
+        
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+        
+        if canvas_width > 10:
+            x = (canvas_width - display_frame.shape[1]) // 2
+            y = (canvas_height - display_frame.shape[0]) // 2
+            self.canvas.create_image(max(0, x), max(0, y), image=self.photo, anchor=tk.NW)
+        else:
+            self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
         self.root.after(self.delay, self.update_frame)
 
     def capture(self, frame=None):
         if frame is None:
-            ret, frame = self.vid.read()
-            if not ret:
+            if self.picam:
+                try:
+                    frame = self.picam.capture_array()
+                    frame = self.get_rotated_frame(frame)
+                except Exception as e:
+                    print("Error manual capture:", e)
+                    return
+            else:
                 return
-            frame = self.get_rotated_frame(frame)
                 
         cat = self.selected_category.get()
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
@@ -190,8 +206,8 @@ class DataCollectorApp:
         self.root.after(100, lambda: self.canvas.configure(bg=original_bg))
 
     def __del__(self):
-        if hasattr(self, 'vid') and self.vid.isOpened():
-            self.vid.release()
+        if hasattr(self, 'picam') and self.picam is not None:
+            self.picam.stop()
 
 if __name__ == "__main__":
     root = tk.Tk()
