@@ -152,23 +152,35 @@ class DataCollectorApp:
                         
             self.last_frame_gray = gray
 
-        # วาดสถานะบนหน้าจอ
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+        
         display_frame = frame.copy()
+        
+        # ปรับขนาดภาพให้พอดีกับ Canvas โดยรักษาอัตราส่วน
+        if canvas_width > 10 and canvas_height > 10:
+            h, w = display_frame.shape[:2]
+            scale = min(canvas_width / w, canvas_height / h)
+            new_w, new_h = int(w * scale), int(h * scale)
+            display_frame = cv2.resize(display_frame, (new_w, new_h))
+            
+        # ค่อยวาดข้อความลงบนภาพที่ปรับขนาดแล้ว จะได้สัมพันธ์กับหน้าจอ
+        # คำนวณขนาดตัวหนังสือตามความกว้างของภาพที่แสดง (อ้างอิงจาก 800px)
+        font_scale = max(0.5, (display_frame.shape[1] / 800.0) * 1.0)
+        thickness = max(1, int(font_scale * 2))
+        
         if self.auto_capture.get():
             is_still = (current_time - self.motion_detected_time > 0.5)
             status_text = "AUTO: " + ("STILL" if is_still else "MOTION")
             color = (0, 255, 0) if is_still else (0, 0, 255)
-            cv2.putText(display_frame, status_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+            cv2.putText(display_frame, status_text, (20, int(40 * font_scale)), cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness)
         
-        cv2.putText(display_frame, f"Save to: {self.selected_category.get()}", (20, 80), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+        cv2.putText(display_frame, f"Save to: {self.selected_category.get()}", (20, int(80 * font_scale) + 10), 
+                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 0), thickness)
 
         # แปลงภาพสำหรับแสดงบน Tkinter
         display_frame = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
         self.photo = ImageTk.PhotoImage(image=Image.fromarray(display_frame))
-        
-        canvas_width = self.canvas.winfo_width()
-        canvas_height = self.canvas.winfo_height()
         
         if canvas_width > 10:
             x = (canvas_width - display_frame.shape[1]) // 2
