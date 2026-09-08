@@ -53,7 +53,7 @@ class DataCollectorApp:
         try:
             from picamera2 import Picamera2
             self.picam = Picamera2()
-            cfg = self.picam.create_preview_configuration(main={"format": "BGR888", "size": (1280, 720)})
+            cfg = self.picam.create_preview_configuration(main={"format": "RGB888", "size": (1280, 720)})
             self.picam.configure(cfg)
             self.picam.start()
             time.sleep(1) # รอวอร์มกล้อง
@@ -154,7 +154,7 @@ class DataCollectorApp:
         
         # --- ตรรกะ Auto Capture ---
         if self.auto_capture.get() and (current_time - self.last_capture_time > 2.0): # ป้องกันถ่ายรัวเกินไป
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
             gray = cv2.GaussianBlur(gray, (21, 21), 0)
             
             if self.last_frame_gray is not None:
@@ -192,14 +192,14 @@ class DataCollectorApp:
         if self.auto_capture.get():
             is_still = (current_time - self.motion_detected_time > 0.5)
             status_text = "AUTO: " + ("STILL" if is_still else "MOTION")
-            color = (0, 255, 0) if is_still else (0, 0, 255)
+            color = (0, 255, 0) if is_still else (255, 0, 0)
             cv2.putText(display_frame, status_text, (20, int(40 * font_scale)), cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness)
         
         cv2.putText(display_frame, f"Save to: {self.selected_category.get()}", (20, int(80 * font_scale) + 10), 
-                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 0), thickness)
+                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 255), thickness)
 
-        # แปลงภาพสำหรับแสดงบน Tkinter
-        display_frame = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
+        # รูปเป็น RGB อยู่แล้ว ไม่ต้องแปลง
+        # display_frame = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
         self.photo = ImageTk.PhotoImage(image=Image.fromarray(display_frame))
         
         if canvas_width > 10:
@@ -229,7 +229,8 @@ class DataCollectorApp:
         filename = f"{cat}_{timestamp}.jpg"
         filepath = os.path.join(self.base_dir, cat, filename)
         
-        cv2.imwrite(filepath, frame)
+        # ตอนบันทึกรูป OpenCV ใช้ BGR ต้องแปลงจาก RGB -> BGR เพื่อไม่ให้สีเพี้ยน
+        cv2.imwrite(filepath, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
         self.last_capture_time = time.time()
         print(f"✅ บันทึกรูป: {filepath}")
         
