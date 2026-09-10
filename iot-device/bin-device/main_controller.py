@@ -12,9 +12,11 @@ import sys
 import os
 
 # Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(root_dir, 'bin-device'))
+sys.path.insert(0, root_dir)
 
-from config import DEVICE_ID, USE_GUI, USE_IR, USE_RESET_BUTTONS
+from settings.config import DEVICE_ID, USE_GUI, USE_IR, USE_RESET_BUTTONS
 from api_client import ApiClient
 from heartbeat_service import HeartbeatService
 from session_manager import SessionManager
@@ -65,7 +67,7 @@ class SmartBinController:
     def _start_reset_buttons_monitor(self):
         try:
             from gpiozero import Button
-            from config import RESET_PIN_PLASTIC, RESET_PIN_CAN, RESET_PIN_CARTON, RESET_PIN_ALL
+            from settings.config import RESET_PIN_PLASTIC, RESET_PIN_CAN, RESET_PIN_CARTON, RESET_PIN_ALL
             
             logger.info("Initializing Reset Buttons monitor...")
             
@@ -109,7 +111,7 @@ class SmartBinController:
         logger.info(f"  GUI Mode: {USE_GUI}")
         logger.info("=" * 50)
 
-        from config import USE_HARDWARE, USE_SERVO
+        from settings.config import USE_HARDWARE, USE_SERVO
         if USE_HARDWARE:
             if USE_SERVO:
                 try:
@@ -419,3 +421,4 @@ class SmartBinController:
 if __name__ == "__main__":
     controller = SmartBinController()
     controller.start()
+

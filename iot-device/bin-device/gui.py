@@ -10,7 +10,7 @@ import logging
 import cv2
 from PIL import Image, ImageTk
 
-from config import WASTE_LABELS, USE_IR
+from settings.config import WASTE_LABELS, USE_IR
 
 logger = logging.getLogger("gui")
 

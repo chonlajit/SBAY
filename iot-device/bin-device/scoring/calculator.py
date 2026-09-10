@@ -1,4 +1,4 @@
-from config import GRAM_PER_ML, PRICE_PER_KG, K
+from settings.config import GRAM_PER_ML, PRICE_PER_KG, K
 
 class ScoreCalculator:
 

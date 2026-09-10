@@ -4,9 +4,11 @@ import time
 import cv2
 
 # เพิ่ม Path ให้มองเห็นโฟลเดอร์ปัจจุบัน
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(root_dir, 'bin-device'))
+sys.path.insert(0, root_dir)
 
-from config import MODEL_PATH, CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT, CAMERA_ROTATION
+from settings.config import MODEL_PATH, CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT, CAMERA_ROTATION
 from vision.detector import Detector
 
 print("="*50)
@@ -88,3 +90,4 @@ finally:
     if picam:
         picam.stop()
     print("🧹 ปิดกล้องเรียบร้อย")
+

@@ -3,9 +3,9 @@ import os
 import sys
 
 # ดึงค่า Config จากโฟลเดอร์หลัก
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 try:
-    import config
+    import settings.config as config
     DEFAULT_SORT_ANGLE = config.DEFAULT_SORT_ANGLE
     DEFAULT_RELEASE_ANGLE = config.DEFAULT_RELEASE_ANGLE
     

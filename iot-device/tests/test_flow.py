@@ -1,6 +1,8 @@
 """Quick test: ทดสอบ full flow ของ Pi (ไม่ต้องมีกล้อง/เน็ต)"""
 import sys, os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(root_dir, 'bin-device'))
+sys.path.insert(0, root_dir)
 
 from session_manager import SessionManager
 from scoring.calculator import ScoreCalculator
@@ -32,3 +34,4 @@ for item in payload["items"]:
     print(f"  - {item['type']} | {item['ml']}ml | score={item['score']}")
 
 print("\n[OK] All modules working correctly!")
+

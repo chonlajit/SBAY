@@ -11,7 +11,7 @@ from collections import deque
 from vision.detector import Detector
 from size.estimator import SizeEstimator
 from scoring.calculator import ScoreCalculator
-from config import (
+from settings.config import (
     MODEL_PATH, CONF_THRESHOLD, STABLE_FRAMES,
     COOLDOWN, DETECT_TIMEOUT, USE_HARDWARE, USE_IR, USE_SERVO, USE_CAMERA,
     CAMERA_ROTATION, CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT

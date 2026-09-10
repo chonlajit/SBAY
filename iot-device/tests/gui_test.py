@@ -13,9 +13,11 @@ import sys
 import os
 import logging
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(root_dir, 'bin-device'))
+sys.path.insert(0, root_dir)
 
-from config import DEVICE_ID, WASTE_LABELS
+from settings.config import DEVICE_ID, WASTE_LABELS
 from api_client import ApiClient
 from heartbeat_service import HeartbeatService
 from session_manager import SessionManager
@@ -616,3 +618,4 @@ class SmartBinTestGUI:
 if __name__ == "__main__":
     app = SmartBinTestGUI()
     app.run()
+

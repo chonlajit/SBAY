@@ -1,5 +1,5 @@
 import logging
-import config
+import settings.config as config
 
 logger = logging.getLogger("led")
 

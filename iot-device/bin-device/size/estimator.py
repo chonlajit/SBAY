@@ -1,5 +1,5 @@
 import math
-import config
+import settings.config as config
 
 def get_scale():
     if config.USE_FOCAL:

@@ -13,7 +13,7 @@ load_dotenv()
 
 # โหลดค่าการครอบภาพ (Crop) จาก config.py
 try:
-    from config import CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT
+    from settings.config import CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT
 except ImportError:
     CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT = 0.0, 1.0, 0.0, 1.0
 

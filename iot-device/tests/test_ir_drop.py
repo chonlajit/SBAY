@@ -1,7 +1,7 @@
 import time
 import sys
 import os
-from config import USE_HARDWARE, USE_IR, USE_SERVO
+from settings.config import USE_HARDWARE, USE_IR, USE_SERVO
 
 print("="*50)
 print("🤖 ระบบทดสอบ Infrared + Drop Servo")

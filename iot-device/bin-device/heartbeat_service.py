@@ -7,7 +7,7 @@ import threading
 import time
 import logging
 
-from config import HEARTBEAT_INTERVAL
+from settings.config import HEARTBEAT_INTERVAL
 
 logger = logging.getLogger("heartbeat")
 

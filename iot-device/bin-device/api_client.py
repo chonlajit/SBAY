@@ -10,7 +10,7 @@ import threading
 import time
 import logging
 
-from config import API_BASE, OFFLINE_DB_PATH, RETRY_INTERVAL, DEVICE_SECRET, DEVICE_NAME, DEVICE_LOCATION
+from settings.config import API_BASE, OFFLINE_DB_PATH, RETRY_INTERVAL, DEVICE_SECRET, DEVICE_NAME, DEVICE_LOCATION
 
 logger = logging.getLogger("api_client")
 
