@@ -1,6 +1,12 @@
-import time
-import sys
 import os
+import sys
+import time
+
+# เพิ่ม Path ให้มองเห็นโฟลเดอร์ bin-device และ root
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(root_dir, 'bin-device'))
+sys.path.insert(0, root_dir)
+
 from settings.config import USE_HARDWARE, USE_IR, USE_SERVO
 
 print("="*50)

@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- Device Identity ---
-DEVICE_ID = os.getenv("DEVICE_ID", "BIN-001")
-DEVICE_NAME = os.getenv("DEVICE_NAME", "Smart Bin")
+DEVICE_ID = os.getenv("DEVICE_ID", "BIN")
+DEVICE_NAME = os.getenv("DEVICE_NAME", "SBAY Bin")
 DEVICE_LOCATION = os.getenv("DEVICE_LOCATION", "")
 
 # --- Backend Server ---
