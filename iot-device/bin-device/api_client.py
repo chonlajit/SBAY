@@ -9,6 +9,7 @@ import requests
 import threading
 import time
 import logging
+import os
 
 from settings.config import API_BASE, OFFLINE_DB_PATH, RETRY_INTERVAL, DEVICE_SECRET, DEVICE_NAME, DEVICE_LOCATION
 
@@ -30,6 +31,7 @@ class ApiClient:
     # ==============================
     def _init_db(self):
         """สร้าง Table สำหรับเก็บ Session ที่ส่งไม่สำเร็จ"""
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS failed_sessions (
