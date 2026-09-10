@@ -63,7 +63,7 @@ RESET_PIN_ALL = 25
 LED_BIN_FULL_PIN = 7
 
 # --- AI Detection ---
-MODEL_PATH = "yolo.pt"
+MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "bin-device", "yolo.pt")
 CONF_THRESHOLD = 0.7
 STABLE_FRAMES = 5       # ต้อง detect ซ้ำกี่เฟรมถึงจะยืนยัน
 COOLDOWN = 3             # วินาที ระหว่างการ detect แต่ละชิ้น
