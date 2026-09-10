@@ -1,11 +1,14 @@
 import cv2
 import time
 from collections import deque
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from vision.detector import Detector
 from size.estimator import SizeEstimator
 from scoring.calculator import ScoreCalculator
-from config import USE_IR, USE_SERVO
+from settings.config import USE_IR, USE_SERVO
 
 # =========================
 # MODE

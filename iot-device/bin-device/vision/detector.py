@@ -16,7 +16,7 @@ class Detector:
         }
 
     def detect(self, frame):
-        import config
+        import settings.config as config
         # รัน YOLO และใช้ผลลัพธ์วาดกรอบแบบออริจินัล (results.plot())
         results = self.model(
             frame,

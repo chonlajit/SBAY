@@ -21,11 +21,11 @@ if not DEVICE_SECRET:
     raise ValueError("CRITICAL ERROR: DEVICE_SECRET environment variable is not set!")
 
 # --- Mode ---
-USE_HARDWARE = str(os.getenv("USE_HARDWARE", "true")).strip().lower() == "true"
-USE_CAMERA = str(os.getenv("USE_CAMERA", "true")).strip().lower() == "true"
-USE_GUI = str(os.getenv("USE_GUI", "true")).strip().lower() == "true"
-USE_IR = str(os.getenv("USE_IR", "true")).strip().lower() == "true"
-USE_SERVO = os.getenv("USE_SERVO", "true").lower() == "true"
+USE_HARDWARE = True
+USE_CAMERA = True
+USE_GUI = True
+USE_IR = True
+USE_SERVO = True
 
 # --- Hardware Pins (Raspberry Pi BCM) ---
 IR_PIN = 17
@@ -36,24 +36,24 @@ SERVO_RETURN_PIN = 13
 
 # --- Servo Angles Configuration ---
 # สามารถปรับแก้ตัวเลขเหล่านี้ได้ที่เดียวเพื่อให้มีผลกับระบบทั้งหมด
-DEFAULT_SORT_ANGLE = int(os.getenv("DEFAULT_SORT_ANGLE", 260))
-DEFAULT_RELEASE_ANGLE = int(os.getenv("DEFAULT_RELEASE_ANGLE", 82))
-DROP_ANGLE_CLOSED = int(os.getenv("DROP_ANGLE_CLOSED", 90))
-DROP_ANGLE_OPEN = int(os.getenv("DROP_ANGLE_OPEN", 180))
+DEFAULT_SORT_ANGLE = 260
+DEFAULT_RELEASE_ANGLE = 82
+DROP_ANGLE_CLOSED = 90
+DROP_ANGLE_OPEN = 180
 
-RETURN_ANGLE_CLOSED = int(os.getenv("RETURN_ANGLE_CLOSED", 90))
-RETURN_ANGLE_OPEN = int(os.getenv("RETURN_ANGLE_OPEN", 180))
+RETURN_ANGLE_CLOSED = 90
+RETURN_ANGLE_OPEN = 180
 
-SORT_ANGLE_PLASTIC = int(os.getenv("SORT_ANGLE_PLASTIC", 260))
-SORT_ANGLE_CAN = int(os.getenv("SORT_ANGLE_CAN", 200))
-SORT_ANGLE_CARTON = int(os.getenv("SORT_ANGLE_CARTON", 320))
+SORT_ANGLE_PLASTIC = 260
+SORT_ANGLE_CAN = 200
+SORT_ANGLE_CARTON = 320
 
-RELEASE_ANGLE_PLASTIC = int(os.getenv("RELEASE_ANGLE_PLASTIC", 104))
-RELEASE_ANGLE_CAN = int(os.getenv("RELEASE_ANGLE_CAN", 60))
-RELEASE_ANGLE_CARTON = int(os.getenv("RELEASE_ANGLE_CARTON", 60))
+RELEASE_ANGLE_PLASTIC = 104
+RELEASE_ANGLE_CAN = 60
+RELEASE_ANGLE_CARTON = 60
 
 # --- Reset Buttons & LEDs (GPIO) ---
-USE_RESET_BUTTONS = str(os.getenv("USE_RESET_BUTTONS", "true")).strip().lower() == "true"
+USE_RESET_BUTTONS = True
 RESET_PIN_PLASTIC = 22
 RESET_PIN_CAN = 23
 RESET_PIN_CARTON = 24
@@ -63,18 +63,18 @@ RESET_PIN_ALL = 25
 LED_BIN_FULL_PIN = 7
 
 # --- AI Detection ---
-MODEL_PATH = os.getenv("MODEL_PATH", "bottle-v1-3.pt")
+MODEL_PATH = "yolo.pt"
 CONF_THRESHOLD = 0.7
 STABLE_FRAMES = 5       # ต้อง detect ซ้ำกี่เฟรมถึงจะยืนยัน
 COOLDOWN = 3             # วินาที ระหว่างการ detect แต่ละชิ้น
 DETECT_TIMEOUT = 10      # วินาที ถ้า detect ไม่ได้ให้ timeout
 
 # --- AI Detection Crop Area & Camera ---
-CAMERA_ROTATION = int(os.getenv("CAMERA_ROTATION", 270))  # 0, 90, 180, 270
-CROP_TOP_PCT = float(os.getenv("CROP_TOP_PCT", 0.23))
-CROP_BOTTOM_PCT = float(os.getenv("CROP_BOTTOM_PCT", 0.70))
-CROP_LEFT_PCT = float(os.getenv("CROP_LEFT_PCT", 0.26))
-CROP_RIGHT_PCT = float(os.getenv("CROP_RIGHT_PCT", 0.83))
+CAMERA_ROTATION = 270
+CROP_TOP_PCT = 0.23
+CROP_BOTTOM_PCT = 0.70
+CROP_LEFT_PCT = 0.26
+CROP_RIGHT_PCT = 0.83
 
 # --- Size Estimation ---
 K = 80  # ค่าคงที่คำนวณ Score
@@ -110,7 +110,7 @@ ML_RANGES = [
 HEARTBEAT_INTERVAL = 30  # วินาที
 
 # --- Offline Queue ---
-OFFLINE_DB_PATH = "offline_queue.db"
+OFFLINE_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "offline_queue.db")
 RETRY_INTERVAL = 30      # วินาที
 
 # --- Price & Scoring ---
