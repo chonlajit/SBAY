@@ -18,135 +18,148 @@ export default function Home() {
             {/* ===== TOP SECTION ===== */}
             {/*
                 Two-column layout:
-                - Left (gray, col-span-5): normal height, rounded-bl-[2.5rem]
-                - Right (green, col-span-7): taller — extends down overlapping middle section, rounded-bl-[2.5rem]
+                - Left: Hero section + Features button
+                - Right: StatsDashboard + Sponsors + Back button
+                Locked to max-w-[1440px] with responsive split background for larger screens
             */}
-            <div id="top-section" className="flex flex-col lg:flex-row relative z-0 bg-white">
-                {/* ─── Left Column Wrapper ─── */}
-                <div className="w-full lg:w-5/12 shrink-0 flex flex-col min-h-[calc(100vh-4rem)] lg:min-h-0 justify-between relative z-10">
-                    
-                    {/* Gap filler for the right edge gaps */}
+            <div id="top-section" className="w-full relative z-0 bg-white">
+                {/* Background Extension on Ultrawide screens (> 1440px) */}
+                <div className="hidden lg:flex absolute inset-0 pointer-events-none z-0">
+                    <div className="w-[42%] bg-white"></div>
                     <div 
-                        className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 bg-cover bg-center z-0"
+                        className="w-[58%] bg-cover bg-center relative"
                         style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                     >
                         <div className="absolute inset-0 bg-[#64964E]/30 backdrop-blur-md"></div>
                     </div>
+                </div>
 
-                    {/* Hero section (Opaque with its own background image to completely hide the gap filler) */}
-                    <div 
-                        className="flex flex-col px-4 md:px-8 xl:px-10 pt-10 md:pt-14 pb-[20px] md:pb-[30px] rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden bg-cover bg-center z-10"
-                        style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
-                    >
-                        {/* Dual-Layer Inner Shadow Overlay over Background Image */}
-                        <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.25),inset_0_12px_24px_rgba(0,0,0,0.5)] pointer-events-none rounded-[2.5rem] rounded-tl-none z-0"></div>
+                <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row relative z-10 lg:h-[calc(100vh-4rem)] lg:min-h-[580px] lg:max-h-[740px]">
+                    {/* ─── Left Column Wrapper ─── */}
+                    <div className="w-full lg:w-[42%] shrink-0 flex flex-col min-h-[calc(100vh-4rem)] lg:min-h-0 lg:h-full justify-between relative z-10">
+                        
+                        {/* Gap filler for the right edge gaps */}
+                        <div 
+                            className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 bg-cover bg-center z-0"
+                            style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
+                        >
+                            <div className="absolute inset-0 bg-[#64964E]/30 backdrop-blur-md"></div>
+                        </div>
 
-                        <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-2 relative z-10">
-                            <h2 className="text-6xl md:text-[5.5rem] font-black text-white tracking-tight shrink-0 drop-shadow-md">Hi.</h2>
-                            {!isInitialized ? (
-                                /* Skeleton User Card */
-                                <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow p-4 border border-white/50 animate-pulse w-fit">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-10 h-10 bg-gray-200 rounded-2xl"></div>
-                                        <div className="h-5 bg-gray-200 rounded w-28"></div>
-                                    </div>
-                                </div>
-                            ) : user ? (
-                                /* User Card */
-                                <div className="bg-[#64964E] rounded-[32px] shadow-md px-4 py-2.5 md:px-5 md:py-3 border border-white/40 w-fit inline-flex items-center backdrop-blur-sm">
-                                    <div className="flex items-center space-x-3 md:space-x-4">
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-black rounded-2xl flex items-center justify-center text-white text-2xl md:text-3xl font-bold shadow-sm shrink-0">
-                                            {(user.username || user.firstName || user.email || '?').charAt(0).toUpperCase()}
+                        {/* Hero section (Opaque with its own background image to completely hide the gap filler) */}
+                        <div 
+                            className="flex flex-col px-4 md:px-8 xl:px-10 pt-8 md:pt-10 pb-4 md:pb-6 rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden bg-cover bg-center z-10"
+                            style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
+                        >
+                            {/* Dual-Layer Inner Shadow Overlay over Background Image */}
+                            <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.25),inset_0_12px_24px_rgba(0,0,0,0.5)] pointer-events-none rounded-[2.5rem] rounded-tl-none z-0"></div>
+
+                            <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-2 relative z-10">
+                                <h2 className="text-5xl md:text-6xl xl:text-7xl font-black text-white tracking-tight shrink-0 drop-shadow-md">Hi.</h2>
+                                {!isInitialized ? (
+                                    /* Skeleton User Card */
+                                    <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow p-3.5 border border-white/50 animate-pulse w-fit">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 bg-gray-200 rounded-2xl"></div>
+                                            <div className="h-5 bg-gray-200 rounded w-28"></div>
                                         </div>
-                                        <div className="min-w-0 pr-2">
-                                            <h3 className="font-bold text-white text-lg md:text-3xl leading-tight truncate">
-                                                {user.username || user.firstName || user.email || 'ผู้ใช้งาน'}
-                                            </h3>
+                                    </div>
+                                ) : user ? (
+                                    /* User Card */
+                                    <div className="bg-[#64964E] rounded-[32px] shadow-md px-4 py-2 md:px-5 md:py-2.5 border border-white/40 w-fit inline-flex items-center backdrop-blur-sm">
+                                        <div className="flex items-center space-x-3 md:space-x-4">
+                                            <div className="w-9 h-9 md:w-10 md:h-10 bg-black rounded-2xl flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow-sm shrink-0">
+                                                {(user.username || user.firstName || user.email || '?').charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="min-w-0 pr-2">
+                                                <h3 className="font-bold text-white text-base md:text-2xl leading-tight truncate">
+                                                    {user.username || user.firstName || user.email || 'ผู้ใช้งาน'}
+                                                </h3>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ) : null}
+                                ) : null}
+                            </div>
+
+                            <div className="pt-1 md:pt-2 relative z-10">
+                                <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-[3.2rem] xl:text-[3.6rem] leading-[1.05] font-black tracking-tight drop-shadow-md">
+                                    <span className="block text-white text-[1em]">WELCOME TO</span>
+                                    <span className="text-white font-bold">SBAY- Platform</span>
+                                </h1>
+                            </div>
+
+                            <div className="pt-2 md:pt-4 flex flex-col items-center text-center mb-2 md:mb-3 relative z-10">
+                                <p className="text-white text-sm sm:text-base md:text-base xl:text-lg font-bold leading-relaxed drop-shadow">
+                                    ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่คุณรีไซเคิล<br />
+                                    "เพื่อสิ่งแวดล้อมที่ดีกว่า"
+                                </p>
+                            </div>
+
+                            <div className="flex justify-end relative z-10 ">
+                                <Link href="/about" className="text-black text-sm md:text-base font-bold px-6 py-2 md:px-8 md:py-2.5 bg-[#64964E] hover:bg-[#548041] rounded-full transition shadow-lg border border-white/30">
+                                    about us.
+                                </Link>
+                            </div>
                         </div>
 
-                        <div className="pt-1 md:pt-2 relative z-10">
-                            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[4rem] xl:text-[4.5rem] leading-[1.02] font-black tracking-tight drop-shadow-md">
-                                <span className="block text-white text-[1em]">WELCOME TO</span>
-                                <span className="text-white font-bold">SBAY- Platform</span>
-                            </h1>
-                        </div>
-
-                        <div className="pt-[10px] md:pt-[24px] flex flex-col items-center text-center mb-[10px] md:mb-[10px] relative z-10">
-                            <p className="text-white text-base sm:text-lg md:text-lg xl:text-xl font-bold leading-relaxed drop-shadow">
-                                ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่คุณรีไซเคิล<br />
-                                "เพื่อสิ่งแวดล้อมที่ดีกว่า"
-                            </p>
-                        </div>
-
-                        <div className="flex justify-end relative z-10 ">
-                            <Link href="/about" className="text-black text-sm md:text-base font-bold px-6 py-2 md:px-8 md:py-2.5 bg-[#64964E] hover:bg-[#548041] rounded-full transition shadow-lg border border-white/30">
-                                about us.
-                            </Link>
+                        {/* White section (Feature tab) — top-right rounded curve against green background */}
+                        <div className="relative z-10">
+                            <div id="features-section" className="flex w-full bg-white rounded-tr-[2.5rem] rounded-br-none flex-col justify-center px-4 md:px-8 xl:px-10 pt-3 md:pt-4 pb-3 md:pb-4 relative shrink-0 z-10">
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const isMobile = window.innerWidth < 1024;
+                                        const targetId = isMobile ? 'mobile-back-button' : 'action-buttons-section';
+                                        const el = document.getElementById(targetId);
+                                        if (el) {
+                                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
+                                    }}
+                                    className="w-full bg-[#64964E] hover:bg-[#5c8c47] active:scale-[0.99] transition rounded-full relative z-30 flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_25px_30px_-15px_rgba(0,0,0,0.25),0_10px_15px_-5px_rgba(0,0,0,0.4)] cursor-pointer"
+                                >
+                                    <span className="text-lg md:text-2xl xl:text-3xl font-bold text-white pointer-events-none">Features</span>
+                                    <i className="fa-solid fa-caret-down text-xl md:text-3xl text-white absolute right-6 md:right-8 pointer-events-none"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    {/* White section (Feature tab) — top-right rounded curve against green background */}
-                    <div className="relative z-10">
-                        <div id="features-section" className="flex w-full bg-white rounded-tr-[2.5rem] rounded-br-none flex-col justify-center px-4 md:px-8 xl:px-10 pt-8 md:pt-10 pb-4 md:pb-5 relative shrink-0 z-10">
+                    {/* ─── Right Column (glass panel) ─── */}
+                    <div 
+                        className="w-full lg:w-[58%] shrink-0 bg-cover bg-center flex flex-col justify-between px-4 md:px-8 lg:pl-10 xl:pl-12 pr-4 md:pr-8 xl:pr-10 pt-4 md:pt-6 pb-3 md:pb-4 rounded-bl-[2.5rem] relative z-10 lg:h-full"
+                        style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
+                    >
+                        <div className="absolute inset-0 bg-[#64964E]/30 backdrop-blur-md rounded-bl-[2.5rem] z-0"></div>
+                        <div className="w-full rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
+                            <StatsDashboard />
+                        </div>
+
+                        {/* Sponsors */}
+                        <div className="flex justify-end space-x-4 pt-1 pr-2 pb-0.5 relative z-10">
+                            <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
+                            <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
+                                <span className="text-[10px] mt-1 font-semibold text-gray-700/80">(sponsor)</span>
+                            </div>
+                            <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
+                        </div>
+
+                        {/* Statistics Tab — Button to scroll back up to Top Section (Mobile & Desktop) */}
+                        <div className="pt-1 w-full flex justify-center relative z-10">
                             <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const isMobile = window.innerWidth < 1024;
-                                    const targetId = isMobile ? 'mobile-back-button' : 'action-buttons-section';
-                                    const el = document.getElementById(targetId);
-                                    if (el) {
-                                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    }
+                                id="mobile-back-button"
+                                onClick={() => {
+                                    document.getElementById('top-section')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
-                                className="w-full bg-[#64964E] hover:bg-[#5c8c47] active:scale-[0.99] transition rounded-full relative z-30 flex items-center justify-center px-6 md:px-8 py-3 md:py-4 shadow-[0_25px_30px_-15px_rgba(0,0,0,0.25),0_10px_15px_-5px_rgba(0,0,0,0.4)] cursor-pointer"
+                                className="w-full bg-white/80 hover:bg-white active:scale-[0.99] backdrop-blur-md transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-4 md:mt-6 scroll-mt-4"
                             >
-                                <span className="text-lg md:text-2xl xl:text-3xl font-bold text-white pointer-events-none">Features</span>
-                                <i className="fa-solid fa-caret-down text-xl md:text-3xl text-white absolute right-6 md:right-8 pointer-events-none"></i>
+                                <span className="text-lg md:text-2xl xl:text-3xl font-bold text-[#64964E]">Back</span>
+                                <i className="fa-solid fa-caret-up text-xl md:text-3xl text-[#64964E] absolute right-6 md:right-8"></i>
                             </button>
                         </div>
                     </div>
                 </div>
-
-                {/* ─── Right Column (glass panel) ─── */}
-                <div 
-                    className="w-full lg:w-7/12 shrink-0 bg-cover bg-center flex flex-col justify-between px-4 md:px-8 lg:pl-10 xl:pl-12 pr-4 md:pr-8 xl:pr-10 pt-4 md:pt-6 pb-4 md:pb-5 rounded-bl-[2.5rem] relative z-10 lg:mb-[-0px]"
-                    style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
-                >
-                    <div className="absolute inset-0 bg-[#64964E]/30 backdrop-blur-md rounded-bl-[2.5rem] z-0"></div>
-                    <div className="w-full rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
-                        <StatsDashboard />
-                    </div>
-
-                    {/* Sponsors */}
-                    <div className="flex justify-end space-x-4 pt-1 pr-2 pb-0.5 relative z-10">
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
-                            <span className="text-[10px] mt-1 font-semibold text-gray-700/80">(sponsor)</span>
-                        </div>
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
-                    </div>
-
-                    {/* Statistics Tab — Button to scroll back up to Top Section (Mobile & Desktop) */}
-                    <div className="pt-1.5 w-full flex justify-center relative z-10">
-                        <button
-                            id="mobile-back-button"
-                            onClick={() => {
-                                document.getElementById('top-section')?.scrollIntoView({ behavior: 'smooth' });
-                            }}
-                            className="w-full bg-white/80 hover:bg-white active:scale-[0.99] backdrop-blur-md transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-3 md:py-4 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-8 md:mt-10 scroll-mt-4"
-                        >
-                            <span className="text-lg md:text-2xl xl:text-3xl font-bold text-[#64964E]">Back</span>
-                            <i className="fa-solid fa-caret-up text-xl md:text-3xl text-[#64964E] absolute right-6 md:right-8"></i>
-                        </button>
-                    </div>
-                </div>
-
             </div>{/* end top section flex row */}
 
             {/* Middle Section (Actions) */}

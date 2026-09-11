@@ -24,7 +24,7 @@ const config: Config = {
         }
       },
       fontFamily: {
-        sans: ['var(--font-prompt)', 'Arial', 'sans-serif'],
+        sans: ['Prompt', 'var(--font-prompt)', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
       },
     },
   },

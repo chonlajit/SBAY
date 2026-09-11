@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { Prompt } from "next/font/google";
 import "./globals.css";
 import { SmartBinProvider } from "./context/SmartBinContext";
 import MainLayout from "./components/MainLayout";
 import GoogleAuthProvider from "./components/GoogleAuthProvider";
-
-const prompt = Prompt({ subsets: ["latin", "thai"], weight: ["300", "400", "500", "600", "700"], variable: "--font-prompt" });
 
 export const metadata: Metadata = {
   title: "SBAY - Smart Recycling Platform",
@@ -25,9 +22,12 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
       </head>
-      <body className={`${prompt.variable} ${prompt.className}`}>
+      <body className="font-sans antialiased">
         <GoogleAuthProvider>
           <SmartBinProvider>
             <MainLayout>

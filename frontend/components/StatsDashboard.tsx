@@ -211,7 +211,7 @@ export default function StatsDashboard() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Chart Section */}
                     <div className="flex flex-col h-[320px] w-full bg-white/50 rounded-2xl p-5 shadow-sm border border-green-50">
                         <div className="flex-1 w-full min-h-0">
