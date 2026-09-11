@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSmartBin } from '../context/SmartBinContext';
+import { getImageUrl } from '../utils/image';
 
 interface PartnerReward {
     id: string;
@@ -488,7 +489,7 @@ export default function RedeemPage() {
                             {/* Image */}
                             <div className="w-full md:w-1/2 h-64 md:h-full bg-gray-100 flex items-center justify-center shrink-0 border-b md:border-b-0 md:border-r border-gray-200">
                                 {reward.imageUrl ? (
-                                    <img src={reward.imageUrl} alt={reward.name} className="w-full h-full object-cover" />
+                                    <img src={getImageUrl(reward.imageUrl)} alt={reward.name} className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="text-gray-400 font-bold text-xl">ไม่มีรูปภาพ</div>
                                 )}
@@ -686,7 +687,7 @@ function PartnerCard({ partner, rewards, userPoints, quantities, onSetQty, onRed
                 <div className="flex-1 min-w-0 flex items-center gap-3 md:gap-4 pr-2">
                     <div className="w-[40px] h-[40px] md:w-[50px] md:h-[50px] bg-white rounded-full flex flex-col items-center justify-center text-[#527d40] font-black text-[9px] leading-tight shadow-md overflow-hidden shrink-0">
                         {partner.logoUrl ? (
-                            <img src={partner.logoUrl} alt={partner.name} className="w-full h-full object-cover" />
+                            <img src={getImageUrl(partner.logoUrl)} alt={partner.name} className="w-full h-full object-cover" />
                         ) : (
                             <>profile<br />shop</>
                         )}
@@ -727,7 +728,7 @@ function PartnerCard({ partner, rewards, userPoints, quantities, onSetQty, onRed
                                                 {/* Image Box */}
                                                 <div className="w-[150px] bg-white flex items-center justify-center text-slate-800 font-bold text-lg shrink-0 overflow-hidden">
                                                     {reward.imageUrl ? (
-                                                        <img src={reward.imageUrl} alt={reward.name} className="w-full h-full object-cover" />
+                                                        <img src={getImageUrl(reward.imageUrl)} alt={reward.name} className="w-full h-full object-cover" />
                                                     ) : (
                                                         `รูป${tagLabel}`
                                                     )}

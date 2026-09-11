@@ -2,11 +2,17 @@ services:
   mongodb:
     image: mongo:latest
     container_name: sbay-mongodb
+    command: mongod --wiredTigerCacheSizeGB 0.25 # ล็อคแคช MongoDB ไม่ให้กินแรมเกิน 256MB
     ports:
       - "127.0.0.1:27017:27017"
     volumes:
       - mongodb_data:/data/db
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
     build:
@@ -16,6 +22,7 @@ services:
     ports:
       - "8070:8070"
     environment:
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx384m # คุมแรม Java Spring Boot ให้อยู่ระหว่าง 128MB - 384MB
       - MONGODB_HOST=mongodb
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/iotdb
       - DEVICE_SECRET=${DEVICE_SECRET}
@@ -27,6 +34,11 @@ services:
     volumes:
       - backend_uploads:/app/uploads
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:
@@ -37,7 +49,7 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://143.14.36.198/api
-      - NODE_OPTIONS=--max-old-space-size=1024 # เพิ่มแรมให้ Node.js กันเว็บกระตุก/ค้าง
+      - NODE_OPTIONS=--max-old-space-size=384 # ปรับลดแรม Node.js เหลือ 384MB
     depends_on:
       - backend
     restart: always
@@ -46,6 +58,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   nginx:
     image: nginx:alpine
@@ -57,6 +74,11 @@ services:
     extra_hosts:
       - "host.docker.internal:${WINDOWS_IP}"
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   mongo-express:
     image: mongo-express
@@ -69,17 +91,22 @@ services:
       - ME_CONFIG_MONGODB_PORT=27017
       - ME_CONFIG_BASICAUTH_USERNAME=${ME_USERNAME}
       - ME_CONFIG_BASICAUTH_PASSWORD=${ME_PASSWORD}
-
     depends_on:
       - mongodb
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  tunnel:
-    image: cloudflare/cloudflared:latest
-    container_name: sbay-tunnel
-    restart: always
-    command: tunnel --no-autoupdate --url http://nginx:80
-    depends_on:
-      - nginx
+  # Cloudflare Tunnel (เปิดใช้งานเมื่อซื้อโดเมนและตั้งค่า HTTPS เรียบร้อยแล้ว)
+  # tunnel:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: sbay-tunnel
+  #   restart: always
+  #   command: tunnel run --token ${CF_TUNNEL_TOKEN}
+  #   depends_on:
+  #     - nginx
 
 volumes:
   mongodb_data:

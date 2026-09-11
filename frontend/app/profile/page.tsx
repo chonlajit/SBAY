@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSmartBin } from '../context/SmartBinContext';
+import { getImageUrl } from '../utils/image';
 
 const BG_STYLE: React.CSSProperties = {
     backgroundColor: '#f8fafc', // Clean slate-50
@@ -68,15 +69,16 @@ export default function ProfilePage() {
         data.append('file', file);
 
         try {
-            const res = await fetch(`${apiBase}/api/upload`, {
+            const uploadUrl = apiBase.endsWith('/api') ? `${apiBase.slice(0, -4)}/api/upload` : `${apiBase}/upload`;
+            const res = await fetch(uploadUrl, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: data
             });
             const result = await res.json();
-            if (res.ok && result.path) {
-                const fullUrl = `${apiBase}${result.path}`;
-                setFormData(prev => ({ ...prev, profileImageUrl: fullUrl }));
+            if (res.ok && (result.url || result.path)) {
+                const imgPath = result.url || result.path;
+                setFormData(prev => ({ ...prev, profileImageUrl: imgPath }));
             } else {
                 setMessage({ text: 'อัปโหลดรูปภาพล้มเหลว', type: 'error' });
             }
@@ -238,7 +240,7 @@ export default function ProfilePage() {
                             <div className="absolute -bottom-12 relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                                 <div className="w-28 h-28 bg-white rounded-full p-1 shadow-lg overflow-hidden">
                                     {formData.profileImageUrl ? (
-                                        <img src={formData.profileImageUrl} alt="avatar" className="w-full h-full object-cover rounded-full" />
+                                        <img src={getImageUrl(formData.profileImageUrl)} alt="avatar" className="w-full h-full object-cover rounded-full" />
                                     ) : (
                                         <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center text-4xl text-gray-400 font-bold">
                                             {(user.firstName || user.username || user.email || '?').charAt(0)}

@@ -22,8 +22,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry registry) {
-        // Serve files from the uploads directory
+        // Serve files from the uploads directory with 7-day browser cache
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:uploads/");
+                .addResourceLocations("file:uploads/")
+                .setCachePeriod(604800);
     }
 }

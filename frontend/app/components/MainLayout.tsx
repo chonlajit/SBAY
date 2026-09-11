@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSmartBin } from '../context/SmartBinContext';
 import Logo from '../../components/icons/Logo';
+import { getImageUrl } from '../utils/image';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const { user, logout, isInitialized } = useSmartBin();
@@ -87,7 +88,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 title="Mini user card"
                             >
                                 {user.profileImageUrl ? (
-                                    <img src={user.profileImageUrl} alt="profile" className="w-full h-full object-cover rounded-full" />
+                                    <img src={getImageUrl(user.profileImageUrl)} alt="profile" className="w-full h-full object-cover rounded-full" />
                                 ) : (
                                     (user.username || user.firstName || user.email || '?').charAt(0).toUpperCase()
                                 )}
@@ -167,7 +168,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <div className="flex items-center space-x-3">
                                 <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center font-black text-white text-xl shadow">
                                     {user.profileImageUrl ? (
-                                        <img src={user.profileImageUrl} alt="profile" className="w-full h-full object-cover rounded-xl" />
+                                        <img src={getImageUrl(user.profileImageUrl)} alt="profile" className="w-full h-full object-cover rounded-xl" />
                                     ) : (
                                         (user.username || user.firstName || user.email || '?').charAt(0).toUpperCase()
                                     )}

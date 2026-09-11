@@ -53,6 +53,7 @@ public class FileUploadController {
             // The URL path that will be used by the frontend to fetch the image
             String fileUrl = "/uploads/" + uniqueFilename;
             response.put("url", fileUrl);
+            response.put("path", fileUrl);
             return ResponseEntity.ok(response);
 
         } catch (IOException e) {

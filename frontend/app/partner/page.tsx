@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSmartBin } from '../context/SmartBinContext';
+import { getImageUrl } from '../utils/image';
 
 interface PartnerReward {
     id: string;
@@ -238,16 +239,15 @@ export default function PartnerProductsPage() {
         formData.append('file', file);
 
         try {
-            const res = await fetch(`${apiBase?.replace('/api', '')}/api/upload`, {
+            const uploadUrl = apiBase.endsWith('/api') ? `${apiBase.slice(0, -4)}/api/upload` : `${apiBase}/upload`;
+            const res = await fetch(uploadUrl, {
                 method: 'POST',
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                 body: formData
             });
             const data = await res.json();
-            if (res.ok) {
-                const baseUrl = apiBase?.replace('/api', '') || '';
-                const fullUrl = `${baseUrl}${data.url}`;
-                setter(fullUrl);
+            if (res.ok && (data.url || data.path)) {
+                setter(data.url || data.path);
             } else {
                 alert('Upload failed: ' + (data.error || 'Unknown error'));
             }
@@ -319,7 +319,7 @@ export default function PartnerProductsPage() {
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center overflow-hidden shrink-0 border border-green-100">
                                     {partner.logoUrl
-                                        ? <img src={partner.logoUrl} alt="" className="w-full h-full object-cover" />
+                                        ? <img src={getImageUrl(partner.logoUrl)} alt="" className="w-full h-full object-cover" />
                                         : <i className="fa-solid fa-store text-green-500 text-2xl"></i>
                                     }
                                 </div>
@@ -403,7 +403,7 @@ export default function PartnerProductsPage() {
                                             <div key={reward.id} className="flex items-center gap-3 p-4 hover:bg-slate-50/50 transition">
                                                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center shrink-0 border border-emerald-100">
                                                     {reward.imageUrl
-                                                        ? <img src={reward.imageUrl} alt="" className="w-full h-full object-cover rounded-xl" />
+                                                        ? <img src={getImageUrl(reward.imageUrl)} alt="" className="w-full h-full object-cover rounded-xl" />
                                                         : <i className="fa-solid fa-gift text-emerald-400"></i>
                                                     }
                                                 </div>

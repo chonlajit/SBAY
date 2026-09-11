@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSmartBin } from '../context/SmartBinContext';
+import { getImageUrl } from '../utils/image';
 
 export default function AdminPage() {
     const router = useRouter();
@@ -597,7 +598,7 @@ export default function AdminPage() {
                                             <label key={p.id} className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition ${selectedPartnerId === p.id ? 'border-violet-500 bg-violet-50' : 'border-slate-200 hover:border-slate-300'}`}>
                                                 <input type="radio" name="partner" value={p.id} checked={selectedPartnerId === p.id} onChange={() => setSelectedPartnerId(p.id)} className="accent-violet-600" />
                                                 <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center overflow-hidden shrink-0">
-                                                    {p.logoUrl ? <img src={p.logoUrl} alt="" className="w-full h-full object-cover" /> : <i className="fa-solid fa-store text-violet-500 text-sm"></i>}
+                                                    {p.logoUrl ? <img src={getImageUrl(p.logoUrl)} alt="" className="w-full h-full object-cover" /> : <i className="fa-solid fa-store text-violet-500 text-sm"></i>}
                                                 </div>
                                                 <div className="text-left">
                                                     <div className="font-bold text-slate-800 text-sm">{p.name}</div>

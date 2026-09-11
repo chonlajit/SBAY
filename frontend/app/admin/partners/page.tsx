@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSmartBin } from '../../context/SmartBinContext';
+import { getImageUrl } from '../../utils/image';
 
 interface PartnerReward {
     id: string;
@@ -343,7 +344,7 @@ export default function AdminPartnersPage() {
                                     {/* Partner Row */}
                                     <div className="flex items-center gap-4 p-5">
                                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-100 to-violet-100 flex items-center justify-center overflow-hidden shrink-0 border border-purple-200">
-                                            {partner.logoUrl ? <img src={partner.logoUrl} alt="" className="w-full h-full object-cover" /> : <i className="fa-solid fa-store text-purple-400 text-xl"></i>}
+                                            {partner.logoUrl ? <img src={getImageUrl(partner.logoUrl)} alt="" className="w-full h-full object-cover" /> : <i className="fa-solid fa-store text-purple-400 text-xl"></i>}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
@@ -399,7 +400,7 @@ export default function AdminPartnersPage() {
                                                     {partner.rewards.map(reward => (
                                                         <div key={reward.id} className="bg-white rounded-2xl p-3 flex items-center gap-3 border border-slate-100">
                                                             <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                                                                {reward.imageUrl ? <img src={reward.imageUrl} alt="" className="w-full h-full object-cover rounded-xl" /> : <i className="fa-solid fa-gift text-emerald-400"></i>}
+                                                                {reward.imageUrl ? <img src={getImageUrl(reward.imageUrl)} alt="" className="w-full h-full object-cover rounded-xl" /> : <i className="fa-solid fa-gift text-emerald-400"></i>}
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center gap-2 flex-wrap">
@@ -519,9 +520,9 @@ export default function AdminPartnersPage() {
                                     </div>
                                 </div>
                                 <div className="w-full md:w-64">
-                                    <input 
-                                        type="text" 
-                                        placeholder="ค้นหาชื่อ หรือ Username..." 
+                                    <input
+                                        type="text"
+                                        placeholder="ค้นหาชื่อ หรือ Username..."
                                         value={assignUserFilter}
                                         onChange={(e) => setAssignUserFilter(e.target.value)}
                                         className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg outline-none focus:border-emerald-400"
@@ -532,9 +533,9 @@ export default function AdminPartnersPage() {
                                 <div className="p-8 text-center text-slate-400 text-sm">ไม่มี user ที่สามารถกำหนดได้</div>
                             ) : (
                                 <div className="divide-y divide-slate-50 max-h-96 overflow-y-auto">
-                                    {regularUsers.filter(u => 
-                                        (u.id && u.id.toLowerCase().includes(assignUserFilter.toLowerCase())) || 
-                                        (u.username && u.username.toLowerCase().includes(assignUserFilter.toLowerCase())) || 
+                                    {regularUsers.filter(u =>
+                                        (u.id && u.id.toLowerCase().includes(assignUserFilter.toLowerCase())) ||
+                                        (u.username && u.username.toLowerCase().includes(assignUserFilter.toLowerCase())) ||
                                         (u.phoneNumber && u.phoneNumber.toLowerCase().includes(assignUserFilter.toLowerCase())) ||
                                         (u.firstName && u.firstName.toLowerCase().includes(assignUserFilter.toLowerCase())) ||
                                         (u.lastName && u.lastName.toLowerCase().includes(assignUserFilter.toLowerCase()))
@@ -667,19 +668,19 @@ export default function AdminPartnersPage() {
                             {!editingPartner && (
                                 <div className="w-1/2 ml-auto">
                                     <label className="text-sm text-[#64964E] mb-1 block">กำหนดตัวแทนPartner จาก Username</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="ค้นหาชื่อ หรือ Username..." 
-                                        value={modalUserFilter} 
-                                        onChange={e => setModalUserFilter(e.target.value)} 
+                                    <input
+                                        type="text"
+                                        placeholder="ค้นหาชื่อ หรือ Username..."
+                                        value={modalUserFilter}
+                                        onChange={e => setModalUserFilter(e.target.value)}
                                         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none mb-2 focus:border-[#64964E]"
                                     />
                                     <div className="relative">
                                         <select value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} className="w-full border-none bg-[#64964E] text-white rounded-lg px-4 py-2 text-sm outline-none appearance-none cursor-pointer">
                                             <option value="" className="bg-[#64964E]">ไม่มี (ไม่กำหนด)</option>
-                                            {regularUsers.filter(u => 
-                                                (u.id && u.id.toLowerCase().includes(modalUserFilter.toLowerCase())) || 
-                                                (u.username && u.username.toLowerCase().includes(modalUserFilter.toLowerCase())) || 
+                                            {regularUsers.filter(u =>
+                                                (u.id && u.id.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
+                                                (u.username && u.username.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
                                                 (u.phoneNumber && u.phoneNumber.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
                                                 (u.firstName && u.firstName.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
                                                 (u.lastName && u.lastName.toLowerCase().includes(modalUserFilter.toLowerCase()))
@@ -827,7 +828,7 @@ export default function AdminPartnersPage() {
                                             <label key={p.id} className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition ${assignPartnerId === p.id ? 'border-violet-500 bg-violet-50' : 'border-slate-200 hover:border-slate-300'}`}>
                                                 <input type="radio" name="partner" value={p.id} checked={assignPartnerId === p.id} onChange={() => setAssignPartnerId(p.id)} className="accent-violet-600" />
                                                 <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center overflow-hidden shrink-0">
-                                                    {p.logoUrl ? <img src={p.logoUrl} alt="" className="w-full h-full object-cover" /> : <i className="fa-solid fa-store text-violet-500 text-sm"></i>}
+                                                    {p.logoUrl ? <img src={getImageUrl(p.logoUrl)} alt="" className="w-full h-full object-cover" /> : <i className="fa-solid fa-store text-violet-500 text-sm"></i>}
                                                 </div>
                                                 <div>
                                                     <div className="font-bold text-slate-800 text-sm">{p.name}</div>
