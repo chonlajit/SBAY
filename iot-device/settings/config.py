@@ -47,10 +47,12 @@ RETURN_ANGLE_OPEN = 180
 SORT_ANGLE_PLASTIC = 260
 SORT_ANGLE_CAN = 200
 SORT_ANGLE_CARTON = 320
+SORT_ANGLE_RETURN = 140
 
 RELEASE_ANGLE_PLASTIC = 104
 RELEASE_ANGLE_CAN = 60
 RELEASE_ANGLE_CARTON = 60
+RELEASE_ANGLE_RETURN = 60
 
 # --- Reset Buttons & LEDs (GPIO) ---
 USE_RESET_BUTTONS = True
@@ -63,7 +65,23 @@ RESET_PIN_ALL = 25
 LED_BIN_FULL_PIN = 7
 
 # --- AI Detection ---
-MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "bin-device", "bottle-v6", "weights", "best.pt")
+# โมเดลตรวจจับขยะ (ใช้โมเดลใหม่ v7: runs/detect/v7/best.pt)
+_base_dir = os.path.dirname(os.path.dirname(__file__))
+_root_dir = os.path.dirname(_base_dir)
+
+_candidate_models = [
+    os.path.join(_base_dir, "bin-device", "runs", "detect", "v7", "best.pt"),
+    os.path.join(_base_dir, "bin-device", "runs", "detect", "v7", "best (4).pt"),
+    os.path.join(_root_dir, "runs", "detect", "v7", "best.pt"),
+    os.path.join(_root_dir, "runs", "detect", "v7", "best (4).pt"),
+    os.path.join(_base_dir, "bin-device", "bottle-v6", "weights", "best.pt"),
+]
+
+MODEL_PATH = _candidate_models[0]
+for _candidate in _candidate_models:
+    if os.path.exists(_candidate):
+        MODEL_PATH = _candidate
+        break
 CONF_THRESHOLD = 0.7
 STABLE_FRAMES = 5       # ต้อง detect ซ้ำกี่เฟรมถึงจะยืนยัน
 COOLDOWN = 3             # วินาที ระหว่างการ detect แต่ละชิ้น
@@ -137,5 +155,6 @@ SCORE_PER_GRAM = {
 WASTE_LABELS = {
     "PLASTIC_BOTTLE": "ขวดพลาสติก",
     "ALUMINUM_CAN": "กระป๋องอลูมิเนียม",
-    "BEVERAGE_CARTON": "กล่องเครื่องดื่ม"
+    "BEVERAGE_CARTON": "กล่องเครื่องดื่ม",
+    "RETURN": "คืนขวด"
 }

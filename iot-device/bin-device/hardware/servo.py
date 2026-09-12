@@ -12,10 +12,12 @@ try:
     SORT_ANGLE_PLASTIC = config.SORT_ANGLE_PLASTIC
     SORT_ANGLE_CAN = config.SORT_ANGLE_CAN
     SORT_ANGLE_CARTON = config.SORT_ANGLE_CARTON
+    SORT_ANGLE_RETURN = getattr(config, 'SORT_ANGLE_RETURN', 140)
     
     RELEASE_ANGLE_PLASTIC = config.RELEASE_ANGLE_PLASTIC
     RELEASE_ANGLE_CAN = config.RELEASE_ANGLE_CAN
     RELEASE_ANGLE_CARTON = config.RELEASE_ANGLE_CARTON
+    RELEASE_ANGLE_RETURN = getattr(config, 'RELEASE_ANGLE_RETURN', 60)
     
     DROP_ANGLE_CLOSED = config.DROP_ANGLE_CLOSED
     DROP_ANGLE_OPEN = config.DROP_ANGLE_OPEN
@@ -27,9 +29,11 @@ except ImportError:
     SORT_ANGLE_PLASTIC = 260
     SORT_ANGLE_CAN = 200
     SORT_ANGLE_CARTON = 320
+    SORT_ANGLE_RETURN = 140
     RELEASE_ANGLE_PLASTIC = 104
     RELEASE_ANGLE_CAN = 60
     RELEASE_ANGLE_CARTON = 60
+    RELEASE_ANGLE_RETURN = 60
     DROP_ANGLE_CLOSED = 90
     DROP_ANGLE_OPEN = 0
     RETURN_ANGLE_CLOSED = 90
@@ -137,7 +141,8 @@ def sort_item(label):
     mapping = {
         "PLASTIC_BOTTLE": SORT_ANGLE_PLASTIC,
         "ALUMINUM_CAN": SORT_ANGLE_CAN,
-        "BEVERAGE_CARTON": SORT_ANGLE_CARTON
+        "BEVERAGE_CARTON": SORT_ANGLE_CARTON,
+        "RETURN": SORT_ANGLE_RETURN
     }
     angle = mapping.get(label, DEFAULT_SORT_ANGLE)
     set_angle(SERVO_SORT_PIN, angle)
@@ -146,7 +151,8 @@ def release_item(label="PLASTIC_BOTTLE"):
     mapping = {
         "PLASTIC_BOTTLE": RELEASE_ANGLE_PLASTIC,
         "ALUMINUM_CAN": RELEASE_ANGLE_CAN,
-        "BEVERAGE_CARTON": RELEASE_ANGLE_CARTON
+        "BEVERAGE_CARTON": RELEASE_ANGLE_CARTON,
+        "RETURN": RELEASE_ANGLE_RETURN
     }
     angle = mapping.get(label, 45)
     
@@ -166,6 +172,13 @@ def return_item():
     set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_OPEN)
     time.sleep(1.0)
     set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_CLOSED)
+
+def return_bottle():
+    """ทิศคืนขวด: หมุนตัวปัดไปยังทิศคืนขวด ปล่อยแผ่นรอง และสั่งตัวคืนขวด (ถ้ามี)"""
+    sort_item("RETURN")
+    time.sleep(1.0)
+    release_item("RETURN")
+    return_item()
 
 def cleanup():
     if HARDWARE_PWM_ENABLED:

@@ -26,15 +26,21 @@ def run_cli():
             print("1. ขวดพลาสติก (PLASTIC_BOTTLE)")
             print("2. กระป๋อง (ALUMINUM_CAN)")
             print("3. กล่องกระดาษ (BEVERAGE_CARTON)")
+            print("4. ทิศคืนขวด (RETURN BOTTLE)")
+            print("c. เปิดโหมดทดสอบพร้อมกล้องสด (Live Camera Mode)")
             print("d. ทดสอบ Servo รับขวด (Drop Servo)")
             print("u. ทดสอบ Servo คืนขวด (Return Servo)")
             print("r. รีเซ็ตมอเตอร์ (Reset Position)")
             print("q. ออกจากโปรแกรม (Quit)")
             
-            choice = input("👉 ใส่ตัวเลือก (1/2/3/d/u/r/q): ").strip().lower()
+            choice = input("👉 ใส่ตัวเลือก (1/2/3/4/c/d/u/r/q): ").strip().lower()
             
             if choice == 'q':
                 print("👋 กำลังออกจากโปรแกรม...")
+                break
+            elif choice == 'c':
+                from tests.test_servo import test_servo
+                test_servo()
                 break
             elif choice == 'r':
                 print("🔄 กำลังรีเซ็ตมอเตอร์กลับสู่จุดศูนย์...")
@@ -63,6 +69,9 @@ def run_cli():
                 servo.sort_item("BEVERAGE_CARTON")
                 time.sleep(1)
                 servo.release_item("BEVERAGE_CARTON")
+            elif choice == '4':
+                print("🔄 จำลองการทิ้ง: ทิศคืนขวด")
+                servo.return_bottle()
             else:
                 print("❌ ตัวเลือกไม่ถูกต้อง กรุณาลองใหม่")
                 

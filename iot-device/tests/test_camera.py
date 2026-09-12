@@ -14,17 +14,30 @@ def test_camera():
 
     try:
         # สร้าง Object แต่ยังไม่ start
-        picam = Picamera2()
+        try:
+            picam = Picamera2()
+            cameras = picam.global_camera_info()
+        except IndexError:
+            cameras = []
+            picam = None
         
-        # เช็คจำนวนกล้องที่ระบบเห็น
-        cameras = picam.global_camera_info()
         print(f"🔍 ระบบพบกล้องทั้งหมด: {len(cameras)} ตัว")
         
-        if len(cameras) == 0:
-            print("\n❌ [ERROR] ระบบไม่เจอกล้องเลยครับ!")
-            print("  - อาจจะเสียบสายแพกลับด้าน")
-            print("  - หรือสายแพเสีย/ขาดใน")
-            print("  - หรือตัวเซ็นเซอร์กล้องเสีย")
+        if len(cameras) == 0 or picam is None:
+            print("\n❌ [ERROR] ระบบไม่เจอกล้องเลยครับ (libcamera ไม่พบฮาร์ดแวร์กล้อง)!")
+            print("  1. ตรวจสอบสายแพ (Ribbon Cable):")
+            print("     - เสียบถูกพอร์ตหรือไม่? (ต้องเสียบพอร์ต CAMERA / CSI ไม่ใช่ DISPLAY / DSI)")
+            print("     - เสียบกลับด้านหรือไม่? (บน Pi 3/4: หน้าสัมผัสสีเงินต้องหันไปทางพอร์ต HDMI, แถบสีฟ้าหันทางพอร์ต USB/LAN)")
+            print("     - กิ๊บล็อก (Latch) แน่นสนิทดีหรือไม่")
+            print("     - คอนเน็กเตอร์ตัวเล็ก (Sunny connector) บนตัวเซนเซอร์ของโมดูลกล้องหลุดหรือไม่")
+            print("  2. ตรวจสอบการตั้งค่าใน config.txt (/boot/firmware/config.txt หรือ /boot/config.txt):")
+            print("     - หากเป็นกล้อง V1 (OV5647) หรือกล้องโมดูลจีน อาจต้องเพิ่ม: dtoverlay=ov5647")
+            print("     - หากเป็นกล้อง V2 ให้เพิ่ม: dtoverlay=imx219")
+            print("     - หากเป็นกล้อง V3 ให้เพิ่ม: dtoverlay=imx708")
+            print("  3. ตรวจสอบว่ามี process อื่นใช้งานกล้องอยู่หรือไม่:")
+            print("     - ตรวจสอบ service: sudo systemctl status smartbin.service (ถ้ามีให้หยุดก่อน: sudo systemctl stop smartbin.service)")
+            print("  4. ตรวจสอบด้วยคำสั่ง CLI:")
+            print("     - rpicam-hello --list-cameras หรือ libcamera-hello --list-cameras")
             sys.exit(1)
             
         for i, cam in enumerate(cameras):
