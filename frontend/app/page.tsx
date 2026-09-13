@@ -37,31 +37,32 @@ export default function Home() {
 
                         {/* Hero section */}
                         <div 
-                            className="flex flex-col px-4 md:px-8 xl:px-10 pt-6 md:pt-8 pb-3 md:pb-5 rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden bg-cover bg-center z-10"
+                            className="flex flex-col px-5 sm:px-8 xl:px-10 pt-6 sm:pt-8 md:pt-8 pb-3 sm:pb-4 md:pb-5 rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden bg-cover bg-center z-10"
                             style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                         >
                             {/* Dual-Layer Inner Shadow Overlay over Background Image */}
                             <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.25),inset_0_12px_24px_rgba(0,0,0,0.5)] pointer-events-none rounded-[2.5rem] rounded-tl-none z-0"></div>
 
-                            <div className="flex flex-wrap items-center gap-2.5 md:gap-3.5 mb-1 relative z-10">
-                                <h2 className="font-honfleur text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-black text-white tracking-tight shrink-0 drop-shadow-md">Hi.</h2>
+                            {/* Top row: Greeting & User Card */}
+                            <div className="flex flex-wrap items-center gap-3 md:gap-3.5 relative z-10">
+                                <h2 className="font-gondens text-6xl xs:text-7xl sm:text-7xl md:text-6xl xl:text-7xl font-bold text-white tracking-normal shrink-0 drop-shadow-md">Hi.</h2>
                                 {!isInitialized ? (
                                     /* Skeleton User Card */
                                     <div className="bg-white/80 rounded-3xl shadow p-3 border border-white/50 animate-pulse w-fit">
                                         <div className="flex items-center space-x-3">
-                                            <div className="w-9 h-9 bg-gray-200 rounded-2xl"></div>
+                                            <div className="w-10 h-10 bg-gray-200 rounded-2xl"></div>
                                             <div className="h-4 bg-gray-200 rounded w-24"></div>
                                         </div>
                                     </div>
                                 ) : user ? (
                                     /* User Card */
-                                    <div className="bg-[#64964E] rounded-[32px] shadow-md px-3.5 py-1.5 md:px-5 md:py-2 border border-white/40 w-fit inline-flex items-center">
-                                        <div className="flex items-center space-x-2.5 md:space-x-3.5">
-                                            <div className="w-8 h-8 md:w-10 md:h-10 bg-black rounded-2xl flex items-center justify-center text-white text-lg md:text-2xl font-bold shadow-sm shrink-0">
+                                    <div className="bg-[#64964E] rounded-[32px] shadow-md px-4 py-2 sm:px-5 sm:py-2 border border-white/40 w-fit inline-flex items-center">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 sm:w-11 sm:h-11 bg-black rounded-2xl flex items-center justify-center text-white text-lg sm:text-xl font-bold shadow-sm shrink-0">
                                                 {(user.username || user.firstName || user.email || '?').charAt(0).toUpperCase()}
                                             </div>
                                             <div className="min-w-0 pr-2">
-                                                <h3 className="font-bold text-white text-sm md:text-xl leading-tight truncate">
+                                                <h3 className="font-bold text-white text-base sm:text-lg md:text-xl leading-tight truncate">
                                                     {user.username || user.firstName || user.email || 'ผู้ใช้งาน'}
                                                 </h3>
                                             </div>
@@ -70,24 +71,28 @@ export default function Home() {
                                 ) : null}
                             </div>
 
-                            <div className="pt-0.5 md:pt-1 relative z-10">
-                                <h1 className="font-honfleur text-3xl sm:text-4xl md:text-5xl lg:text-[2.8rem] xl:text-[3.4rem] leading-[1.08] font-black tracking-tight drop-shadow-md">
-                                    <span className="block text-white text-[1em]">WELCOME TO</span>
-                                    <span className="text-white font-bold">SBAY- Platform</span>
-                                </h1>
-                            </div>
+                            {/* Middle section: Headline + Thai Description + About Us */}
+                            <div className="my-auto py-1 sm:py-2 flex flex-col justify-center relative z-10">
+                                <div>
+                                    <h1 className="font-gondens text-[2.85rem] xs:text-[3.4rem] sm:text-[4rem] md:text-5xl lg:text-[3.2rem] xl:text-[4rem] leading-[1.3] sm:leading-[1.25] tracking-wide font-normal drop-shadow-md">
+                                        <span className="block text-white">WELCOME TO</span>
+                                        <span className="block text-white mt-1.5 sm:mt-2">SBAY- Platform</span>
+                                    </h1>
+                                </div>
 
-                            <div className="pt-1 md:pt-2 flex flex-col items-center text-center mb-1 md:mb-2 relative z-10">
-                                <p className="text-white text-base sm:text-lg md:text-lg xl:text-xl font-bold leading-snug drop-shadow max-w-[95%]">
-                                    ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่คุณรีไซเคิล<br />
-                                    "เพื่อสิ่งแวดล้อมที่ดีกว่า"
-                                </p>
-                            </div>
+                                <div className="pt-3 sm:pt-4 flex flex-col items-center text-center">
+                                    <p className="text-white text-[16px] xs:text-[18px] sm:text-xl font-bold leading-relaxed drop-shadow-md max-w-[98%]">
+                                        ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่คุณรีไซเคิล<br />
+                                        "เพื่อสิ่งแวดล้อมที่ดีกว่า"
+                                    </p>
+                                </div>
 
-                            <div className="flex justify-end relative z-10">
-                                <Link href="/about" className="font-retro tracking-wide text-black text-xs sm:text-sm md:text-base font-bold px-5 py-1.5 md:px-7 md:py-2 bg-[#64964E] hover:bg-[#548041] rounded-full transition shadow-lg border border-white/30">
-                                    about us.
-                                </Link>
+                                {/* About Us Link with reduced padding below Thai text */}
+                                <div className="flex justify-end pt-3 sm:pt-4 relative z-10">
+                                    <Link href="/about" className="font-milker tracking-wider text-black text-sm sm:text-base md:text-base font-bold px-6 py-2 sm:px-7 sm:py-2.5 md:py-2 bg-[#64964E] hover:bg-[#548041] rounded-full transition shadow-lg border border-white/30 active:scale-95">
+                                        about us.
+                                    </Link>
+                                </div>
                             </div>
                         </div>
 
@@ -106,9 +111,9 @@ export default function Home() {
                                             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                         }
                                     }}
-                                    className="w-full bg-[#64964E] hover:bg-[#5c8c47] active:scale-[0.99] transition rounded-full relative z-30 flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_25px_30px_-15px_rgba(0,0,0,0.25),0_10px_15px_-5px_rgba(0,0,0,0.4)] cursor-pointer"
+                                    className="w-full bg-[#64964E] hover:bg-[#5c8c47] active:scale-[0.99] transition rounded-full relative z-30 flex items-center justify-center px-6 md:px-8 py-3.5 md:py-3.5 shadow-[0_25px_30px_-15px_rgba(0,0,0,0.25),0_10px_15px_-5px_rgba(0,0,0,0.4)] cursor-pointer"
                                 >
-                                    <span className="font-retro tracking-wider text-lg md:text-2xl xl:text-3xl font-bold text-white pointer-events-none">Features</span>
+                                    <span className="font-milker tracking-wider text-xl sm:text-2xl md:text-2xl xl:text-3xl font-bold text-white pointer-events-none">Features</span>
                                     <i className="fa-solid fa-caret-down text-xl md:text-3xl text-white absolute right-6 md:right-8 pointer-events-none"></i>
                                 </button>
                             </div>
@@ -143,7 +148,7 @@ export default function Home() {
                                 }}
                                 className="w-full bg-white/90 hover:bg-white active:scale-[0.99] transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-4 md:mt-6 scroll-mt-4"
                             >
-                                <span className="font-retro tracking-wider text-lg md:text-2xl xl:text-3xl font-bold text-[#64964E]">Back</span>
+                                <span className="font-milker tracking-wider text-lg md:text-2xl xl:text-3xl font-bold text-[#64964E]">Back</span>
                                 <i className="fa-solid fa-caret-up text-xl md:text-3xl text-[#64964E] absolute right-6 md:right-8"></i>
                             </button>
                         </div>
@@ -189,7 +194,7 @@ export default function Home() {
                                 <div className="space-y-12 md:space-y-16 flex flex-col items-center md:items-start">
                                     <Link href="/dashboard" className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
                                         <div className="group bg-gray-200 text-[#64964E] hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center shadow-xl shrink-0">
-                                            <span className="text-xl md:text-5xl font-bold my-auto leading-none flex-1 text-center md:text-left md:group-hover:text-[50px]">สถิติของคุณ</span>
+                                            <span className="font-milker tracking-wider text-xl md:text-4xl lg:text-5xl font-bold my-auto leading-none flex-1 text-center md:text-left">MY STATS</span>
                                             <div className="w-12 h-12 md:w-[96px] md:h-[96px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">
                                                 <i className="fa-solid fa-chart-column text-2xl md:text-5xl"></i>
                                             </div>
@@ -204,7 +209,7 @@ export default function Home() {
 
                                     <Link href="/redeem" className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
                                         <div className="group bg-gray-200 text-[#64964E] hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center shadow-md shrink-0">
-                                            <span className="text-xl md:text-5xl font-bold my-auto leading-none flex-1 text-center md:text-left md:group-hover:text-[45px]">แลกของรางวัล</span>
+                                            <span className="font-milker tracking-wider text-xl md:text-3xl lg:text-4xl font-bold my-auto leading-none flex-1 text-center md:text-left">REDEEM REWARDS</span>
                                             <div className="w-12 h-12 md:w-[96px] md:h-[96px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">
                                                 <i className="fa-solid fa-gift text-2xl md:text-5xl"></i>
                                             </div>
@@ -222,7 +227,7 @@ export default function Home() {
                                 <div className="space-y-11 md:space-y-14 flex flex-col items-center md:items-start">
                                     <Link href="/login?redirect=/" className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
                                         <div className="group bg-black text-white hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center shadow-md shrink-0">
-                                            <span className="text-xl md:text-5xl font-bold my-auto leading-none flex-1 text-center md:text-left md:group-hover:text-[55px]">เข้าสู่ระบบ</span>
+                                            <span className="font-milker tracking-wider text-xl md:text-4xl lg:text-5xl font-bold my-auto leading-none flex-1 text-center md:text-left">LOG IN</span>
                                             <div className="w-12 h-12 md:w-[96px] md:h-[96px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">
                                                 <i className="fa-solid fa-right-to-bracket text-2xl md:text-5xl"></i>
                                             </div>
@@ -235,7 +240,7 @@ export default function Home() {
 
                                     <div className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
                                         <div className="group bg-white text-gray-700 hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center border-2 border-gray-200 border-dashed shrink-0">
-                                            <span className="text-xl md:text-5xl font-bold text-gray-400 my-auto leading-none flex-1 text-center md:text-left">ยังไม่มีบัญชี?</span>
+                                            <Link href="/register" className="font-milker tracking-wider text-xl md:text-3xl lg:text-4xl font-bold text-gray-400 hover:text-[#64964E] my-auto leading-none flex-1 text-center md:text-left transition">SIGN UP</Link>
                                             <Link href="/register" className="w-12 h-12 md:w-[96px] md:h-[96px] bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 hover:bg-[#64964E] hover:text-white transition cursor-pointer">
                                                 <i className="fa-solid fa-user-plus text-2xl md:text-5xl"></i>
                                             </Link>
