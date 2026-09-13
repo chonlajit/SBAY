@@ -16,7 +16,10 @@ root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(root_dir, 'bin-device'))
 sys.path.insert(0, root_dir)
 
-from settings.config import DEVICE_ID, USE_GUI, USE_IR, USE_RESET_BUTTONS
+from settings.config import (
+    DEVICE_ID, USE_GUI, USE_IR, USE_RESET_BUTTONS,
+    DETECT_TIMEOUT, SORT_ANGLE_RETURN, RELEASE_ANGLE_RETURN
+)
 from api_client import ApiClient
 from heartbeat_service import HeartbeatService
 from session_manager import SessionManager
@@ -251,25 +254,35 @@ class SmartBinController:
                     
                 else:
                     # ⏳ AI ยังหาไม่เจอ หรือยังไม่เสถียร เช็คว่าหมดเวลา (Timeout) หรือยัง
-                    # ถ้าของเข้ามาข้างในเกิน 10 วินาทีแล้ว AI ยังอ่านไม่ออก ให้ยอมแพ้แล้วทิ้งของไป
-                    if USE_IR and (time.time() - processing_start_time > 10.0):
-                        logger.warning("Detection timeout - no item found by AI")
-                        self.detection.stop_camera()
+                    # ถ้าเกินเวลา DETECT_TIMEOUT แล้ว AI ยังตรวจไม่พบขวด ให้หมุนคืนขวด (Return)
+                    timeout_limit = float(DETECT_TIMEOUT) if DETECT_TIMEOUT else 10.0
+                    has_timed_out = (processing_start_time > 0) and (time.time() - processing_start_time > timeout_limit)
+
+                    if (USE_IR or processing_item) and has_timed_out:
+                        logger.warning(f"Detection timeout ({timeout_limit}s) - no valid bottle found, returning item...")
                         
-                        # สั่งเคลียร์ของทิ้งไปเลย (หรือส่งคืน)
+                        # สั่งหมุน Sort Servo ไปมุมคืนขวด (135°) แล้วเปิด Release Servo (55°) เพื่อคืนขวด
                         try:
-                            from hardware.servo import release_item
-                            release_item("UNKNOWN")
-                        except:
-                            pass
-                        
+                            from hardware.servo import sort_item, release_item
+                            logger.info(f"Returning item → Sort: {SORT_ANGLE_RETURN}°, Release: {RELEASE_ANGLE_RETURN}°")
+                            sort_item("RETURN")
+                            time.sleep(0.5)
+                            release_item("RETURN")
+                        except Exception as e:
+                            logger.error(f"Failed to return item via servo: {e}")
+
+                        if USE_IR:
+                            self.detection.stop_camera()
+
                         if self.gui:
-                            self.gui.schedule(self.gui.update_status, "วิเคราะห์ไม่สำเร็จ หรือเป็นขยะที่รับไม่ได้...", "#ef4444")
+                            self.gui.schedule(self.gui.update_status, "ไม่พบขวด หรือขยะไม่ถูกต้อง (คืนขวดแล้ว)...", "#ef4444")
                             time.sleep(3.0)
-                            self.gui.schedule(self.gui.update_status, "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)", "#94a3b8")
+                            status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
+                            self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
                             self.gui.schedule(self.gui.update_camera_frame, None)
-                            
+
                         processing_item = False
+                        processing_start_time = 0
 
             time.sleep(0.1)  # Prevent CPU spike
 
