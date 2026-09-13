@@ -26,6 +26,7 @@ USE_CAMERA = True
 USE_GUI = True
 USE_IR = True
 USE_SERVO = True
+HIDE_CURSOR = True
 
 # --- Hardware Pins (Raspberry Pi BCM) ---
 IR_PIN = 17

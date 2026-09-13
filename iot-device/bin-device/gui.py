@@ -61,6 +61,16 @@ class SmartBinGUI:
         self.container = tk.Frame(self.root, bg=self.BG)
         self.container.pack(fill="both", expand=True)
 
+        # Configurable Cursor Visibility (ซ่อน/แสดง Cursor เมาส์ตาม config.py)
+        import settings.config as config
+        self.cursor_hidden = getattr(config, 'HIDE_CURSOR', True)
+        self._apply_cursor()
+
+        # Debug shortcuts: 'c' เพื่อเปิด/ปิด cursor, 'ESC' เพื่อเปิด/ปิด fullscreen
+        self.root.bind("<Escape>", self._toggle_fullscreen)
+        self.root.bind("<c>", self._toggle_cursor)
+        self.root.bind("<C>", self._toggle_cursor)
+
         # State
         self.phone_var = tk.StringVar(value="")
         self.items_list = []
@@ -480,3 +490,27 @@ class SmartBinGUI:
 
     def quit(self):
         self.root.quit()
+
+    def _apply_cursor(self):
+        """กำหนดการแสดงผล/ซ่อน Cursor เมาส์"""
+        try:
+            cur = "none" if self.cursor_hidden else ""
+            self.root.config(cursor=cur)
+            if hasattr(self, 'container') and self.container:
+                self.container.config(cursor=cur)
+        except Exception as e:
+            logger.warning(f"Could not apply cursor: {e}")
+
+    def _toggle_cursor(self, event=None):
+        """กด 'c' เพื่อสลับการซ่อน/แสดง Cursor (มีประโยชน์ตอน debug)"""
+        self.cursor_hidden = not self.cursor_hidden
+        self._apply_cursor()
+        logger.info(f"Mouse cursor visibility: {'HIDDEN' if self.cursor_hidden else 'VISIBLE'}")
+
+    def _toggle_fullscreen(self, event=None):
+        """กด ESC เพื่อสลับ Fullscreen"""
+        try:
+            is_fs = self.root.attributes("-fullscreen")
+            self.root.attributes("-fullscreen", not is_fs)
+        except Exception:
+            pass
