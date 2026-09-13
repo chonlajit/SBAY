@@ -44,7 +44,7 @@ export default function Home() {
                             <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.25),inset_0_12px_24px_rgba(0,0,0,0.5)] pointer-events-none rounded-[2.5rem] rounded-tl-none z-0"></div>
 
                             <div className="flex flex-wrap items-center gap-2.5 md:gap-3.5 mb-1 relative z-10">
-                                <h2 className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-black text-white tracking-tight shrink-0 drop-shadow-md">Hi.</h2>
+                                <h2 className="font-honfleur text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-black text-white tracking-tight shrink-0 drop-shadow-md">Hi.</h2>
                                 {!isInitialized ? (
                                     /* Skeleton User Card */
                                     <div className="bg-white/80 rounded-3xl shadow p-3 border border-white/50 animate-pulse w-fit">
@@ -71,7 +71,7 @@ export default function Home() {
                             </div>
 
                             <div className="pt-0.5 md:pt-1 relative z-10">
-                                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[2.8rem] xl:text-[3.4rem] leading-[1.08] font-black tracking-tight drop-shadow-md">
+                                <h1 className="font-honfleur text-3xl sm:text-4xl md:text-5xl lg:text-[2.8rem] xl:text-[3.4rem] leading-[1.08] font-black tracking-tight drop-shadow-md">
                                     <span className="block text-white text-[1em]">WELCOME TO</span>
                                     <span className="text-white font-bold">SBAY- Platform</span>
                                 </h1>
@@ -85,7 +85,7 @@ export default function Home() {
                             </div>
 
                             <div className="flex justify-end relative z-10">
-                                <Link href="/about" className="text-black text-xs sm:text-sm md:text-base font-bold px-5 py-1.5 md:px-7 md:py-2 bg-[#64964E] hover:bg-[#548041] rounded-full transition shadow-lg border border-white/30">
+                                <Link href="/about" className="font-retro tracking-wide text-black text-xs sm:text-sm md:text-base font-bold px-5 py-1.5 md:px-7 md:py-2 bg-[#64964E] hover:bg-[#548041] rounded-full transition shadow-lg border border-white/30">
                                     about us.
                                 </Link>
                             </div>
@@ -108,7 +108,7 @@ export default function Home() {
                                     }}
                                     className="w-full bg-[#64964E] hover:bg-[#5c8c47] active:scale-[0.99] transition rounded-full relative z-30 flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_25px_30px_-15px_rgba(0,0,0,0.25),0_10px_15px_-5px_rgba(0,0,0,0.4)] cursor-pointer"
                                 >
-                                    <span className="text-lg md:text-2xl xl:text-3xl font-bold text-white pointer-events-none">Features</span>
+                                    <span className="font-retro tracking-wider text-lg md:text-2xl xl:text-3xl font-bold text-white pointer-events-none">Features</span>
                                     <i className="fa-solid fa-caret-down text-xl md:text-3xl text-white absolute right-6 md:right-8 pointer-events-none"></i>
                                 </button>
                             </div>
@@ -143,7 +143,7 @@ export default function Home() {
                                 }}
                                 className="w-full bg-white/90 hover:bg-white active:scale-[0.99] transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-4 md:mt-6 scroll-mt-4"
                             >
-                                <span className="text-lg md:text-2xl xl:text-3xl font-bold text-[#64964E]">Back</span>
+                                <span className="font-retro tracking-wider text-lg md:text-2xl xl:text-3xl font-bold text-[#64964E]">Back</span>
                                 <i className="fa-solid fa-caret-up text-xl md:text-3xl text-[#64964E] absolute right-6 md:right-8"></i>
                             </button>
                         </div>

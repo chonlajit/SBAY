@@ -133,7 +133,7 @@ export default function StatsDashboard() {
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
-                    <h2 className="text-2xl font-black text-[#64964E] flex items-center gap-2">
+                    <h2 className="font-honfleur text-2xl font-black text-[#64964E] flex items-center gap-2">
                         <i className="fa-solid fa-chart-pie"></i> Statistics
                     </h2>
                     <p className="text-gray-500 text-sm">สถิติการรีไซเคิลของแพลตฟอร์ม</p>
