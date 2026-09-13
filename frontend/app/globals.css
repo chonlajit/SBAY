@@ -27,8 +27,8 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Smooth scrolling */
-* {
+/* Smooth scrolling only on root */
+html {
   scroll-behavior: smooth;
 }
 

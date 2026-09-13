@@ -27,10 +27,10 @@ export default function Home() {
                 <div className="hidden lg:flex absolute inset-0 pointer-events-none z-0">
                     <div className="w-[42%] bg-white"></div>
                     <div 
-                        className="w-[58%] bg-cover bg-center relative"
+                        className="w-[58%] bg-cover bg-center relative rounded-bl-[2.5rem] overflow-hidden"
                         style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                     >
-                        <div className="absolute inset-0 bg-[#64964E]/30 backdrop-blur-md"></div>
+                        <div className="absolute inset-0 bg-[#64964E]/40 rounded-bl-[2.5rem]"></div>
                     </div>
                 </div>
 
@@ -38,41 +38,41 @@ export default function Home() {
                     {/* ─── Left Column Wrapper ─── */}
                     <div className="w-full lg:w-[42%] shrink-0 flex flex-col min-h-[calc(100vh-4rem)] lg:min-h-0 lg:h-full justify-between relative z-10">
                         
-                        {/* Gap filler for the right edge gaps */}
+                        {/* Gap filler for the right edge gaps (stops above bottom curve to prevent sharp green corner leakage) */}
                         <div 
-                            className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 bg-cover bg-center z-0"
+                            className="hidden lg:block absolute right-0 top-0 bottom-28 w-1/2 bg-cover bg-center z-0"
                             style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                         >
-                            <div className="absolute inset-0 bg-[#64964E]/30 backdrop-blur-md"></div>
+                            <div className="absolute inset-0 bg-[#64964E]/40"></div>
                         </div>
 
                         {/* Hero section (Opaque with its own background image to completely hide the gap filler) */}
                         <div 
-                            className="flex flex-col px-4 md:px-8 xl:px-10 pt-8 md:pt-10 pb-4 md:pb-6 rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden bg-cover bg-center z-10"
+                            className="flex flex-col px-4 md:px-8 xl:px-10 pt-6 md:pt-8 pb-3 md:pb-5 rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden bg-cover bg-center z-10"
                             style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                         >
                             {/* Dual-Layer Inner Shadow Overlay over Background Image */}
                             <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.25),inset_0_12px_24px_rgba(0,0,0,0.5)] pointer-events-none rounded-[2.5rem] rounded-tl-none z-0"></div>
 
-                            <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-2 relative z-10">
-                                <h2 className="text-5xl md:text-6xl xl:text-7xl font-black text-white tracking-tight shrink-0 drop-shadow-md">Hi.</h2>
+                            <div className="flex flex-wrap items-center gap-2.5 md:gap-3.5 mb-1 relative z-10">
+                                <h2 className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-black text-white tracking-tight shrink-0 drop-shadow-md">Hi.</h2>
                                 {!isInitialized ? (
                                     /* Skeleton User Card */
-                                    <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow p-3.5 border border-white/50 animate-pulse w-fit">
+                                    <div className="bg-white/80 rounded-3xl shadow p-3 border border-white/50 animate-pulse w-fit">
                                         <div className="flex items-center space-x-3">
-                                            <div className="w-10 h-10 bg-gray-200 rounded-2xl"></div>
-                                            <div className="h-5 bg-gray-200 rounded w-28"></div>
+                                            <div className="w-9 h-9 bg-gray-200 rounded-2xl"></div>
+                                            <div className="h-4 bg-gray-200 rounded w-24"></div>
                                         </div>
                                     </div>
                                 ) : user ? (
                                     /* User Card */
-                                    <div className="bg-[#64964E] rounded-[32px] shadow-md px-4 py-2 md:px-5 md:py-2.5 border border-white/40 w-fit inline-flex items-center backdrop-blur-sm">
-                                        <div className="flex items-center space-x-3 md:space-x-4">
-                                            <div className="w-9 h-9 md:w-10 md:h-10 bg-black rounded-2xl flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow-sm shrink-0">
+                                    <div className="bg-[#64964E] rounded-[32px] shadow-md px-3.5 py-1.5 md:px-5 md:py-2 border border-white/40 w-fit inline-flex items-center">
+                                        <div className="flex items-center space-x-2.5 md:space-x-3.5">
+                                            <div className="w-8 h-8 md:w-10 md:h-10 bg-black rounded-2xl flex items-center justify-center text-white text-lg md:text-2xl font-bold shadow-sm shrink-0">
                                                 {(user.username || user.firstName || user.email || '?').charAt(0).toUpperCase()}
                                             </div>
                                             <div className="min-w-0 pr-2">
-                                                <h3 className="font-bold text-white text-base md:text-2xl leading-tight truncate">
+                                                <h3 className="font-bold text-white text-sm md:text-xl leading-tight truncate">
                                                     {user.username || user.firstName || user.email || 'ผู้ใช้งาน'}
                                                 </h3>
                                             </div>
@@ -81,22 +81,22 @@ export default function Home() {
                                 ) : null}
                             </div>
 
-                            <div className="pt-1 md:pt-2 relative z-10">
-                                <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-[3.2rem] xl:text-[3.6rem] leading-[1.05] font-black tracking-tight drop-shadow-md">
+                            <div className="pt-0.5 md:pt-1 relative z-10">
+                                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[2.8rem] xl:text-[3.4rem] leading-[1.08] font-black tracking-tight drop-shadow-md">
                                     <span className="block text-white text-[1em]">WELCOME TO</span>
                                     <span className="text-white font-bold">SBAY- Platform</span>
                                 </h1>
                             </div>
 
-                            <div className="pt-2 md:pt-4 flex flex-col items-center text-center mb-2 md:mb-3 relative z-10">
-                                <p className="text-white text-sm sm:text-base md:text-base xl:text-lg font-bold leading-relaxed drop-shadow">
+                            <div className="pt-1 md:pt-2 flex flex-col items-center text-center mb-1 md:mb-2 relative z-10">
+                                <p className="text-white text-base sm:text-lg md:text-lg xl:text-xl font-bold leading-snug drop-shadow max-w-[95%]">
                                     ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่คุณรีไซเคิล<br />
                                     "เพื่อสิ่งแวดล้อมที่ดีกว่า"
                                 </p>
                             </div>
 
-                            <div className="flex justify-end relative z-10 ">
-                                <Link href="/about" className="text-black text-sm md:text-base font-bold px-6 py-2 md:px-8 md:py-2.5 bg-[#64964E] hover:bg-[#548041] rounded-full transition shadow-lg border border-white/30">
+                            <div className="flex justify-end relative z-10">
+                                <Link href="/about" className="text-black text-xs sm:text-sm md:text-base font-bold px-5 py-1.5 md:px-7 md:py-2 bg-[#64964E] hover:bg-[#548041] rounded-full transition shadow-lg border border-white/30">
                                     about us.
                                 </Link>
                             </div>
@@ -126,23 +126,23 @@ export default function Home() {
                         </div>
                     </div>
 
-                    {/* ─── Right Column (glass panel) ─── */}
+                    {/* ─── Right Column (glass panel with clipped rounded-bl corner) ─── */}
                     <div 
-                        className="w-full lg:w-[58%] shrink-0 bg-cover bg-center flex flex-col justify-between px-4 md:px-8 lg:pl-10 xl:pl-12 pr-4 md:pr-8 xl:pr-10 pt-4 md:pt-6 pb-3 md:pb-4 rounded-bl-[2.5rem] relative z-10 lg:h-full"
+                        className="w-full lg:w-[58%] shrink-0 bg-cover bg-center flex flex-col justify-between px-4 md:px-8 lg:pl-10 xl:pl-12 pr-4 md:pr-8 xl:pr-10 pt-4 md:pt-6 pb-3 md:pb-4 rounded-bl-[2.5rem] overflow-hidden relative z-10 lg:h-full"
                         style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                     >
-                        <div className="absolute inset-0 bg-[#64964E]/30 backdrop-blur-md rounded-bl-[2.5rem] z-0"></div>
+                        <div className="absolute inset-0 bg-[#64964E]/40 rounded-bl-[2.5rem] z-0"></div>
                         <div className="w-full rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
                             <StatsDashboard />
                         </div>
 
                         {/* Sponsors */}
                         <div className="flex justify-end space-x-4 pt-1 pr-2 pb-0.5 relative z-10">
-                            <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
-                            <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
+                            <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
+                            <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
                                 <span className="text-[10px] mt-1 font-semibold text-gray-700/80">(sponsor)</span>
                             </div>
-                            <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 backdrop-blur-sm rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
+                            <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
                         </div>
 
                         {/* Statistics Tab — Button to scroll back up to Top Section (Mobile & Desktop) */}
@@ -152,7 +152,7 @@ export default function Home() {
                                 onClick={() => {
                                     document.getElementById('top-section')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
-                                className="w-full bg-white/80 hover:bg-white active:scale-[0.99] backdrop-blur-md transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-4 md:mt-6 scroll-mt-4"
+                                className="w-full bg-white/90 hover:bg-white active:scale-[0.99] transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-4 md:mt-6 scroll-mt-4"
                             >
                                 <span className="text-lg md:text-2xl xl:text-3xl font-bold text-[#64964E]">Back</span>
                                 <i className="fa-solid fa-caret-up text-xl md:text-3xl text-[#64964E] absolute right-6 md:right-8"></i>
@@ -269,115 +269,8 @@ export default function Home() {
             </div>
 
             {/* Bottom Section (Interactive Image Slideshow) */}
-            {(() => {
-                const slides = [
-                    {
-                        id: 1,
-                        title: 'ขั้นตอนที่ 1: สมัครสมาชิก',
-                        description: 'สมัครสมาชิกบนแพลตฟอร์ม SBAY Smart Recycling เพื่อเริ่มสะสมคะแนน',
-                        image: '/images/Howto1.jpg'
-                    },
-                    {
-                        id: 2,
-                        title: 'ขั้นตอนที่ 2: กรอกเบอร์โทรที่ตู้',
-                        description: 'ไปที่ตู้รีไซเคิลอัจฉริยะ SBAY แล้วกรอกเบอร์โทรศัพท์ของคุณที่หน้าจอเพื่อยืนยันตัวตน',
-                        image: '/images/Howto2.jpg'
-                    },
-                    {
-                        id: 3,
-                        title: 'ขั้นตอนที่ 3: เริ่มหยอดขวด',
-                        description: 'หยอดขวดพลาสติก กระป๋อง หรือกล่องเครื่องดื่มลงช่องรับขยะ แล้วรับแต้มสะสมเข้าบัญชีทันที',
-                        image: '/images/Howto3.jpg'
-                    }
-                ];
+            <HowtoSlideshow />
 
-                const [currentSlide, setCurrentSlide] = React.useState(0);
-
-                const nextSlide = () => {
-                    setCurrentSlide((prev) => (prev + 1) % slides.length);
-                };
-
-                const prevSlide = () => {
-                    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-                };
-
-                return (
-                    <div className="w-full relative h-[450px] md:h-[550px] lg:h-[620px] flex items-center justify-center overflow-hidden group" style={{ backgroundImage: "url('/images/bg-white.jpg')" }}>
-                        {/* Slide Content */}
-                        {slides.map((slide, index) => (
-                            <div
-                                key={slide.id}
-                                className={`absolute inset-0 transition-opacity duration-700 ease-in-out flex flex-col items-center justify-center p-4 md:p-8 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-                                    }`}
-                            >
-                                {/* Full Crisp Image (No dark mask, 100% unblocked) */}
-                                <div className="w-full h-full flex items-center justify-center pb-16 md:pb-20">
-                                    <img
-                                        src={slide.image}
-                                        alt={slide.title}
-                                        onError={(e) => {
-                                            (e.target as HTMLElement).style.display = 'none';
-                                        }}
-                                        className="max-h-full max-w-full object-contain rounded-xl shadow-2xl"
-                                    />
-                                </div>
-
-                                {/* Floating Bottom Caption Bar (Does not block the image) */}
-                                <div className="absolute bottom-12 md:bottom-14 left-4 right-4 md:left-auto md:right-auto z-20 text-center">
-                                    <div className="bg-black/85 backdrop-blur-md border border-white/10 px-5 py-3 md:px-8 md:py-3.5 rounded-2xl shadow-2xl max-w-2xl mx-auto">
-                                        <div className="flex items-center justify-center gap-2 mb-1">
-                                            <span className="bg-[#64964E] text-white text-[11px] md:text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0">
-                                                #{index + 1}
-                                            </span>
-                                            <h3 className="text-sm md:text-lg lg:text-xl font-bold text-white">
-                                                {slide.title}
-                                            </h3>
-                                        </div>
-                                        <p className="text-gray-300 text-xs md:text-sm font-normal">
-                                            {slide.description}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-
-                        {/* Navigation Arrow Left */}
-                        <div className="absolute inset-y-0 left-2 md:left-8 flex items-center z-30">
-                            <button
-                                onClick={prevSlide}
-                                className="text-gray-300 hover:text-white bg-black/40 hover:bg-black/70 p-3 md:p-4 rounded-full transition transform hover:scale-110 active:scale-95 shadow-lg backdrop-blur-sm cursor-pointer"
-                                aria-label="Previous Slide"
-                            >
-                                <i className="fa-solid fa-chevron-left text-2xl md:text-4xl"></i>
-                            </button>
-                        </div>
-
-                        {/* Navigation Arrow Right */}
-                        <div className="absolute inset-y-0 right-2 md:left-auto md:right-8 flex items-center z-30">
-                            <button
-                                onClick={nextSlide}
-                                className="text-gray-300 hover:text-white bg-black/40 hover:bg-black/70 p-3 md:p-4 rounded-full transition transform hover:scale-110 active:scale-95 shadow-lg backdrop-blur-sm cursor-pointer"
-                                aria-label="Next Slide"
-                            >
-                                <i className="fa-solid fa-chevron-right text-2xl md:text-4xl"></i>
-                            </button>
-                        </div>
-
-                        {/* Dot Indicators */}
-                        <div className="absolute bottom-5 md:bottom-8 left-0 right-0 flex justify-center space-x-3 z-30">
-                            {slides.map((_, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => setCurrentSlide(index)}
-                                    className={`h-3 rounded-full transition-all duration-300 cursor-pointer ${index === currentSlide ? 'w-8 bg-[#64964E]' : 'w-3 bg-gray-500 hover:bg-gray-400'
-                                        }`}
-                                    aria-label={`Go to slide ${index + 1}`}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                );
-            })()}
 
             {/* Footer */}
             <footer className="bg-black text-gray-500 py-8 text-center text-sm w-full border-t border-gray-800">
@@ -388,6 +281,116 @@ export default function Home() {
                     <p>&copy; {new Date().getFullYear()} SBAY Smart Recycling Platform. All rights reserved.</p>
                 </div>
             </footer>
+        </div>
+    );
+}
+
+function HowtoSlideshow() {
+    const slides = [
+        {
+            id: 1,
+            title: 'ขั้นตอนที่ 1: สมัครสมาชิก',
+            description: 'สมัครสมาชิกบนแพลตฟอร์ม SBAY Smart Recycling เพื่อเริ่มสะสมคะแนน',
+            image: '/images/Howto1.jpg'
+        },
+        {
+            id: 2,
+            title: 'ขั้นตอนที่ 2: กรอกเบอร์โทรที่ตู้',
+            description: 'ไปที่ตู้รีไซเคิลอัจฉริยะ SBAY แล้วกรอกเบอร์โทรศัพท์ของคุณที่หน้าจอเพื่อยืนยันตัวตน',
+            image: '/images/Howto2.jpg'
+        },
+        {
+            id: 3,
+            title: 'ขั้นตอนที่ 3: เริ่มหยอดขวด',
+            description: 'หยอดขวดพลาสติก กระป๋อง หรือกล่องเครื่องดื่มลงช่องรับขยะ แล้วรับแต้มสะสมเข้าบัญชีทันที',
+            image: '/images/Howto3.jpg'
+        }
+    ];
+
+    const [currentSlide, setCurrentSlide] = React.useState(0);
+
+    const nextSlide = () => {
+        setCurrentSlide((prev) => (prev + 1) % slides.length);
+    };
+
+    const prevSlide = () => {
+        setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    };
+
+    return (
+        <div className="w-full relative h-[450px] md:h-[550px] lg:h-[620px] flex items-center justify-center overflow-hidden group" style={{ backgroundImage: "url('/images/bg-white.jpg')" }}>
+            {/* Slide Content */}
+            {slides.map((slide, index) => (
+                <div
+                    key={slide.id}
+                    className={`absolute inset-0 transition-opacity duration-700 ease-in-out flex flex-col items-center justify-center p-4 md:p-8 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                        }`}
+                >
+                    {/* Full Crisp Image */}
+                    <div className="w-full h-full flex items-center justify-center pb-16 md:pb-20">
+                        <img
+                            src={slide.image}
+                            alt={slide.title}
+                            onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                            }}
+                            className="max-h-full max-w-full object-contain rounded-xl shadow-2xl"
+                        />
+                    </div>
+
+                    {/* Floating Bottom Caption Bar */}
+                    <div className="absolute bottom-12 md:bottom-14 left-4 right-4 md:left-auto md:right-auto z-20 text-center">
+                        <div className="bg-black/85 backdrop-blur-md border border-white/10 px-5 py-3 md:px-8 md:py-3.5 rounded-2xl shadow-2xl max-w-2xl mx-auto">
+                            <div className="flex items-center justify-center gap-2 mb-1">
+                                <span className="bg-[#64964E] text-white text-[11px] md:text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0">
+                                    #{index + 1}
+                                </span>
+                                <h3 className="text-sm md:text-lg lg:text-xl font-bold text-white">
+                                    {slide.title}
+                                </h3>
+                            </div>
+                            <p className="text-gray-300 text-xs md:text-sm font-normal">
+                                {slide.description}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ))}
+
+            {/* Navigation Arrow Left */}
+            <div className="absolute inset-y-0 left-2 md:left-8 flex items-center z-30">
+                <button
+                    onClick={prevSlide}
+                    className="text-gray-300 hover:text-white bg-black/40 hover:bg-black/70 p-3 md:p-4 rounded-full transition transform hover:scale-110 active:scale-95 shadow-lg backdrop-blur-sm cursor-pointer"
+                    aria-label="Previous Slide"
+                >
+                    <i className="fa-solid fa-chevron-left text-2xl md:text-4xl"></i>
+                </button>
+            </div>
+
+            {/* Navigation Arrow Right */}
+            <div className="absolute inset-y-0 right-2 md:left-auto md:right-8 flex items-center z-30">
+                <button
+                    onClick={nextSlide}
+                    className="text-gray-300 hover:text-white bg-black/40 hover:bg-black/70 p-3 md:p-4 rounded-full transition transform hover:scale-110 active:scale-95 shadow-lg backdrop-blur-sm cursor-pointer"
+                    aria-label="Next Slide"
+                >
+                    <i className="fa-solid fa-chevron-right text-2xl md:text-4xl"></i>
+                </button>
+            </div>
+
+            {/* Dot Indicators */}
+            <div className="absolute bottom-5 md:bottom-8 left-0 right-0 flex justify-center space-x-3 z-30">
+                {slides.map((_, index) => (
+                    <button
+                        key={index}
+                        onClick={() => setCurrentSlide(index)}
+                        className={`h-3 rounded-full transition-all duration-300 cursor-pointer ${index === currentSlide ? 'w-8 bg-[#64964E]' : 'w-3 bg-gray-500 hover:bg-gray-400'
+                            }`}
+                        aria-label={`Go to slide ${index + 1}`}
+                    />
+                ))}
+            </div>
         </div>
     );
 }

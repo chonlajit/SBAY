@@ -127,9 +127,9 @@ export default function StatsDashboard() {
     const chartData = formatDataForChart();
 
     return (
-        <div className="bg-white/80 backdrop-blur-xl rounded-[32px] shadow-xl border border-green-50 px-8 pt-2 pb-4 xl:px-10 relative overflow-hidden">
+        <div className="bg-white/95 backdrop-blur-sm rounded-[32px] shadow-xl border border-green-50 px-8 pt-2 pb-4 xl:px-10 relative overflow-hidden">
             {/* Background blob */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-green-100/50 rounded-full blur-3xl -z-10 transform translate-x-1/3 -translate-y-1/3"></div>
+            <div className="absolute top-0 right-0 w-48 h-48 bg-green-100/40 rounded-full blur-xl -z-10 transform translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
