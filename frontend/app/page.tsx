@@ -25,7 +25,7 @@ export default function Home() {
             <div id="top-section" className="w-full relative z-0 bg-white">
                 <div className="w-full flex flex-col lg:flex-row relative z-10 lg:h-[calc(100vh-4rem)] lg:min-h-[580px] lg:max-h-[740px]">
                     {/* ─── Left Column Wrapper ─── */}
-                    <div className="w-full lg:w-[42%] shrink-0 flex flex-col min-h-[calc(100vh-4rem)] lg:min-h-0 lg:h-full justify-between relative z-10 bg-white">
+                    <div className="w-full lg:w-[42%] shrink-0 flex flex-col lg:min-h-0 lg:h-full justify-between relative z-10 bg-white">
 
                         {/* Green background for the rounded right corners of Hero section (Image 2 style) */}
                         <div
@@ -37,7 +37,7 @@ export default function Home() {
 
                         {/* Hero section */}
                         <div
-                            className="flex flex-col px-5 sm:px-8 xl:px-10 pt-6 sm:pt-8 md:pt-8 pb-3 sm:pb-4 md:pb-5 rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden bg-cover bg-center z-10"
+                            className="flex flex-col px-5 sm:px-8 xl:px-10 pt-5 xs:pt-6 sm:pt-8 md:pt-8 pb-4 sm:pb-5 md:pb-5 rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden bg-cover bg-center z-10"
                             style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                         >
                             {/* Dual-Layer Inner Shadow Overlay over Background Image */}
@@ -45,7 +45,7 @@ export default function Home() {
 
                             {/* Top row: Greeting & User Card */}
                             <div className="flex flex-wrap items-center gap-3 md:gap-3.5 relative z-10">
-                                <h2 className="font-gondens text-6xl xs:text-7xl sm:text-7xl md:text-6xl xl:text-7xl font-bold text-white tracking-normal shrink-0 drop-shadow-md mt-10 sm:mt-4">Hi.</h2>
+                                <h2 className="font-gondens text-5xl xs:text-6xl sm:text-7xl md:text-6xl xl:text-7xl font-bold text-white tracking-normal shrink-0 drop-shadow-md">Hi.</h2>
                                 {!isInitialized ? (
                                     /* Skeleton User Card */
                                     <div className="bg-white/80 rounded-3xl shadow p-3 border border-white/50 animate-pulse w-fit">
@@ -56,13 +56,13 @@ export default function Home() {
                                     </div>
                                 ) : user ? (
                                     /* User Card */
-                                    <div className="bg-[#64964E] rounded-[32px] shadow-md px-6 py-4 sm:px-4 sm:py-4 border border-white/40 w-fit inline-flex items-center sm:mt-4">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-10 h-10 sm:w-20 sm:h-20 bg-black rounded-2xl flex items-center justify-center text-white text-lg sm:text-5xl font-bold shadow-sm shrink-0">
+                                    <div className="bg-[#64964E] rounded-[32px] shadow-md px-3.5 py-2 xs:px-4 xs:py-2 sm:px-5 sm:py-2.5 lg:px-4 lg:py-2 xl:px-6 xl:py-3 border border-white/40 w-fit inline-flex items-center">
+                                        <div className="flex items-center space-x-2.5 sm:space-x-3">
+                                            <div className="w-9 h-9 xs:w-10 xs:h-10 sm:w-11 sm:h-11 xl:w-12 xl:h-12 bg-black rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-base xs:text-lg sm:text-xl xl:text-xl font-bold font-sans shadow-sm shrink-0">
                                                 {(user.username || user.firstName || user.email || '?').charAt(0).toUpperCase()}
                                             </div>
                                             <div className="min-w-0 pr-2">
-                                                <h3 className="font-bold text-white text-base sm:text-lg md:text-5xl leading-tight truncate">
+                                                <h3 className="font-bold font-sans text-white text-sm xs:text-base sm:text-lg md:text-xl leading-tight truncate">
                                                     {user.username || user.firstName || user.email || 'ผู้ใช้งาน'}
                                                 </h3>
                                             </div>
@@ -71,17 +71,17 @@ export default function Home() {
                                 ) : null}
                             </div>
 
-                            {/* Middle section: Headline + Thai Description + About Us */}
-                            <div className="my-auto py-1 sm:py-2 flex flex-col justify-center relative z-10">
+                            {/* Middle section: Headline + Thai Description */}
+                            <div className="my-auto py-3 xs:py-4 sm:py-6 lg:py-1 xl:py-2 flex flex-col justify-center relative z-10">
                                 <div>
-                                    <h1 className="font-gondens text-[2.85rem] xs:text-[3.4rem] sm:text-[4rem] md:text-5xl lg:text-[3.2rem] xl:text-[4rem] leading-[1.3] sm:leading-[1.25] tracking-wide font-normal drop-shadow-md sm:mt-10">
-                                        <span className="block text-white sm:text-[5rem]">WELCOME TO</span>
-                                        <span className="block text-white mt-4 sm:mt-12">SBAY- Platform</span>
+                                    <h1 className="font-gondens text-[2.65rem] xs:text-[3.2rem] sm:text-[3.75rem] md:text-[4.2rem] lg:text-[3.2rem] xl:text-[4rem] leading-[1.18] sm:leading-[1.18] lg:leading-[1.25] tracking-wide font-normal drop-shadow-md">
+                                        <span className="block text-white">WELCOME TO</span>
+                                        <span className="block text-white mt-1.5 sm:mt-2 lg:mt-2 xl:mt-3">SBAY- Platform</span>
                                     </h1>
                                 </div>
 
-                                <div className="mt-6 sm:mt-10 flex flex-col items-center text-center">
-                                    <p className="text-white text-[16px] xs:text-[18px] sm:text-xl font-bold leading-relaxed drop-shadow-md max-w-[98%]">
+                                <div className="mt-4 xs:mt-5 sm:mt-6 lg:mt-6 xl:mt-8 flex flex-col items-center text-center">
+                                    <p className="text-white text-[14px] xs:text-[16px] sm:text-[18px] lg:text-base xl:text-xl font-bold leading-relaxed drop-shadow-md max-w-[98%]">
                                         ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่คุณรีไซเคิล<br />
                                         "เพื่อสิ่งแวดล้อมที่ดีกว่า"
                                     </p>
@@ -115,42 +115,42 @@ export default function Home() {
 
                     {/* ─── Right Column (glass panel with clipped rounded-bl corner) ─── */}
                     <div
-                        className="w-full lg:w-[58%] shrink-0 bg-cover bg-center flex flex-col justify-between px-4 md:px-8 lg:pl-10 xl:pl-12 pr-4 md:pr-8 xl:pr-10 pt-4 md:pt-6 pb-3 md:pb-4 rounded-bl-[2.5rem] overflow-hidden relative z-10 lg:h-full"
+                        className="w-full lg:w-[58%] shrink-0 bg-cover bg-center flex flex-col justify-between px-3 xs:px-4 md:px-8 lg:pl-10 xl:pl-12 pr-3 xs:px-4 md:pr-8 xl:pr-10 pt-4 md:pt-6 pb-3 md:pb-4 rounded-[2rem] sm:rounded-[2.5rem] lg:rounded-none lg:rounded-bl-[2.5rem] overflow-hidden relative z-10 lg:h-full"
                         style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                     >
-                        <div className="absolute inset-0 bg-[#64964E]/40 rounded-bl-[2.5rem] z-0"></div>
-                        <div className="w-full max-w-[840px] rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
+                        <div className="absolute inset-0 bg-[#64964E]/40 rounded-[2rem] sm:rounded-[2.5rem] lg:rounded-none lg:rounded-bl-[2.5rem] z-0"></div>
+                        <div className="w-full max-w-[840px] mx-auto rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
                             <StatsDashboard />
                         </div>
 
                         {/* Row below Statistics Card: About Us (Left) & Sponsors (Right) */}
-                        <div className="flex justify-between items-center pt-2 sm:pt-3 px-1 sm:px-2 pb-0.5 relative z-10 max-w-[840px] w-full">
+                        <div className="flex justify-between items-center pt-2.5 sm:pt-3 px-1 sm:px-2 pb-0.5 relative z-10 max-w-[840px] w-full mx-auto">
                             {/* About Us Button (Bottom-Left of Stats Card) */}
-                            <Link 
-                                href="/about" 
-                                className="font-milker tracking-wider text-black text-sm sm:text-base font-bold px-6 py-2 sm:px-7 sm:py-2.5 bg-[#64964E] hover:bg-[#548041] rounded-full transition shadow-lg border border-white/30 active:scale-95"
+                            <Link
+                                href="/about"
+                                className="font-milker tracking-wider text-[#64964E] text-xs xs:text-sm sm:text-base font-bold px-5 py-2 xs:px-6 xs:py-2 sm:px-7 sm:py-2.5 bg-white/90 hover:bg-white rounded-full transition shadow-lg border border-white/30 active:scale-95"
                             >
                                 about us.
                             </Link>
 
                             {/* Sponsors (Bottom-Right) */}
-                            <div className="flex items-center space-x-3 sm:space-x-4">
-                                <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
-                                <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
-                                    <span className="text-[10px] mt-1 font-semibold text-gray-700/80">(sponsor)</span>
+                            <div className="flex items-center space-x-2 xs:space-x-3 sm:space-x-4">
+                                <div className="w-9 h-9 xs:w-10 xs:h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
+                                <div className="w-9 h-9 xs:w-10 xs:h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
+                                    <span className="text-[9px] xs:text-[10px] mt-1 font-semibold text-gray-700/80">(sponsor)</span>
                                 </div>
-                                <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
+                                <div className="w-9 h-9 xs:w-10 xs:h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
                             </div>
                         </div>
 
                         {/* Statistics Tab — Button to scroll back up to Top Section (Mobile & Desktop) */}
-                        <div className="pt-1 w-full max-w-[840px] flex justify-center relative z-10">
+                        <div className="pt-1 w-full max-w-[840px] mx-auto flex justify-center relative z-10">
                             <button
                                 id="mobile-back-button"
                                 onClick={() => {
                                     document.getElementById('top-section')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
-                                className="w-full bg-white/90 hover:bg-white active:scale-[0.99] transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-4 md:mt-6 scroll-mt-4"
+                                className="w-full bg-white/90 hover:bg-white active:scale-[0.99] transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-3 sm:mt-4 md:mt-6 scroll-mt-4"
                             >
                                 <span className="font-milker tracking-wider text-lg md:text-2xl xl:text-3xl font-bold text-[#64964E]">Back</span>
                                 <i className="fa-solid fa-caret-up text-xl md:text-3xl text-[#64964E] absolute right-6 md:right-8"></i>
