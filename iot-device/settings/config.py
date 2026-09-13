@@ -14,7 +14,7 @@ DEVICE_NAME = os.getenv("DEVICE_NAME", "SBAY Bin")
 DEVICE_LOCATION = os.getenv("DEVICE_LOCATION", "")
 
 # --- Backend Server ---
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8070")
+BACKEND_URL = os.getenv("BACKEND_URL", "https://sbay-platform.online")
 API_BASE = f"{BACKEND_URL}/api"
 DEVICE_SECRET = os.getenv("DEVICE_SECRET")
 if not DEVICE_SECRET:

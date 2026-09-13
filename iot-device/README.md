@@ -11,7 +11,7 @@
 และตั้งค่าข้อมูลที่จำเป็น เช่น:
 ```ini
 DEVICE_ID=BIN-001
-BACKEND_URL=https://<your-cloudflare-tunnel-url>
+BACKEND_URL=https://sbay-platform.online
 DEVICE_SECRET=<your-device-secret>
 
 # --- การตั้งค่าเปิด-ปิดฮาร์ดแวร์ (Hardware Toggles) ---
