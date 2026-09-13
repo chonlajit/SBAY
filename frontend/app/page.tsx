@@ -163,7 +163,7 @@ export default function Home() {
             {/* Middle Section (Actions) */}
             <div id="action-buttons-section" className="relative bg-white overflow-hidden scroll-mt-16 lg:scroll-mt-[115px]">
                 <div className="px-4 md:px-8 xl:px-10 pt-6 md:pt-20 pb-16 md:pb-24">
-                    <div className="flex flex-col lg:flex-row items-center justify-between gap-2 lg:gap-">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-2 lg:gap-4">
                         {/* Left Column: Action Buttons (70%) */}
                         <div className="w-full lg:w-[70%] space-y-5 md:space-y-6">
                             {!isInitialized ? (
