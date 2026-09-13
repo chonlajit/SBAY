@@ -14,11 +14,11 @@ s.start("BIN-001", "u123", "Test User")
 calc = ScoreCalculator()
 est = SizeEstimator()
 
-# จำลองหยอดขยะ 3 ชิ้น
-test_items = ["CLEAR_BOTTLE", "ALUMINUM_CAN", "GLASSES_BOTTLE"]
+# จำลองหยอดขยะ 4 ชนิดรวมถึง CARTON และ MILK
+test_items = ["CLEAR_BOTTLE", "ALUMINUM_CAN", "BEVERAGE_CARTON", "MILK"]
 
 for t in test_items:
-    ml = est.get_size_ml(150)
+    ml = est.get_size_ml(150, 300)
     result = calc.calculate(t, ml)
     s.add_item(t, ml, result["weight"], result["score"])
 
@@ -34,4 +34,3 @@ for item in payload["items"]:
     print(f"  - {item['type']} | {item['ml']}ml | score={item['score']}")
 
 print("\n[OK] All modules working correctly!")
-

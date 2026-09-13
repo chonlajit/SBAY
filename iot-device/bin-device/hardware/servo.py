@@ -140,21 +140,33 @@ def reset_position():
 def sort_item(label):
     mapping = {
         "PLASTIC_BOTTLE": SORT_ANGLE_PLASTIC,
+        "CLEAR_BOTTLE": SORT_ANGLE_PLASTIC,
+        "BOTTLE": SORT_ANGLE_PLASTIC,
         "ALUMINUM_CAN": SORT_ANGLE_CAN,
+        "CAN": SORT_ANGLE_CAN,
+        "CANNED": SORT_ANGLE_CAN,
         "BEVERAGE_CARTON": SORT_ANGLE_CARTON,
+        "CARTON": SORT_ANGLE_CARTON,
+        "MILK": SORT_ANGLE_CARTON,
         "RETURN": SORT_ANGLE_RETURN
     }
-    angle = mapping.get(label, DEFAULT_SORT_ANGLE)
+    angle = mapping.get(str(label).upper(), DEFAULT_SORT_ANGLE)
     set_angle(SERVO_SORT_PIN, angle)
 
 def release_item(label="PLASTIC_BOTTLE"):
     mapping = {
         "PLASTIC_BOTTLE": RELEASE_ANGLE_PLASTIC,
+        "CLEAR_BOTTLE": RELEASE_ANGLE_PLASTIC,
+        "BOTTLE": RELEASE_ANGLE_PLASTIC,
         "ALUMINUM_CAN": RELEASE_ANGLE_CAN,
+        "CAN": RELEASE_ANGLE_CAN,
+        "CANNED": RELEASE_ANGLE_CAN,
         "BEVERAGE_CARTON": RELEASE_ANGLE_CARTON,
+        "CARTON": RELEASE_ANGLE_CARTON,
+        "MILK": RELEASE_ANGLE_CARTON,
         "RETURN": RELEASE_ANGLE_RETURN
     }
-    angle = mapping.get(label, 45)
+    angle = mapping.get(str(label).upper(), 45)
     
     set_angle(SERVO_RELEASE_PIN, angle)
     time.sleep(1)

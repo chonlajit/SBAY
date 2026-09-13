@@ -178,12 +178,18 @@ class DetectionService:
         # แปลงชื่อคลาสจาก AI ให้ตรงกับที่ระบบตั้งไว้ (เผื่อใช้โมเดลคนละเวอร์ชัน)
         label_map = {
             "CLEAR_BOTTLE": "PLASTIC_BOTTLE",
+            "OPAQUE_BOTTLE": "PLASTIC_BOTTLE",
             "BOTTLE": "PLASTIC_BOTTLE",
             "PLASTIC_BOTTLE": "PLASTIC_BOTTLE",
             "CAN": "ALUMINUM_CAN",
+            "CANNED": "ALUMINUM_CAN",
             "ALUMINUM_CAN": "ALUMINUM_CAN",
+            "CRAZYWOLF": "ALUMINUM_CAN",
+            "HELL": "ALUMINUM_CAN",
             "CARTON": "BEVERAGE_CARTON",
-            "BEVERAGE_CARTON": "BEVERAGE_CARTON"
+            "BEVERAGE_CARTON": "BEVERAGE_CARTON",
+            "MILK": "BEVERAGE_CARTON",
+            "BA": "BEVERAGE_CARTON",
         }
         raw_label = best["label"].upper()
         label = label_map.get(raw_label, raw_label)

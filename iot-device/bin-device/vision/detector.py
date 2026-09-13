@@ -7,14 +7,30 @@ class Detector:
     def __init__(self, model_path):
         self.model = YOLO(model_path)
         
-        # แมปชื่อคลาสจากโมเดลเทรนเอง -> ชื่อคงที่ใน config.py (PRICE_PER_KG)
+        # แมปชื่อคลาสจากโมเดลเทรนเอง -> ชื่อมาตรฐานของระบบ SBAY
         self.label_mapping = {
-            "Clear Plastic": "CLEAR_BOTTLE",
+            # คลาสจากโมเดล Custom YOLO v7 (best.pt)
+            "milk": "BEVERAGE_CARTON",
             "canned": "ALUMINUM_CAN",
-            "Opaque Plastic": "OPAQUE_BOTTLE",
+            "bottle": "PLASTIC_BOTTLE",
+            "ba": "BEVERAGE_CARTON",
+            "CrazyWolf": "ALUMINUM_CAN",
+            "Hell": "ALUMINUM_CAN",
+
+            # ชื่อคลาสอื่นๆ หรือโมเดลรุ่นก่อนหน้า
+            "Milk": "BEVERAGE_CARTON",
+            "Carton": "BEVERAGE_CARTON",
+            "CARTON": "BEVERAGE_CARTON",
+            "BEVERAGE_CARTON": "BEVERAGE_CARTON",
+            "Bottle": "PLASTIC_BOTTLE",
+            "PLASTIC_BOTTLE": "PLASTIC_BOTTLE",
+            "Clear Plastic": "PLASTIC_BOTTLE",
+            "CLEAR_BOTTLE": "PLASTIC_BOTTLE",
+            "Opaque Plastic": "PLASTIC_BOTTLE",
+            "Can": "ALUMINUM_CAN",
+            "CAN": "ALUMINUM_CAN",
+            "ALUMINUM_CAN": "ALUMINUM_CAN",
             "Glass": "GLASSES_BOTTLE",
-            "Bottle": "CLEAR_BOTTLE",
-            "Can": "ALUMINUM_CAN"
         }
 
     def _find_rotated_box(self, roi, x1, y1, x2, y2):
@@ -107,9 +123,15 @@ class Detector:
             conf_val = float(box.conf[0])
 
             # แปลงชื่อจาก Custom Model เป็นชื่อที่ระบบ Score ยอมรับ
-            sbay_label = self.label_mapping.get(label_name)
+            clean_name = str(label_name).strip()
+            sbay_label = self.label_mapping.get(clean_name)
             if not sbay_label:
-                sbay_label = "CLEAR_BOTTLE"
+                for k, v in self.label_mapping.items():
+                    if k.lower() == clean_name.lower():
+                        sbay_label = v
+                        break
+            if not sbay_label:
+                sbay_label = clean_name.upper()
 
             x1, y1, x2, y2 = map(int, box.xyxy[0])
             # ป้องกันพิกัดหลุดขอบภาพ
@@ -155,7 +177,11 @@ class Detector:
                 anchor_y = int(min(box_pts[:, 1]))
 
                 angle_str = f" ({abs(tilt_deg):.0f}deg)" if abs(tilt_deg) > 3 else ""
-                label_text = f"{sbay_label} {conf_val*100:.0f}%{angle_str}"
+                if clean_name.lower() in sbay_label.lower():
+                    display_label = sbay_label
+                else:
+                    display_label = f"{sbay_label} ({clean_name})"
+                label_text = f"{display_label} {conf_val*100:.0f}%{angle_str}"
                 size_text = f"W:{width:.0f}px({w_cm:.1f}cm) H:{height:.0f}px({h_cm:.1f}cm) {text_vol}"
 
                 # วาดแถบพื้นหลังสีเข้มให้อ่านง่าย
