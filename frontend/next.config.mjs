@@ -3,7 +3,7 @@ const nextConfig = {
     output: 'standalone',
     devIndicators: {
         appIsrStatus: false,
-        buildActivityPosition: 'bottom-right',
+        buildActivity: false,
     },
     eslint: {
         ignoreDuringBuilds: true,

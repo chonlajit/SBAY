@@ -5,8 +5,13 @@ import MainLayout from "./components/MainLayout";
 import GoogleAuthProvider from "./components/GoogleAuthProvider";
 
 export const metadata: Metadata = {
-  title: "SBAY - Smart Recycling Platform",
+  title: "SBAY-Platform",
   description: "ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่รีไซเคิล",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -17,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" sizes="any" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#16a34a" />
         <meta name="mobile-web-app-capable" content="yes" />

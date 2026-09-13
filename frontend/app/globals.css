@@ -38,4 +38,10 @@ select,
 textarea {
   font-size: 16px;
 }
-/* Force rebuild */
+
+/* Hide Next.js Dev Indicator & Error Toast pill */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dialog-overlay] {
+  display: none !important;
+}
