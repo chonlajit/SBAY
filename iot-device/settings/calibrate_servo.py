@@ -41,8 +41,8 @@ def run_calibration():
         while True:
             cam_window.set_status("Select servo (1-4) in terminal")
             print("\nเลือก Servo ที่ต้องการทดสอบ:")
-            print("1. Servo Sort (ตัวปัดคัดแยกขยะ - ค่าปัจจุบัน: พลาสติก 260°, กระป๋อง 200°, กล่อง 320°, คืนขวด 140°)")
-            print("2. Servo Release (ตัวแผ่นรองปล่อยขยะ - ค่าปัจจุบัน: 60°-104°)")
+            print("1. Servo Sort (ตัวปัดคัดแยกขยะ - ค่าปัจจุบัน: พลาสติก 265°, กระป๋อง 200°, กล่อง 320°, คืนขวด 135°)")
+            print("2. Servo Release (ตัวแผ่นรองปล่อยขยะ - ค่าปัจจุบัน: 55°-145°)")
             print("3. Servo Drop (ตัวเปิดรับขวด)")
             print("4. Servo Return (ตัวคืนขวด)")
             print("5. ออกจากโปรแกรม (หรือกด Ctrl+C)")
