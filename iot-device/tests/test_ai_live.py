@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(root_dir, 'bin-device'))
 sys.path.insert(0, root_dir)
 
 from settings.config import (
-    MODEL_PATH,
+    MODEL_PATH, CONF_THRESHOLD,
     CROP_TOP_PCT, CROP_BOTTOM_PCT, CROP_LEFT_PCT, CROP_RIGHT_PCT,
     DEFAULT_SORT_ANGLE, SORT_ANGLE_PLASTIC, SORT_ANGLE_CAN,
     SORT_ANGLE_CARTON, SORT_ANGLE_RETURN
@@ -107,6 +107,7 @@ def main():
     cv2.createTrackbar("Left (%)", "Settings", int(CROP_LEFT_PCT * 100), 100, nothing)
     cv2.createTrackbar("Right (%)", "Settings", int(CROP_RIGHT_PCT * 100), 100, nothing)
     cv2.createTrackbar("Sort Angle", "Settings", int(DEFAULT_SORT_ANGLE), 360, nothing)
+    cv2.createTrackbar("Confidence (%)", "Settings", int(CONF_THRESHOLD * 100), 100, nothing)
 
     last_trackbar_angle = int(DEFAULT_SORT_ANGLE)
 
@@ -125,6 +126,11 @@ def main():
             left_pct = cv2.getTrackbarPos("Left (%)", "Settings")
             right_pct = cv2.getTrackbarPos("Right (%)", "Settings")
             trackbar_angle = cv2.getTrackbarPos("Sort Angle", "Settings")
+            conf_pct = cv2.getTrackbarPos("Confidence (%)", "Settings")
+
+            # อัปเดต CONF_THRESHOLD ใน config แบบเรียลไทม์
+            import settings.config as _cfg
+            _cfg.CONF_THRESHOLD = max(0.05, conf_pct / 100.0)
 
             # เช็คว่าผู้ใช้เลื่อน Slider องศาหรือไม่
             if trackbar_angle != last_trackbar_angle:
@@ -160,7 +166,7 @@ def main():
                 servo_status = "MOVING..." if is_servo_moving else "STABLE"
                 info_text1 = f"Found: {len(detections)} items"
                 info_text2 = f"Sort Angle: {current_servo_angle} deg [{servo_status}]"
-                info_text3 = f"Crop Y:{top_pct}-{bottom_pct}% | X:{left_pct}-{right_pct}%"
+                info_text3 = f"Conf: {conf_pct}% | Crop Y:{top_pct}-{bottom_pct}% | X:{left_pct}-{right_pct}%"
                 
                 cv2.putText(annotated_frame_bgr, info_text1, (10, 30), 
                             cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
@@ -177,7 +183,8 @@ def main():
             if key == 27 or key == ord('q'):
                 print("🛑 ได้รับคำสั่งหยุดการทำงาน...")
                 print("\n" + "="*45)
-                print("📌 ค่าคอนฟิก Crop ล่าสุด:")
+                print("📌 ค่าคอนฟิก Crop และ Confidence ล่าสุด:")
+                print(f"CONF_THRESHOLD  = {conf_pct/100:.2f}")
                 print(f"CROP_TOP_PCT    = {top_pct/100:.2f}")
                 print(f"CROP_BOTTOM_PCT = {bottom_pct/100:.2f}")
                 print(f"CROP_LEFT_PCT   = {left_pct/100:.2f}")

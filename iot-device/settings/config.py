@@ -82,13 +82,14 @@ for _candidate in _candidate_models:
     if os.path.exists(_candidate):
         MODEL_PATH = _candidate
         break
-CONF_THRESHOLD = 0.7
+CONF_THRESHOLD = 0.5
 STABLE_FRAMES = 5       # ต้อง detect ซ้ำกี่เฟรมถึงจะยืนยัน
 COOLDOWN = 3             # วินาที ระหว่างการ detect แต่ละชิ้น
 DETECT_TIMEOUT = 10      # วินาที ถ้า detect ไม่ได้ให้ timeout
 
 # --- AI Detection Crop Area & Camera ---
 CAMERA_ROTATION = 270
+USE_ROTATED_BBOX = True   # ปรับกรอบ Bounding Box ให้เอียงตามรูปทรงขวดจริง
 CROP_TOP_PCT = 0.23
 CROP_BOTTOM_PCT = 0.70
 CROP_LEFT_PCT = 0.26
