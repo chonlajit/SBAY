@@ -25,6 +25,8 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['Prompt', 'var(--font-prompt)', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        honfleur: ['Honfleur', 'sans-serif'],
+        retro: ['"Super Retro M54"', 'sans-serif'],
       },
     },
   },
