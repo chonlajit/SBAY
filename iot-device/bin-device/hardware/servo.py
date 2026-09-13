@@ -131,6 +131,46 @@ def set_angle(pin, angle):
         if not KEEP_TORQUE:
             target.change_duty_cycle(0)
 
+def hold_torque(pin=SERVO_RELEASE_PIN, angle=None):
+    """
+    ส่งสัญญาณ PWM ค้างไว้ เพื่อล็อกตำแหน่งแกนมอเตอร์ให้ 'เกร็งสู้' แรงกระแทกของขวดที่ตกลงมา
+    """
+    if pin in [SERVO_DROP_PIN, SERVO_RETURN_PIN]:
+        if not SOFTWARE_PWM_ENABLED:
+            return
+        target = drop_motor if pin == SERVO_DROP_PIN else return_motor
+        ang = angle if angle is not None else (DROP_ANGLE_CLOSED if pin == SERVO_DROP_PIN else RETURN_ANGLE_CLOSED)
+        if target:
+            target.angle = ang
+    else:
+        if not HARDWARE_PWM_ENABLED:
+            return
+        target = sort_servo if pin == SERVO_SORT_PIN else release_servo
+        max_scale = 360.0 if pin == SERVO_SORT_PIN else 180.0
+        ang = angle if angle is not None else (DEFAULT_SORT_ANGLE if pin == SERVO_SORT_PIN else DEFAULT_RELEASE_ANGLE)
+        duty_cycle = 2.5 + (ang / max_scale) * 10.0
+        target.change_duty_cycle(duty_cycle)
+
+def release_torque(pin=None):
+    """
+    ตัดสัญญาณไฟเพื่อพักมอเตอร์ ไม่ให้ร้อน
+    """
+    if pin is None:
+        if HARDWARE_PWM_ENABLED:
+            sort_servo.change_duty_cycle(0)
+            release_servo.change_duty_cycle(0)
+        if SOFTWARE_PWM_ENABLED:
+            if drop_motor: drop_motor.value = None
+            if return_motor: return_motor.value = None
+    elif pin == SERVO_SORT_PIN and HARDWARE_PWM_ENABLED:
+        sort_servo.change_duty_cycle(0)
+    elif pin == SERVO_RELEASE_PIN and HARDWARE_PWM_ENABLED:
+        release_servo.change_duty_cycle(0)
+    elif pin == SERVO_DROP_PIN and SOFTWARE_PWM_ENABLED and drop_motor:
+        drop_motor.value = None
+    elif pin == SERVO_RETURN_PIN and SOFTWARE_PWM_ENABLED and return_motor:
+        return_motor.value = None
+
 def reset_position():
     set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)
     set_angle(SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE)

@@ -18,7 +18,8 @@ sys.path.insert(0, root_dir)
 
 from settings.config import (
     DEVICE_ID, USE_GUI, USE_IR, USE_RESET_BUTTONS,
-    DETECT_TIMEOUT, SORT_ANGLE_RETURN, RELEASE_ANGLE_RETURN
+    DETECT_TIMEOUT, SORT_ANGLE_RETURN, RELEASE_ANGLE_RETURN,
+    SERVO_HOLD_ON_DROP
 )
 from api_client import ApiClient
 from heartbeat_service import HeartbeatService
@@ -203,6 +204,15 @@ class SmartBinController:
                 if USE_IR:
                     if self.gui:
                         self.gui.schedule(self.gui.update_status, "กำลังรับขยะเข้าสู่ช่องวิเคราะห์...", "#eab308")
+
+                    # 🛡️ สั่งให้ Release Servo เกร็งสู้ ล็อกตำแหน่งรองรับขวดก่อนเปิดบานพับตก
+                    if SERVO_HOLD_ON_DROP:
+                        try:
+                            from hardware.servo import hold_torque, SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE
+                            hold_torque(SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE)
+                            logger.info("Engaged Release Servo hold torque (เกร็งสู้แรงกระแทกขวดตก)")
+                        except Exception as e:
+                            logger.warning(f"Failed to engage hold torque: {e}")
                     
                     self.detection.drop_item()  # เปิดบานพับให้ของตกเข้ามา
                     
@@ -211,6 +221,14 @@ class SmartBinController:
                     
                     self.detection.start_camera()
                     time.sleep(1.0) # Wait for camera warmup
+                else:
+                    # กรณีไม่ใช้ IR ให้เกร็งสู้เมื่อเริ่มวิเคราะห์เช่นกัน
+                    if SERVO_HOLD_ON_DROP:
+                        try:
+                            from hardware.servo import hold_torque, SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE
+                            hold_torque(SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE)
+                        except Exception:
+                            pass
                 
                 # เปลี่ยนสถานะว่า "กำลังมีของอยู่ข้างในตู้ ให้กล้องวิเคราะห์ต่อไปเรื่อยๆ"
                 processing_item = True

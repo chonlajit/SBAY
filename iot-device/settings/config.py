@@ -105,10 +105,11 @@ REF_WIDTH_CM = 5.6
 REF_WIDTH_PX = 171
 REF_HEIGHT_CM = 14.5
 REF_HEIGHT_PX = 360
-DISTANCE_CM = 40.0
-FOCAL_LENGTH_PX = 1016  # (REF_WIDTH_PX * DISTANCE_CM) / REF_WIDTH_CM
+DISTANCE_CM = 34.0  # ระยะห่างจากกล้องถึงพื้นวางขวด (เดิม 40.0cm)
+FOCAL_LENGTH_PX = int((REF_WIDTH_PX * DISTANCE_CM) / REF_WIDTH_CM)  # คำนวณจากระยะ 34cm (~1038)
 CORRECTION_FACTOR = 0.98  # ปรับเป็น 1.00 เพื่อดึง 350ml ลงมาที่ 324ml
 MIN_HEIGHT_PX = 100
+SERVO_HOLD_ON_DROP = True  # เกร็งสู้แรงกระแทกเมื่อมีขวดตกใส่แผ่นรอง
 
 ML_RANGES = [
     # (min_ml, max_ml, label_ml)
