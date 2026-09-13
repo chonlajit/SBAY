@@ -23,30 +23,19 @@ export default function Home() {
                 Locked to max-w-[1440px] with responsive split background for larger screens
             */}
             <div id="top-section" className="w-full relative z-0 bg-white">
-                {/* Background Extension on Ultrawide screens (> 1440px) */}
-                <div className="hidden lg:flex absolute inset-0 pointer-events-none z-0">
-                    <div className="w-[42%] bg-white"></div>
-                    <div 
-                        className="w-[58%] bg-cover bg-center relative rounded-bl-[2.5rem] overflow-hidden"
-                        style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
-                    >
-                        <div className="absolute inset-0 bg-[#64964E]/40 rounded-bl-[2.5rem]"></div>
-                    </div>
-                </div>
-
-                <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row relative z-10 lg:h-[calc(100vh-4rem)] lg:min-h-[580px] lg:max-h-[740px]">
+                <div className="w-full flex flex-col lg:flex-row relative z-10 lg:h-[calc(100vh-4rem)] lg:min-h-[580px] lg:max-h-[740px]">
                     {/* ─── Left Column Wrapper ─── */}
-                    <div className="w-full lg:w-[42%] shrink-0 flex flex-col min-h-[calc(100vh-4rem)] lg:min-h-0 lg:h-full justify-between relative z-10">
+                    <div className="w-full lg:w-[42%] shrink-0 flex flex-col min-h-[calc(100vh-4rem)] lg:min-h-0 lg:h-full justify-between relative z-10 bg-white">
                         
-                        {/* Gap filler for the right edge gaps (stops above bottom curve to prevent sharp green corner leakage) */}
+                        {/* Green background for the rounded right corners of Hero section (Image 2 style) */}
                         <div 
-                            className="hidden lg:block absolute right-0 top-0 bottom-28 w-1/2 bg-cover bg-center z-0"
+                            className="hidden lg:block absolute right-0 top-0 bottom-0 w-24 bg-cover bg-center z-0"
                             style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                         >
                             <div className="absolute inset-0 bg-[#64964E]/40"></div>
                         </div>
 
-                        {/* Hero section (Opaque with its own background image to completely hide the gap filler) */}
+                        {/* Hero section */}
                         <div 
                             className="flex flex-col px-4 md:px-8 xl:px-10 pt-6 md:pt-8 pb-3 md:pb-5 rounded-[2.5rem] rounded-tl-none flex-1 justify-between relative overflow-hidden bg-cover bg-center z-10"
                             style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
@@ -132,12 +121,12 @@ export default function Home() {
                         style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                     >
                         <div className="absolute inset-0 bg-[#64964E]/40 rounded-bl-[2.5rem] z-0"></div>
-                        <div className="w-full rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
+                        <div className="w-full max-w-[840px] rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
                             <StatsDashboard />
                         </div>
 
                         {/* Sponsors */}
-                        <div className="flex justify-end space-x-4 pt-1 pr-2 pb-0.5 relative z-10">
+                        <div className="flex justify-end space-x-4 pt-1 pr-2 pb-0.5 relative z-10 max-w-[840px] w-full">
                             <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
                             <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
                                 <span className="text-[10px] mt-1 font-semibold text-gray-700/80">(sponsor)</span>
@@ -146,7 +135,7 @@ export default function Home() {
                         </div>
 
                         {/* Statistics Tab — Button to scroll back up to Top Section (Mobile & Desktop) */}
-                        <div className="pt-1 w-full flex justify-center relative z-10">
+                        <div className="pt-1 w-full max-w-[840px] flex justify-center relative z-10">
                             <button
                                 id="mobile-back-button"
                                 onClick={() => {
