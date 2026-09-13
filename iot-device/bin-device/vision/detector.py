@@ -9,28 +9,15 @@ class Detector:
         
         # แมปชื่อคลาสจากโมเดลเทรนเอง -> ชื่อมาตรฐานของระบบ SBAY
         self.label_mapping = {
-            # คลาสจากโมเดล Custom YOLO v7 (best.pt)
-            "milk": "BEVERAGE_CARTON",
-            "canned": "ALUMINUM_CAN",
+            # 3 คลาสหลักที่คุณเทรนจริง
             "bottle": "PLASTIC_BOTTLE",
-            "ba": "BEVERAGE_CARTON",
+            "canned": "ALUMINUM_CAN",
+            "milk": "BEVERAGE_CARTON",
+
+            # 3 คลาสที่ติดมาจาก Dataset ต้นแบบ (ป้องกันกรณีโมเดลทายหลุด)
             "CrazyWolf": "ALUMINUM_CAN",
             "Hell": "ALUMINUM_CAN",
-
-            # ชื่อคลาสอื่นๆ หรือโมเดลรุ่นก่อนหน้า
-            "Milk": "BEVERAGE_CARTON",
-            "Carton": "BEVERAGE_CARTON",
-            "CARTON": "BEVERAGE_CARTON",
-            "BEVERAGE_CARTON": "BEVERAGE_CARTON",
-            "Bottle": "PLASTIC_BOTTLE",
-            "PLASTIC_BOTTLE": "PLASTIC_BOTTLE",
-            "Clear Plastic": "PLASTIC_BOTTLE",
-            "CLEAR_BOTTLE": "PLASTIC_BOTTLE",
-            "Opaque Plastic": "PLASTIC_BOTTLE",
-            "Can": "ALUMINUM_CAN",
-            "CAN": "ALUMINUM_CAN",
-            "ALUMINUM_CAN": "ALUMINUM_CAN",
-            "Glass": "GLASSES_BOTTLE",
+            "ba": "BEVERAGE_CARTON",
         }
 
     def _find_rotated_box(self, roi, x1, y1, x2, y2):
