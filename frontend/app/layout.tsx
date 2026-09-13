@@ -5,7 +5,7 @@ import MainLayout from "./components/MainLayout";
 import GoogleAuthProvider from "./components/GoogleAuthProvider";
 
 export const metadata: Metadata = {
-  title: "SBAY-Platform",
+  title: "SBAY Platform",
   description: "ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่รีไซเคิล",
   icons: {
     icon: "/icon.svg",
