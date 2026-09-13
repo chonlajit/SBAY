@@ -48,7 +48,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://143.14.36.198/api
+      - NEXT_PUBLIC_API_URL=https://sbay-platform.online/api
       - NODE_OPTIONS=--max-old-space-size=384 # ปรับลดแรม Node.js เหลือ 384MB
     depends_on:
       - backend
