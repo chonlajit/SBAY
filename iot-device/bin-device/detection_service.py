@@ -30,15 +30,15 @@ if USE_HARDWARE:
         from hardware.servo import sort_item, release_item, drop_item
     else:
         def sort_item(label): logger.debug(f"[SIMULATE] sort → {label}")
-        def release_item(): logger.debug("[SIMULATE] release")
+        def release_item(label="PLASTIC_BOTTLE"): logger.debug(f"[SIMULATE] release → {label}")
         def drop_item(): logger.debug("[SIMULATE] drop item")
 else:
     def ir_detected():
         return True
     def sort_item(label):
         logger.debug(f"[SIMULATE] sort → {label}")
-    def release_item():
-        logger.debug("[SIMULATE] release")
+    def release_item(label="PLASTIC_BOTTLE"):
+        logger.debug(f"[SIMULATE] release → {label}")
     def drop_item():
         logger.debug("[SIMULATE] drop item")
 

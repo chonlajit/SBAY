@@ -28,18 +28,15 @@ if USE_HARDWARE:
         from hardware.servo import sort_item, release_item, cleanup
     else:
         def sort_item(label): print(f"[SIMULATE] sort → {label}")
-        def release_item(): print("[SIMULATE] release")
+        def release_item(label="PLASTIC_BOTTLE"): print(f"[SIMULATE] release → {label}")
         def cleanup(): pass
 else:
-    def is_detected():
+    def ir_detected():
         return True
-
     def sort_item(label):
         print(f"[SIMULATE] sort → {label}")
-
-    def release_item():
-        print("[SIMULATE] release")
-
+    def release_item(label="PLASTIC_BOTTLE"):
+        print(f"[SIMULATE] release → {label}")
     def cleanup():
         pass
 
