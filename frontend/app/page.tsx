@@ -45,10 +45,10 @@ export default function Home() {
 
                             {/* Top row: Greeting & User Card */}
                             <div className="flex flex-wrap items-center gap-3 md:gap-3.5 relative z-10">
-                                <h2 className="font-gondens text-5xl md:text-6xl xl:text-7xl font-bold text-white tracking-normal shrink-0 drop-shadow-md md:mt-2 xl:mt-2">HI.</h2>
+                                <h2 className="font-gondens text-5xl md:text-6xl xl:text-7xl font-bold text-white tracking-normal shrink-0 drop-shadow-md mt-12 md:mt-8 xl:mt-4">HI.</h2>
                                 {!isInitialized ? (
                                     /* Skeleton User Card */
-                                    <div className="bg-white/80 rounded-xl xl:rounded-3xl shadow p-3 border border-white/50 animate-pulse w-fit">
+                                    <div className="bg-white/80 rounded-xl xl:rounded-3xl shadow p-3 border border-white/50 animate-pulse w-fit mt-12 md:mt-8 xl:mt-4">
                                         <div className="flex items-center space-x-3">
                                             <div className="w-10 h-10 bg-gray-200 rounded-2xl"></div>
                                             <div className="h-4 bg-gray-200 rounded w-24"></div>
@@ -56,7 +56,7 @@ export default function Home() {
                                     </div>
                                 ) : user ? (
                                     /* User Card */
-                                    <div className="bg-[#64964E] rounded-xl xl:rounded-[32px] shadow-md px-4 py-2.5 md:px-6 md:py-4 xl:px-4 xl:py-4 border border-white/40 w-fit inline-flex items-center xl:mt-2">
+                                    <div className="bg-[#64964E] rounded-xl xl:rounded-[32px] shadow-md px-4 py-2.5 md:px-6 md:py-4 xl:px-4 xl:py-4 border border-white/40 w-fit inline-flex items-center mt-12 md:mt-8 xl:mt-4">
                                         <div className="flex items-center space-x-3">
                                             <div className="w-13 h-13 md:w-15 md:h-15 xl:w-20 xl:h-20 bg-black rounded-lg xl:rounded-2xl flex items-center justify-center text-white text-4xl px-4 py-2 md:px-4 md:py-2 md:text-5xl xl:text-5xl font-bold shadow-sm shrink-0">
                                                 {(user.username || user.firstName || user.email || '?').charAt(0).toUpperCase()}
@@ -68,20 +68,24 @@ export default function Home() {
                                             </div>
                                         </div>
                                     </div>
-                                ) : null}
+                                ) : (
+                                    <span className="font-gondens text-5xl md:text-6xl xl:text-7xl font-bold text-white tracking-normal drop-shadow-md mt-12 md:mt-8 xl:mt-4">
+                                        EVERYONE
+                                    </span>
+                                )}
                             </div>
 
                             {/* Middle section: Headline + Thai Description + About Us */}
-                            <div className="my-auto py-1 sm:py-2 flex flex-col justify-center relative z-10">
+                            <div className="my-auto flex flex-col justify-center relative z-10">
                                 <div>
-                                    <h1 className="font-gondens leading-[1.3] sm:leading-[1.25] tracking-wide font-normal drop-shadow-md md:mt-2 xl:mt-12">
-                                        <span className="block text-white xl:text-[5rem] md:text-[4rem] text-[3.75rem] ">WELCOME TO</span>
-                                        <span className="block text-white xl:text-[4rem] md:text-[3.25rem] text-[3rem] mt-5 md:mt-6 xl:mt-7">SBAY- Platform</span>
+                                    <h1 className="font-gondens tracking-wide font-normal drop-shadow-md mt-2 md:mt-8 xl:mt-10">
+                                        <span className="text-white xl:text-[5rem] md:text-[4rem] text-[3.25rem] ">WELCOME TO</span>
+                                        <span className="block text-white xl:text-[4.25rem] md:text-[3.4rem] text-[2.735rem] mt-2 md:mt-2 xl:mt-1">SBAY Platform</span>
                                     </h1>
                                 </div>
 
                                 <div className="mt-6 sm:mt-10 flex flex-col items-center xl:text-center md:items-end md:text-right text-center">
-                                    <p className="text-white text-[0.9rem] xl:text-[1.5rem] sm:text-xl font-bold leading-relaxed drop-shadow-md max-w-[98%] xl:mt-8 md:mt-6 mt-6">
+                                    <p className="text-white xl:text-[1.4rem] md:text-[1.3rem] text-[0.85rem] font-bold leading-relaxed drop-shadow-md max-w-[98%] xl:mt-0 md:mt-2 mt-6">
                                         ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่คุณรีไซเคิล<br />
                                         "เพื่อสิ่งแวดล้อมที่ดีกว่า"
                                     </p>
@@ -91,7 +95,8 @@ export default function Home() {
 
                         {/* White section (Feature tab) — top-right rounded curve against green background */}
                         <div className="relative z-10">
-                            <div id="features-section" className="flex w-full bg-white rounded-tr-[2.5rem] rounded-br-none flex-col justify-center px-4 md:px-8 xl:px-10 pt-3 md:pt-4 pb-3 md:pb-4 relative shrink-0 z-10">
+                            <div id="features-section" className="flex w-full bg-white rounded-tr-[2.5rem] rounded-br-none flex-col justify-center px-4
+                            md:px-8 xl:px-10 pt-3 md:pt-4 pb-3 md:pb-4 relative shrink-0 z-10">
                                 <button
                                     type="button"
                                     onClick={(e) => {
@@ -119,12 +124,12 @@ export default function Home() {
                         style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                     >
                         <div className="absolute inset-0 bg-[#64964E]/40 rounded-bl-[2.5rem] z-0"></div>
-                        <div className="w-full max-w-[840px] rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
+                        <div className="w-full max-w-[940px] rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
                             <StatsDashboard />
                         </div>
 
                         {/* Row below Statistics Card: About Us (Left) & Sponsors (Right) */}
-                        <div className="flex justify-between items-center pt-2 sm:pt-3 px-1 sm:px-2 pb-0.5 relative z-10 max-w-[840px] w-full">
+                        <div className="flex justify-between items-center pt-2 sm:pt-3 px-1 sm:px-2 pb-0.5 relative z-10 max-w-[940px] w-full">
                             {/* About Us Button (Bottom-Left of Stats Card) */}
                             <Link
                                 href="/about"
@@ -144,7 +149,7 @@ export default function Home() {
                         </div>
 
                         {/* Statistics Tab — Button to scroll back up to Top Section (Mobile & Desktop) */}
-                        <div className="pt-1 w-full max-w-[840px] flex justify-center relative z-10">
+                        <div className="pt-1 w-full max-w-[940px] flex justify-center relative z-10">
                             <button
                                 id="mobile-back-button"
                                 onClick={() => {
@@ -161,7 +166,7 @@ export default function Home() {
             </div>{/* end top section flex row */}
 
             {/* Middle Section (Actions) */}
-            <div id="action-buttons-section" className="relative bg-white overflow-hidden scroll-mt-16 lg:scroll-mt-[115px]">
+            <div id="action-buttons-section" className="relative bg-white overflow-hidden scroll-mt-0 xl:scroll-mt-[95px]">
                 <div className="px-4 md:px-8 xl:px-10 pt-6 md:pt-20 pb-16 md:pb-24">
                     <div className="flex flex-col lg:flex-row items-center justify-between gap-2 lg:gap-4">
                         {/* Left Column: Action Buttons (70%) */}
@@ -228,15 +233,15 @@ export default function Home() {
                                 </div>
                             ) : (
                                 /* Guest Features */
-                                <div className="space-y-11 md:space-y-14 flex flex-col items-center md:items-start">
+                                <div className="space-y-16 md:space-y-10 xl:space-y-20 flex flex-col items-center md:items-start md:mt-0 mt-10">
                                     <Link href="/login?redirect=/" className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
                                         <div className="group bg-black text-white hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center shadow-md shrink-0">
-                                            <span className="font-milker tracking-wider text-xl md:text-4xl lg:text-5xl font-bold my-auto leading-none flex-1 text-center md:text-left">LOG IN</span>
+                                            <span className="font-milker tracking-wider text-4xl md:text-6xl xl:text-6xl font-bold my-auto leading-none flex-1 text-center md:text-left">SIGN IN</span>
                                             <div className="w-12 h-12 md:w-[96px] md:h-[96px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">
                                                 <i className="fa-solid fa-right-to-bracket text-2xl md:text-5xl"></i>
                                             </div>
                                         </div>
-                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 text-gray-700 text-base md:text-xl lg:text-2xl font-medium leading-relaxed text-left px-4 md:px-0">
+                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 text-gray-700 text-lg md:text-xl xl:text-2xl font-medium leading-relaxed text-left px-4 md:px-0">
                                             ดูสถิติและประวัติของคุณ <br className="hidden md:block" />
                                             แลกแต้มสะสมเป็นของรางวัล
                                         </div>
@@ -244,12 +249,12 @@ export default function Home() {
 
                                     <div className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
                                         <div className="group bg-white text-gray-700 hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center border-2 border-gray-200 border-dashed shrink-0">
-                                            <Link href="/register" className="font-milker tracking-wider text-xl md:text-3xl lg:text-4xl font-bold text-gray-400 hover:text-[#64964E] my-auto leading-none flex-1 text-center md:text-left transition">SIGN UP</Link>
+                                            <Link href="/register" className="font-milker tracking-wider text-4xl md:text-6xl xl:text-6xl font-bold text-gray-400 hover:text-[#64964E] my-auto leading-none flex-1 text-center md:text-left transition">SIGN UP</Link>
                                             <Link href="/register" className="w-12 h-12 md:w-[96px] md:h-[96px] bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 hover:bg-[#64964E] hover:text-white transition cursor-pointer">
                                                 <i className="fa-solid fa-user-plus text-2xl md:text-5xl"></i>
                                             </Link>
                                         </div>
-                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 text-gray-500 text-lg md:text-xl lg:text-2xl font-medium leading-relaxed text-left px-4 md:px-0">
+                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 text-gray-500 text-lg md:text-xl xl:text-2xl font-medium leading-relaxed text-left px-4 md:px-0 pb-10">
                                             สมัครสมาชิกใหม่ฟรี <br className="hidden md:block" />
                                             รับแต้มสะสมทันที ทุกครั้งที่คุณช่วยเรารีไซเคิล
                                         </div>

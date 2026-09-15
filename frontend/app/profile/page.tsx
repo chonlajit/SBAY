@@ -109,7 +109,7 @@ export default function ProfilePage() {
                 },
                 body: JSON.stringify(payload)
             });
-            
+
             if (res.ok) {
                 await refreshUser();
                 setMessage({ text: 'บันทึกข้อมูลเรียบร้อย', type: 'success' });
@@ -127,7 +127,7 @@ export default function ProfilePage() {
         if (!newContact.trim()) return;
         setContactLoading(true);
         setContactMessage({ text: '', type: '' });
-        
+
         try {
             const res = await fetch(`${apiBase}/auth/request-change-contact`, {
                 method: 'POST',
@@ -179,7 +179,7 @@ export default function ProfilePage() {
 
     if (!isInitialized || !user) {
         return (
-            <div style={BG_STYLE} className="pt-24 pb-12 font-sans px-4 min-h-screen animate-pulse">
+            <div style={{ backgroundImage: "url('../images/bg_loginregis.jpg')" }} className="pt-24 pb-12 font-sans px-4 min-h-screen animate-pulse">
                 <div className="max-w-3xl mx-auto space-y-6">
                     {/* Header Area */}
                     <div className="flex items-center space-x-4 mb-8">
@@ -215,15 +215,15 @@ export default function ProfilePage() {
     }
 
     return (
-        <div style={BG_STYLE} className="pt-24 pb-12 font-sans px-4">
+        <div style={{ backgroundImage: "url('../images/bg_loginregis.jpg')" }} className="pt-12 pb-12 font-sans px-4">
             <div className="max-w-3xl mx-auto space-y-6">
-                
+
                 {/* Header Area */}
                 <div className="flex items-center space-x-4 mb-8">
                     <button onClick={() => router.back()} className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition text-gray-600">
                         <i className="fa-solid fa-arrow-left"></i>
                     </button>
-                    <h1 className="text-2xl font-black text-[#64964E]">โปรไฟล์ของฉัน</h1>
+                    <h1 className="text-2xl font-black text-white">โปรไฟล์ของฉัน</h1>
                 </div>
 
                 {message.text && (
@@ -268,43 +268,43 @@ export default function ProfilePage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-gray-700">ชื่อ</label>
-                                    <input type="text" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="ชื่อจริง" />
+                                    <input type="text" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="ชื่อจริง" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-gray-700">นามสกุล</label>
-                                    <input type="text" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="นามสกุล" />
+                                    <input type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="นามสกุล" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-gray-700">อายุ</label>
-                                    <input type="number" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="อายุ (ปี)" />
+                                    <input type="number" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="อายุ (ปี)" />
                                 </div>
                             </div>
-                            
+
                             <div className="mt-5 space-y-1">
                                 <label className="text-sm font-bold text-gray-700">ที่อยู่จัดส่ง / ติดต่อ</label>
-                                <textarea value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} rows={3} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E] resize-none" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"></textarea>
+                                <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={3} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E] resize-none" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"></textarea>
                             </div>
 
                             <div className="mt-8 mb-4 border-b pb-2">
                                 <h2 className="text-lg font-bold text-gray-800">ข้อมูลนักศึกษา</h2>
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-gray-700">รหัสนักศึกษา</label>
-                                    <input type="text" value={formData.studentId} onChange={e => setFormData({...formData, studentId: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="รหัสนักศึกษา 13 หลัก" />
+                                    <input type="text" value={formData.studentId} onChange={e => setFormData({ ...formData, studentId: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="รหัสนักศึกษา 13 หลัก" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-gray-700">คณะ</label>
-                                    <input type="text" value={formData.faculty} onChange={e => setFormData({...formData, faculty: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="คณะที่กำลังศึกษา" />
+                                    <input type="text" value={formData.faculty} onChange={e => setFormData({ ...formData, faculty: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="คณะที่กำลังศึกษา" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-gray-700">สาขาวิชา</label>
-                                    <input type="text" value={formData.major} onChange={e => setFormData({...formData, major: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="สาขาวิชาเอก" />
+                                    <input type="text" value={formData.major} onChange={e => setFormData({ ...formData, major: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="สาขาวิชาเอก" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-gray-700">ปีการศึกษา</label>
-                                    <input type="text" value={formData.academicYear || ''} onChange={e => setFormData({...formData, academicYear: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="เช่น 2569" />
+                                    <input type="text" value={formData.academicYear || ''} onChange={e => setFormData({ ...formData, academicYear: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="เช่น 2569" />
                                 </div>
                             </div>
 
@@ -321,14 +321,14 @@ export default function ProfilePage() {
                 {/* Contact Info (Read-only + Change buttons) */}
                 <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
                     <h2 className="text-xl font-bold text-gray-800 mb-6 border-b pb-2">ข้อมูลบัญชีและการติดต่อ</h2>
-                    
+
                     <div className="space-y-6">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
                             <div>
                                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">อีเมลที่ผูกกับบัญชี</p>
                                 <p className="font-medium text-gray-900 text-lg mt-0.5">{user.email || '-'}</p>
                             </div>
-                            <button onClick={() => { setContactMode('email'); setOtpSent(false); setNewContact(''); setContactMessage({text:'', type:''}) }} className="text-sm font-bold text-[#64964E] hover:underline bg-white px-4 py-2 rounded-lg border border-[#64964E]/30 shrink-0">
+                            <button onClick={() => { setContactMode('email'); setOtpSent(false); setNewContact(''); setContactMessage({ text: '', type: '' }) }} className="text-sm font-bold text-[#64964E] hover:underline bg-white px-4 py-2 rounded-lg border border-[#64964E]/30 shrink-0">
                                 เปลี่ยนอีเมล
                             </button>
                         </div>
@@ -338,7 +338,7 @@ export default function ProfilePage() {
                                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">เบอร์โทรศัพท์มือถือ</p>
                                 <p className="font-medium text-gray-900 text-lg mt-0.5">{user.phoneNumber || '-'}</p>
                             </div>
-                            <button onClick={() => { setContactMode('phone'); setOtpSent(false); setNewContact(''); setContactMessage({text:'', type:''}) }} className="text-sm font-bold text-[#64964E] hover:underline bg-white px-4 py-2 rounded-lg border border-[#64964E]/30 shrink-0">
+                            <button onClick={() => { setContactMode('phone'); setOtpSent(false); setNewContact(''); setContactMessage({ text: '', type: '' }) }} className="text-sm font-bold text-[#64964E] hover:underline bg-white px-4 py-2 rounded-lg border border-[#64964E]/30 shrink-0">
                                 เปลี่ยนเบอร์โทร
                             </button>
                         </div>
@@ -353,7 +353,7 @@ export default function ProfilePage() {
                             <h3 className="text-xl font-bold text-gray-900 mb-4">
                                 {contactMode === 'email' ? 'เปลี่ยนอีเมลใหม่' : 'เปลี่ยนเบอร์โทรใหม่'}
                             </h3>
-                            
+
                             {contactMessage.text && (
                                 <div className={`mb-4 p-3 rounded-xl text-sm font-medium ${contactMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
                                     {contactMessage.text}
@@ -364,10 +364,10 @@ export default function ProfilePage() {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-sm font-bold text-gray-700">{contactMode === 'email' ? 'กรอกอีเมลใหม่' : 'กรอกเบอร์โทรใหม่'}</label>
-                                        <input 
-                                            type={contactMode === 'email' ? "email" : "tel"} 
-                                            value={newContact} 
-                                            onChange={e => setNewContact(e.target.value)} 
+                                        <input
+                                            type={contactMode === 'email' ? "email" : "tel"}
+                                            value={newContact}
+                                            onChange={e => setNewContact(e.target.value)}
                                             className="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E]"
                                         />
                                     </div>
@@ -382,10 +382,10 @@ export default function ProfilePage() {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-sm font-bold text-gray-700">กรอกรหัส OTP ที่ได้รับ</label>
-                                        <input 
-                                            type="text" 
-                                            value={otp} 
-                                            onChange={e => setOtp(e.target.value)} 
+                                        <input
+                                            type="text"
+                                            value={otp}
+                                            onChange={e => setOtp(e.target.value)}
                                             className="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E] text-center text-2xl tracking-widest font-mono"
                                             maxLength={6}
                                         />
