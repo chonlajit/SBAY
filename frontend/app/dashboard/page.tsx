@@ -235,7 +235,7 @@ export default function DashboardPage() {
             <div className="min-h-full px-2 sm:px-6 lg:px-8 py-4 md:py-2 lg:py-6 font-sans flex flex-col relative z-0 animate-pulse">
                 <div className="fixed inset-0 -z-10 bg-cover bg-center md:bg-fixed" style={{ backgroundImage: "url('/images/bg-white.jpg')" }}></div>
                 <div className="bg-white/30 backdrop-blur-md p-2 sm:p-4 lg:p-8 rounded-3xl lg:rounded-[3rem] shadow-2xl max-w-[1500px] mx-auto w-full border border-white/50 flex-1 flex flex-col relative overflow-visible">
-                    <div className="max-w-[1440px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch flex-1 relative z-10 lg:h-[550px] xl:h-[600px]">
+                    <div className="max-w-[1440px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch flex-1 relative z-10 lg:h-[550px] xl:h-[600px] tall:h-[660px]">
                         <div className="absolute inset-0 rounded-2xl lg:rounded-[2.5rem] -z-10 shadow-xl border border-white/20 bg-gray-200 shadow-inner"></div>
                         
                         {/* LEFT COLUMN SKELETON */}
@@ -243,10 +243,10 @@ export default function DashboardPage() {
                             {/* Top Banner Skeleton */}
                             <div className="bg-gray-300 shadow-inner rounded-2xl lg:rounded-[2rem] p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">
                                 <div className="flex items-center space-x-3 sm:space-x-4">
-                                    <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 shadow-inner rounded-xl md:rounded-2xl"></div>
-                                    <div className="w-32 md:w-48 h-8 bg-gray-200 shadow-inner rounded-lg"></div>
+                                    <div className="w-16 h-16 md:w-20 md:h-20 tall:w-24 tall:h-24 bg-gray-200 shadow-inner rounded-xl md:rounded-2xl"></div>
+                                    <div className="w-32 md:w-48 tall:w-56 h-8 tall:h-10 bg-gray-200 shadow-inner rounded-lg"></div>
                                 </div>
-                                <div className="bg-white rounded-xl md:rounded-[1.4rem] px-3 py-2 md:px-5 md:py-3 w-full sm:w-40 h-20 shadow-inner"></div>
+                                <div className="bg-white rounded-xl md:rounded-[1.4rem] px-3 py-2 md:px-5 md:py-3 tall:py-4 w-full sm:w-40 tall:w-48 h-20 tall:h-24 shadow-inner"></div>
                             </div>
                             
                             {/* Tabs Skeleton */}
@@ -294,7 +294,7 @@ export default function DashboardPage() {
         <div className="min-h-full px-2 sm:px-6 lg:px-8 py-4 md:py-2 lg:py-6 font-sans flex flex-col relative z-0">
             <div className="fixed inset-0 -z-10 bg-cover bg-center md:bg-fixed" style={{ backgroundImage: "url('/images/bg-white.jpg')" }}></div>
             <div className="bg-white/30 backdrop-blur-md p-2 sm:p-4 lg:p-8 rounded-3xl lg:rounded-[3rem] shadow-2xl max-w-[1500px] mx-auto w-full border border-white/50 flex-1 flex flex-col relative overflow-visible">
-                <div className="max-w-[1440px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch flex-1 relative z-10 lg:h-[550px] xl:h-[600px]">
+                <div className="max-w-[1440px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch flex-1 relative z-10 lg:h-[550px] xl:h-[600px] tall:h-[660px]">
                     {/* Unified Background for both columns */}
                     <div className={`absolute inset-0 rounded-2xl lg:rounded-[2.5rem] -z-10 shadow-xl border border-white/20 transition-colors duration-300 ${activeTab === 'recycle' ? 'bg-[#64964E]' : 'bg-[#5BA1C2]'}`}></div>
 
@@ -304,8 +304,8 @@ export default function DashboardPage() {
                         {/* Top Green Banner (User Profile & Points) */}
                         <div className="bg-[#64964E] rounded-2xl lg:rounded-[2rem] p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 shadow-md shrink-0">
                             {/* User Profile Badge (Dark Left Box) */}
-                            <div className="text-white p-2 sm:p-3.5 flex items-center space-x-3 sm:space-x-4 min-w-[200px] ">
-                                <div className="w-16 h-16 md:w-20 md:h-20 bg-black text-white font-black text-4xl md:text-6xl rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 shadow overflow-hidden">
+                            <div className="text-white p-2 sm:p-3.5 flex items-center space-x-3 sm:space-x-4 min-w-[200px] tall:min-w-[240px]">
+                                <div className="w-16 h-16 md:w-20 md:h-20 tall:w-24 tall:h-24 bg-black text-white font-black text-4xl md:text-6xl tall:text-7xl rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 shadow overflow-hidden">
                                     {user.profileImageUrl ? (
                                         <img
                                             src={getImageUrl(user.profileImageUrl)}
@@ -317,18 +317,18 @@ export default function DashboardPage() {
                                     )}
                                 </div>
                                 <div className="min-w-0 pr-2">
-                                    <h2 className="font-extrabold text-white text-xl md:text-4xl tracking-tight truncate">
+                                    <h2 className="font-extrabold text-white text-xl md:text-4xl tall:text-5xl tracking-tight truncate">
                                         {displayName}
                                     </h2>
                                 </div>
                             </div>
 
                             {/* Total Points Badge (White Right Box) */}
-                            <div className="bg-white text-[#64964E] rounded-xl md:rounded-[1.4rem] px-3 py-2 md:px-5 md:py-3 flex flex-col items-center justify-center text-center shadow-md border-2 border-white w-full sm:w-auto min-w-[200px]">
+                            <div className="bg-white text-[#64964E] rounded-xl md:rounded-[1.4rem] px-3 py-2 md:px-5 md:py-3 tall:py-4 flex flex-col items-center justify-center text-center shadow-md border-2 border-white w-full sm:w-auto min-w-[200px] tall:min-w-[230px]">
                                 <span className="text-[#64964E] font-extrabold text-sm sm:text-base">คะแนนทั้งหมด</span>
                                 <div className="flex items-baseline space-x-1.5 mt-0.5">
-                                    <span className="text-2xl md:text-4xl font-black text-gray-900">{user.points || 0}</span>
-                                    <span className="text-sm md:text-xl font-bold text-[#64964E]">Point</span>
+                                    <span className="text-2xl md:text-4xl tall:text-5xl font-black text-gray-900">{user.points || 0}</span>
+                                    <span className="text-sm md:text-xl tall:text-2xl font-bold text-[#64964E]">Point</span>
                                 </div>
                                 <span className="text-[10px] md:text-[11px] text-gray-500 font-semibold mt-0.5">
                                     จากทั้งหมด {history.length} รอบการทำงาน
@@ -369,46 +369,46 @@ export default function DashboardPage() {
                             <div className="pt-3 md:pt-4 flex-1 flex flex-col min-h-0">
                                 {activeTab === 'recycle' ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-3.5 flex-1 min-h-0">
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] tall:min-h-[135px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">แลกทั้งหมด</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
+                                                <span className="text-2xl sm:text-4xl tall:text-[42px] font-black text-[#64964E]">
                                                     {totalRecycleItems} <span className="text-xs sm:text-sm font-bold">ชิ้น</span>
                                                 </span>
-                                                <span className="text-[#64964E] font-bold text-xs sm:text-base">
+                                                <span className="text-[#64964E] font-bold text-xs sm:text-base tall:text-lg">
                                                     +{Number(totalRecyclePoints).toFixed(2).replace(/\.00$/, '')} แต้ม
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] tall:min-h-[135px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">ขวดพลาสติก</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
+                                                <span className="text-2xl sm:text-4xl tall:text-[42px] font-black text-[#64964E]">
                                                     {wasteStats.bottleCount} <span className="text-xs sm:text-sm font-bold">ชิ้น</span>
                                                 </span>
-                                                <span className="text-[#64964E] font-bold text-xs sm:text-base">
+                                                <span className="text-[#64964E] font-bold text-xs sm:text-base tall:text-lg">
                                                     +{Number(wasteStats.bottlePoints).toFixed(2).replace(/\.00$/, '')} แต้ม
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] tall:min-h-[135px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">กระป๋องอลูมิเนียม</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
+                                                <span className="text-2xl sm:text-4xl tall:text-[42px] font-black text-[#64964E]">
                                                     {wasteStats.canCount} <span className="text-xs sm:text-sm font-bold">ชิ้น</span>
                                                 </span>
-                                                <span className="text-[#64964E] font-bold text-xs sm:text-base">
+                                                <span className="text-[#64964E] font-bold text-xs sm:text-base tall:text-lg">
                                                     +{Number(wasteStats.canPoints).toFixed(2).replace(/\.00$/, '')} แต้ม
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] tall:min-h-[135px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">กล่องเครื่องดื่ม</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
+                                                <span className="text-2xl sm:text-4xl tall:text-[42px] font-black text-[#64964E]">
                                                     {wasteStats.cartonCount} <span className="text-xs sm:text-sm font-bold">ชิ้น</span>
                                                 </span>
-                                                <span className="text-[#64964E] font-bold text-xs sm:text-base">
+                                                <span className="text-[#64964E] font-bold text-xs sm:text-base tall:text-lg">
                                                     +{Number(wasteStats.cartonPoints).toFixed(2).replace(/\.00$/, '')} แต้ม
                                                 </span>
                                             </div>
@@ -416,37 +416,37 @@ export default function DashboardPage() {
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-3.5 flex-1 min-h-0">
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] tall:min-h-[135px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">แลกทั้งหมด</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl font-black text-gray-900">
+                                                <span className="text-2xl sm:text-4xl tall:text-[42px] font-black text-gray-900">
                                                     {redemptions.length} <span className="text-xs sm:text-sm font-bold">รายการ</span>
                                                 </span>
-                                                <span className="text-[#5BA1C2] font-bold text-xs sm:text-base">
+                                                <span className="text-[#5BA1C2] font-bold text-xs sm:text-base tall:text-lg">
                                                     -{totalRedeemPoints} แต้ม
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] tall:min-h-[135px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">สินค้า</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl font-black text-gray-900">
+                                                <span className="text-2xl sm:text-4xl tall:text-[42px] font-black text-gray-900">
                                                     {redemptions.filter(r => r.rewardType === 'PRODUCT' || r.type === 'GOODS' || r.rewardType === 'OTHER').length} <span className="text-xs sm:text-sm font-bold">รายการ</span>
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] tall:min-h-[135px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">ส่วนลด</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl font-black text-gray-900">
+                                                <span className="text-2xl sm:text-4xl tall:text-[42px] font-black text-gray-900">
                                                     {redemptions.filter(r => r.rewardType === 'DISCOUNT' || r.type === 'COUPON').length} <span className="text-xs sm:text-sm font-bold">รายการ</span>
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] tall:min-h-[135px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">หมวดหมู่สำหรับนักศึกษา</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl font-black text-gray-900">
+                                                <span className="text-2xl sm:text-4xl tall:text-[42px] font-black text-gray-900">
                                                     {redemptions.filter(r => r.rewardType === 'ACTIVITY' || r.rewardType === 'VOLUNTEER' || r.type === 'VOUCHER').length} <span className="text-xs sm:text-sm font-bold">รายการ</span>
                                                 </span>
                                             </div>

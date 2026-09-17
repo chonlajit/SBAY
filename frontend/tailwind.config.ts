@@ -32,6 +32,9 @@ const config: Config = {
         gondens: ['Gondens', 'sans-serif'],
         spartan: ['"League Spartan"', 'sans-serif'],
       },
+      screens: {
+        'tall': { 'raw': '(min-width: 1440px) and (min-height: 1000px)' },
+      },
     },
   },
   plugins: [],

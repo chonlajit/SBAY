@@ -207,13 +207,13 @@ export default function StatsDashboard() {
             </div>
 
             {loading ? (
-                <div className="h-[320px] flex justify-center items-center">
+                <div className="h-[320px] tall:h-[370px] flex justify-center items-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Chart Section */}
-                    <div className="flex flex-col h-[320px] w-full bg-white/50 rounded-2xl p-5 shadow-sm border border-green-50">
+                    <div className="flex flex-col h-[320px] tall:h-[370px] w-full bg-white/50 rounded-2xl p-5 tall:p-6 shadow-sm border border-green-50">
                         <div className="flex-1 w-full min-h-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -222,7 +222,7 @@ export default function StatsDashboard() {
                                     <Tooltip cursor={{ fill: '#a2c5edff' }} contentStyle={{ borderRadius: '22px', border: 'none', boxShadow: '0 4px 4px -1px rgb(0 0 0 / 0.1)' }} />
                                     <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                                         {chartData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                             <Cell key={`cell-${index}`} fill={entry.color} />
                                         ))}
                                     </Bar>
                                 </BarChart>
@@ -248,24 +248,24 @@ export default function StatsDashboard() {
                     {/* Summary Section */}
                     <div className="flex flex-col gap-4 justify-center">
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-blue-300 rounded-2xl p-4 shadow-md text-center flex flex-col items-center justify-center relative overflow-hidden">
+                            <div className="bg-blue-300 rounded-2xl p-4 tall:p-5 shadow-md text-center flex flex-col items-center justify-center relative overflow-hidden">
                                 <div className="absolute top-2 right-2 text-gray-700 text-4xl opacity-50"><i className="fa-solid fa-recycle"></i></div>
                                 <span className="text-gray-700 font-bold text-sm mb-1 z-10">รีไซเคิลรวม</span>
-                                <span className="text-3xl font-black text-gray-700 z-10">{stats?.totalItems.toLocaleString()} <span className="text-sm font-normal">ชิ้น</span></span>
+                                <span className="text-3xl tall:text-4xl font-black text-gray-700 z-10">{stats?.totalItems.toLocaleString()} <span className="text-sm font-normal">ชิ้น</span></span>
                             </div>
 
-                            <div className="bg-blue-300 rounded-2xl p-4 shadow-md text-center flex flex-col items-center justify-center relative overflow-hidden">
+                            <div className="bg-blue-300 rounded-2xl p-4 tall:p-5 shadow-md text-center flex flex-col items-center justify-center relative overflow-hidden">
                                 <div className="absolute top-2 right-2 text-gray-700 text-4xl opacity-50"><i className="fa-solid fa-weight-scale"></i></div>
                                 <span className="text-gray-700 font-bold text-sm mb-1 z-10">น้ำหนักรวม</span>
-                                <span className="text-3xl font-black text-gray-700 z-10">{stats?.totalWeightKg.toLocaleString()} <span className="text-sm font-normal">กก.</span></span>
+                                <span className="text-3xl tall:text-4xl font-black text-gray-700 z-10">{stats?.totalWeightKg.toLocaleString()} <span className="text-sm font-normal">กก.</span></span>
                             </div>
                         </div>
 
-                        <div className="bg-[#64964E] rounded-2xl p-5 shadow-md text-white relative overflow-hidden">
+                        <div className="bg-[#64964E] rounded-2xl p-5 tall:p-6 shadow-md text-white relative overflow-hidden">
                             <div className="absolute -right-4 -bottom-4 text-white/20 text-6xl"><i className="fa-solid fa-leaf"></i></div>
                             <p className="font-medium text-sm md:text-base text-green-100 mb-1 border-b border-green-400/50 pb-2">ลดคาร์บอนไปทั้งหมด</p>
                             <div className="flex items-end gap-2 mt-3">
-                                <span className="text-5xl md:text-[56px] leading-none font-black tracking-tight">{stats?.totalCarbonReductionKg.toLocaleString()}</span>
+                                <span className="text-5xl md:text-[56px] tall:text-[62px] leading-none font-black tracking-tight">{stats?.totalCarbonReductionKg.toLocaleString()}</span>
                                 <span className="text-green-100 font-bold mb-1.5 md:mb-2 text-lg">kgCO2e</span>
                             </div>
                             <div className="mt-4 pt-3 border-t border-green-400/30 flex items-center justify-between">
