@@ -280,11 +280,11 @@ export default function RedeemPage() {
 
                 {/* Dropdown Panel */}
                 <div className={`w-full transition-all duration-700 ease-in-out origin-top border-b border-white/30 backdrop-blur-2xl bg-[#64964E]/40 rounded-b-[3rem] ${isHeaderVisible ? 'max-h-[1000px] opacity-100 overflow-visible shadow-[0_15px_40px_-10px_rgba(0,0,0,0.5)] pointer-events-auto' : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'}`}>
-                    <div className="max-w-7xl mx-auto px-4 pt-4 pb-4 md:pt-6 md:pb-6">
+                    <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 pt-4 pb-4 md:pt-6 md:pb-6">
                         <div className="flex flex-col lg:flex-row items-stretch justify-between gap-2 md:gap-4 xl:gap-8">
 
                             {/* Left: Points */}
-                            <div className="w-full lg:w-64 rounded-[1.5rem] overflow-hidden shadow-2xl shrink-0 flex flex-col self-stretch bg-white">
+                            <div className="w-full lg:w-64 2xl:w-72 rounded-[1.5rem] overflow-hidden shadow-2xl shrink-0 flex flex-col self-stretch bg-white">
                                 {user ? (
                                     <>
                                         <div className="bg-[#64964E] text-white text-center py-2 text-sm font-bold tracking-wide">
@@ -396,7 +396,7 @@ export default function RedeemPage() {
             </div>
 
             {/* ── Main Content Area ── */}
-            <div className="relative z-10 pt-10 max-w-7xl mx-auto px-4">
+            <div className="relative z-10 pt-10 max-w-7xl 2xl:max-w-[1600px] mx-auto px-4">
 
                 {/* ── Partner Cards ── */}
                 <div className="space-y-6">
@@ -681,11 +681,11 @@ function PartnerCard({ partner, rewards, userPoints, quantities, onSetQty, onRed
         <div className="flex flex-col relative">
             {/* Header */}
             <div
-                className={`bg-[#527d40] text-white border border-white/20 ${expanded ? 'rounded-xl rounded-tl-[60px] ' : 'rounded-t-xl rounded-tl-[60px]'} px-4 md:px-6 py-3 flex items-center justify-between cursor-pointer shadow-lg z-10 relative transition-all`}
+                className={`bg-[#527d40] text-white border border-white/20 ${expanded ? 'rounded-xl rounded-tl-[60px] ' : 'rounded-t-xl rounded-tl-[60px]'} px-4 md:px-6 2xl:px-8 py-3 2xl:py-4 flex items-center justify-between cursor-pointer shadow-lg z-10 relative transition-all`}
                 onClick={() => setExpanded(e => !e)}
             >
-                <div className="flex-1 min-w-0 flex items-center gap-3 md:gap-4 pr-2">
-                    <div className="w-[40px] h-[40px] md:w-[50px] md:h-[50px] bg-white rounded-full flex flex-col items-center justify-center text-[#527d40] font-black text-[9px] leading-tight shadow-md overflow-hidden shrink-0">
+                <div className="flex-1 min-w-0 flex items-center gap-3 md:gap-4 2xl:gap-5 pr-2">
+                    <div className="w-[40px] h-[40px] md:w-[50px] md:h-[50px] 2xl:w-[60px] 2xl:h-[60px] bg-white rounded-full flex flex-col items-center justify-center text-[#527d40] font-black text-[9px] 2xl:text-xs leading-tight shadow-md overflow-hidden shrink-0">
                         {partner.logoUrl ? (
                             <img src={getImageUrl(partner.logoUrl)} alt={partner.name} className="w-full h-full object-cover" />
                         ) : (
@@ -693,40 +693,40 @@ function PartnerCard({ partner, rewards, userPoints, quantities, onSetQty, onRed
                         )}
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col gap-0.5 md:gap-1">
-                        <h2 className="text-xl md:text-2xl font-black tracking-wide drop-shadow-sm break-words">
+                        <h2 className="text-xl md:text-2xl 2xl:text-3xl font-black tracking-wide drop-shadow-sm break-words">
                             {partner.name}
                         </h2>
                         {partner.description && (
-                            <div className="text-[11px] md:text-sm font-normal opacity-90 tracking-normal drop-shadow-sm break-words leading-snug">คำอธิบายร้าน : {partner.description}</div>
+                            <div className="text-[11px] md:text-sm 2xl:text-base font-normal opacity-90 tracking-normal drop-shadow-sm break-words leading-snug">คำอธิบายร้าน : {partner.description}</div>
                         )}
-                        <div className="text-[10px] md:text-sm font-normal opacity-80 drop-shadow-sm break-words">หมวดหมู่ร้าน : {partner.category}</div>
+                        <div className="text-[10px] md:text-sm 2xl:text-base font-normal opacity-80 drop-shadow-sm break-words">หมวดหมู่ร้าน : {partner.category}</div>
                     </div>
                 </div>
-                <i className={`fa-solid fa-caret-down text-2xl md:text-3xl text-white drop-shadow-sm transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} />
+                <i className={`fa-solid fa-caret-down text-2xl md:text-3xl 2xl:text-4xl text-white drop-shadow-sm transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} />
             </div>
 
             {/* Body */}
             {expanded && (
-                <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 md:p-8 shadow-inner relative z-0 my-3 mx-1 border border-white/20">
+                <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 md:p-8 2xl:p-10 shadow-inner relative z-0 my-3 mx-1 border border-white/20">
                     {rewards.length === 0 ? (
-                        <p className="text-white text-center py-4 font-bold text-lg drop-shadow">ไม่มีของรางวัลในร้านนี้</p>
+                        <p className="text-white text-center py-4 font-bold text-lg 2xl:text-xl drop-shadow">ไม่มีของรางวัลในร้านนี้</p>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 2xl:gap-10">
                             {rewards.map(reward => {
                                 const qty = quantities[reward.id] ?? 1;
                                 const isDiscount = reward.rewardType === 'DISCOUNT' || reward.category === 'ส่วนลดร้านค้า';
                                 const tagLabel = isDiscount ? 'ส่วนลด' : (reward.rewardType === 'ACTIVITY' ? 'กิจกรรม' : 'สินค้า');
 
                                 return (
-                                    <div key={reward.id} className="border border-white/40 bg-white/10 backdrop-blur-sm rounded-3xl p-4 flex flex-col shadow-lg">
+                                    <div key={reward.id} className="border border-white/40 bg-white/10 backdrop-blur-sm rounded-3xl p-4 2xl:p-5 flex flex-col shadow-lg">
                                         {/* Floating type text inside wrapper */}
-                                        <div className="text-white font-bold text-xl mb-3 drop-shadow-md">{tagLabel}</div>
+                                        <div className="text-white font-bold text-xl 2xl:text-2xl mb-3 drop-shadow-md">{tagLabel}</div>
 
                                         <div className="rounded-2xl overflow-hidden flex flex-col shadow-2xl border border-white/20">
                                             {/* Card Top: Image + Info */}
-                                            <div className="flex h-[130px] cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onShowReward({partner, reward})}>
+                                            <div className="flex h-[130px] 2xl:h-[150px] cursor-pointer hover:opacity-90 transition-opacity" onClick={() => onShowReward({partner, reward})}>
                                                 {/* Image Box */}
-                                                <div className="w-[150px] bg-white flex items-center justify-center text-slate-800 font-bold text-lg shrink-0 overflow-hidden">
+                                                <div className="w-[150px] 2xl:w-[175px] bg-white flex items-center justify-center text-slate-800 font-bold text-lg 2xl:text-xl shrink-0 overflow-hidden">
                                                     {reward.imageUrl ? (
                                                         <img src={getImageUrl(reward.imageUrl)} alt={reward.name} className="w-full h-full object-cover" />
                                                     ) : (
@@ -734,21 +734,21 @@ function PartnerCard({ partner, rewards, userPoints, quantities, onSetQty, onRed
                                                     )}
                                                 </div>
                                                 {/* Info Text Box */}
-                                                <div className="flex-1 bg-[#527d40] text-white p-3 flex flex-col justify-between overflow-hidden border-l border-white/20">
+                                                <div className="flex-1 bg-[#527d40] text-white p-3 2xl:p-4 flex flex-col justify-between overflow-hidden border-l border-white/20">
                                                     <div>
-                                                        <div className="font-bold text-sm mb-1 truncate">{reward.name}</div>
+                                                        <div className="font-bold text-sm 2xl:text-base mb-1 truncate">{reward.name}</div>
 
                                                         {reward.description ? (
                                                             <>
-                                                                <div className="text-[10px] opacity-80 border-b border-white/30 pb-0.5 mb-1">คำอธิบาย</div>
-                                                                <div className="text-[11px] leading-tight mb-1 truncate">{reward.description}</div>
+                                                                <div className="text-[10px] 2xl:text-xs opacity-80 border-b border-white/30 pb-0.5 mb-1">คำอธิบาย</div>
+                                                                <div className="text-[11px] 2xl:text-xs leading-tight mb-1 truncate">{reward.description}</div>
                                                             </>
                                                         ) : (
-                                                            <div className="text-[11px] leading-tight border-b border-white/30 pb-1 mb-1 opacity-60">ไม่มีคำอธิบาย</div>
+                                                            <div className="text-[11px] 2xl:text-xs leading-tight border-b border-white/30 pb-1 mb-1 opacity-60">ไม่มีคำอธิบาย</div>
                                                         )}
                                                     </div>
                                                     {reward.stock !== -1 && (
-                                                        <div className="text-xs font-bold self-start mt-auto bg-white/20 px-2 py-0.5 rounded-full">
+                                                        <div className="text-xs 2xl:text-sm font-bold self-start mt-auto bg-white/20 px-2 py-0.5 rounded-full">
                                                             เหลือ {reward.stock} ชิ้น
                                                         </div>
                                                     )}
@@ -756,11 +756,11 @@ function PartnerCard({ partner, rewards, userPoints, quantities, onSetQty, onRed
                                             </div>
 
                                             {/* Card Bottom: Points + Qty Controls */}
-                                            <div className="bg-[#e6e8e6] p-3 flex items-center justify-between border-t border-white/50">
+                                            <div className="bg-[#e6e8e6] p-3 2xl:p-4 flex items-center justify-between border-t border-white/50">
                                                 <div>
-                                                    <div className="text-[10px] text-gray-500 font-bold mb-0.5">แต้มที่ใช้</div>
-                                                    <div className="text-slate-700 font-medium text-2xl leading-none flex items-baseline gap-1">
-                                                        {(reward.pointCost * qty).toLocaleString()} <span className="text-sm font-normal text-slate-600">คะแนน</span>
+                                                    <div className="text-[10px] 2xl:text-xs text-gray-500 font-bold mb-0.5">แต้มที่ใช้</div>
+                                                    <div className="text-slate-700 font-medium text-2xl 2xl:text-3xl leading-none flex items-baseline gap-1">
+                                                        {(reward.pointCost * qty).toLocaleString()} <span className="text-sm 2xl:text-base font-normal text-slate-600">คะแนน</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-stretch gap-2">

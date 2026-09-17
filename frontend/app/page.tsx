@@ -46,7 +46,7 @@ export default function Home() {
 
                             {/* Top row: Greeting & User Card */}
                             <div className="flex flex-wrap items-center gap-3 md:gap-3.5 relative z-10">
-                                <h2 className="font-gondens text-5xl md:text-6xl xl:text-7xl font-bold text-white tracking-normal shrink-0 drop-shadow-md mt-12 md:mt-8 xl:mt-4">HI.</h2>
+                                <h2 className="font-gondens text-5xl md:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-white tracking-normal shrink-0 drop-shadow-md mt-12 md:mt-8 xl:mt-4">HI.</h2>
                                 {!isInitialized ? (
                                     /* Skeleton User Card */
                                     <div className="bg-white/80 rounded-xl xl:rounded-3xl shadow p-3 border border-white/50 animate-pulse w-fit mt-12 md:mt-8 xl:mt-4">
@@ -60,10 +60,10 @@ export default function Home() {
                                     <Link
                                         href="/profile"
                                         title="แก้ไขโปรไฟล์"
-                                        className="bg-[#64964E] hover:brightness-105 transition rounded-[15px] md:rounded-[20px] xl:rounded-[25px] shadow-md px-2 py-2 md:px-3 md:py-3 xl:px-4 xl:py-3 border border-white/40 max-w-[220px] xs:max-w-[260px] sm:max-w-[320px] md:max-w-[380px] xl:max-w-[440px] inline-flex items-center mt-12 md:mt-8 xl:mt-4 cursor-pointer"
+                                        className="bg-[#64964E] hover:brightness-105 transition rounded-[15px] md:rounded-[20px] xl:rounded-[25px] shadow-md px-2 py-2 md:px-3 md:py-3 xl:px-4 xl:py-3 2xl:px-5 2xl:py-3.5 border border-white/40 max-w-[220px] xs:max-w-[260px] sm:max-w-[320px] md:max-w-[380px] xl:max-w-[440px] 2xl:max-w-[520px] inline-flex items-center mt-12 md:mt-8 xl:mt-4 cursor-pointer"
                                     >
                                         <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 w-full">
-                                            <div className="w-12 h-12 md:w-16 md:h-16 xl:w-20 xl:h-20 bg-black rounded-lg md:rounded-xl xl:rounded-2xl flex items-center justify-center text-white text-4xl md:text-5xl xl:text-6xl font-bold shadow-sm shrink-0 overflow-hidden">
+                                            <div className="w-12 h-12 md:w-16 md:h-16 xl:w-20 xl:h-20 2xl:w-24 2xl:h-24 bg-black rounded-lg md:rounded-xl xl:rounded-2xl flex items-center justify-center text-white text-4xl md:text-5xl xl:text-6xl 2xl:text-7xl font-bold shadow-sm shrink-0 overflow-hidden">
                                                 {user.profileImageUrl ? (
                                                     <img
                                                         src={getImageUrl(user.profileImageUrl)}
@@ -75,14 +75,14 @@ export default function Home() {
                                                 )}
                                             </div>
                                             <div className="min-w-0 flex-1 pr-1">
-                                                <h3 className="font-bold text-white text-3xl md:text-4xl xl:text-5xl leading-tight truncate" title={user.username || user.firstName || user.email || 'ผู้ใช้งาน'}>
+                                                <h3 className="font-bold text-white text-3xl md:text-4xl xl:text-5xl 2xl:text-6xl leading-tight truncate" title={user.username || user.firstName || user.email || 'ผู้ใช้งาน'}>
                                                     {user.username || user.firstName || user.email || 'ผู้ใช้งาน'}
                                                 </h3>
                                             </div>
                                         </div>
                                     </Link>
                                 ) : (
-                                    <span className="font-gondens text-5xl md:text-6xl xl:text-7xl font-bold text-white tracking-normal drop-shadow-md mt-12 md:mt-8 xl:mt-4">
+                                    <span className="font-gondens text-5xl md:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-white tracking-normal drop-shadow-md mt-12 md:mt-8 xl:mt-4">
                                         EVERYONE
                                     </span>
                                 )}
@@ -92,13 +92,13 @@ export default function Home() {
                             <div className="my-auto flex flex-col justify-center relative z-10">
                                 <div>
                                     <h1 className="font-gondens tracking-wide font-normal drop-shadow-md mt-2 md:mt-8 xl:mt-10">
-                                        <span className="text-white xl:text-[5rem] md:text-[4rem] text-[3.25rem] ">WELCOME TO</span>
-                                        <span className="block text-white xl:text-[4.25rem] md:text-[3.4rem] text-[2.735rem] mt-2 md:mt-2 xl:mt-1">SBAY Platform</span>
+                                        <span className="text-white xl:text-[5rem] md:text-[4rem] text-[3.25rem] 2xl:text-[6.25rem]">WELCOME TO</span>
+                                        <span className="block text-white xl:text-[4.25rem] md:text-[3.4rem] text-[2.735rem] 2xl:text-[5.5rem] mt-2 md:mt-2 xl:mt-1">SBAY Platform</span>
                                     </h1>
                                 </div>
 
                                 <div className="mt-6 sm:mt-10 flex flex-col items-center xl:text-center md:items-end md:text-right text-center">
-                                    <p className="text-white xl:text-[1.4rem] md:text-[1.3rem] text-[0.85rem] font-bold leading-relaxed drop-shadow-md max-w-[98%] xl:mt-0 md:mt-2 mt-6">
+                                    <p className="text-white xl:text-[1.4rem] md:text-[1.3rem] text-[0.85rem] 2xl:text-[1.75rem] font-bold leading-relaxed drop-shadow-md max-w-[98%] xl:mt-0 md:mt-2 mt-6">
                                         ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่คุณรีไซเคิล<br />
                                         "เพื่อสิ่งแวดล้อมที่ดีกว่า"
                                     </p>
@@ -109,7 +109,7 @@ export default function Home() {
                         {/* White section (Feature tab) — top-right rounded curve against green background */}
                         <div className="relative z-10">
                             <div id="features-section" className="flex w-full bg-white rounded-tr-[2.5rem] rounded-br-none flex-col justify-center px-4
-                            md:px-8 xl:px-10 pt-3 md:pt-4 pb-3 md:pb-4 relative shrink-0 z-10">
+                            md:px-8 xl:px-10 2xl:px-12 pt-3 md:pt-4 2xl:pt-5 pb-3 md:pb-4 2xl:pb-5 relative shrink-0 z-10">
                                 <button
                                     type="button"
                                     onClick={(e) => {
@@ -122,10 +122,10 @@ export default function Home() {
                                             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                         }
                                     }}
-                                    className="w-full bg-[#64964E] hover:bg-[#5c8c47] active:scale-[0.99] transition rounded-full relative z-30 flex items-center justify-center px-6 md:px-8 py-3.5 md:py-3.5 shadow-[0_25px_30px_-15px_rgba(0,0,0,0.25),0_10px_15px_-5px_rgba(0,0,0,0.4)] cursor-pointer"
+                                    className="w-full bg-[#64964E] hover:bg-[#5c8c47] active:scale-[0.99] transition rounded-full relative z-30 flex items-center justify-center px-6 md:px-8 2xl:px-10 py-3.5 md:py-3.5 2xl:py-5 shadow-[0_25px_30px_-15px_rgba(0,0,0,0.25),0_10px_15px_-5px_rgba(0,0,0,0.4)] cursor-pointer"
                                 >
-                                    <span className="font-milker tracking-wider text-xl sm:text-2xl md:text-2xl xl:text-3xl font-bold text-white pointer-events-none">Features</span>
-                                    <i className="fa-solid fa-caret-down text-xl md:text-3xl text-white absolute right-6 md:right-8 pointer-events-none"></i>
+                                    <span className="font-milker tracking-wider text-xl sm:text-2xl md:text-2xl xl:text-3xl 2xl:text-4xl font-bold text-white pointer-events-none">Features</span>
+                                    <i className="fa-solid fa-caret-down text-xl md:text-3xl 2xl:text-4xl text-white absolute right-6 md:right-8 2xl:right-10 pointer-events-none"></i>
                                 </button>
                             </div>
                         </div>
@@ -133,45 +133,45 @@ export default function Home() {
 
                     {/* ─── Right Column (glass panel with clipped rounded-bl corner) ─── */}
                     <div
-                        className="w-full lg:w-[58%] shrink-0 bg-cover bg-center flex flex-col justify-between px-4 md:px-8 lg:pl-10 xl:pl-12 pr-4 md:pr-8 xl:pr-10 pt-4 md:pt-6 pb-3 md:pb-4 rounded-bl-[2.5rem] overflow-hidden relative z-10 lg:h-full"
+                        className="w-full lg:w-[58%] shrink-0 bg-cover bg-center flex flex-col justify-between px-4 md:px-8 lg:pl-10 xl:pl-12 2xl:pl-14 pr-4 md:pr-8 xl:pr-10 2xl:pr-12 pt-4 md:pt-6 pb-3 md:pb-4 2xl:pb-5 rounded-bl-[2.5rem] overflow-hidden relative z-10 lg:h-full"
                         style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                     >
                         <div className="absolute inset-0 bg-[#64964E]/40 rounded-bl-[2.5rem] z-0"></div>
-                        <div className="w-full max-w-[940px] rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
+                        <div className="w-full max-w-[940px] 2xl:max-w-[1060px] rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
                             <StatsDashboard />
                         </div>
 
                         {/* Row below Statistics Card: About Us (Left) & Sponsors (Right) */}
-                        <div className="flex justify-between items-center pt-2 sm:pt-3 px-1 sm:px-2 pb-0.5 relative z-10 max-w-[940px] w-full">
+                        <div className="flex justify-between items-center pt-2 sm:pt-3 px-1 sm:px-2 pb-0.5 relative z-10 max-w-[940px] 2xl:max-w-[1060px] w-full">
                             {/* About Us Button (Bottom-Left of Stats Card) */}
                             <Link
                                 href="/about"
-                                className="font-milker tracking-wider text-[#64964E] text-sm sm:text-base font-bold px-6 py-2 sm:px-7 sm:py-2.5 bg-white/90 hover:bg-white rounded-full transition shadow-lg border border-white/30 active:scale-95"
+                                className="font-milker tracking-wider text-[#64964E] text-sm sm:text-base 2xl:text-xl font-bold px-6 py-2 sm:px-7 sm:py-2.5 2xl:px-9 2xl:py-3 bg-white/90 hover:bg-white rounded-full transition shadow-lg border border-white/30 active:scale-95"
                             >
                                 about us.
                             </Link>
 
                             {/* Sponsors (Bottom-Right) */}
-                            <div className="flex items-center space-x-3 sm:space-x-4">
-                                <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
-                                <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
-                                    <span className="text-[10px] mt-1 font-semibold text-gray-700/80">(sponsor)</span>
+                            <div className="flex items-center space-x-3 sm:space-x-4 2xl:space-x-5">
+                                <div className="w-10 h-10 md:w-14 md:h-14 2xl:w-18 2xl:h-18 bg-white/40 rounded-lg 2xl:rounded-xl shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
+                                <div className="w-10 h-10 md:w-14 md:h-14 2xl:w-18 2xl:h-18 bg-white/40 rounded-lg 2xl:rounded-xl shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
+                                    <span className="text-[10px] 2xl:text-xs mt-1 font-semibold text-gray-700/80">(sponsor)</span>
                                 </div>
-                                <div className="w-10 h-10 md:w-14 md:h-14 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
+                                <div className="w-10 h-10 md:w-14 md:h-14 2xl:w-18 2xl:h-18 bg-white/40 rounded-lg 2xl:rounded-xl shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
                             </div>
                         </div>
 
                         {/* Statistics Tab — Button to scroll back up to Top Section (Mobile & Desktop) */}
-                        <div className="pt-1 w-full max-w-[940px] flex justify-center relative z-10">
+                        <div className="pt-1 w-full max-w-[940px] 2xl:max-w-[1060px] flex justify-center relative z-10">
                             <button
                                 id="mobile-back-button"
                                 onClick={() => {
                                     document.getElementById('top-section')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
-                                className="w-full bg-white/90 hover:bg-white active:scale-[0.99] transition rounded-full relative flex items-center justify-center px-6 md:px-8 py-2.5 md:py-3.5 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-4 md:mt-6 scroll-mt-4"
+                                className="w-full bg-white/90 hover:bg-white active:scale-[0.99] transition rounded-full relative flex items-center justify-center px-6 md:px-8 2xl:px-10 py-2.5 md:py-3.5 2xl:py-5 shadow-[0_15px_25px_-10px_rgba(0,0,0,0.15)] border border-white/60 cursor-pointer mt-4 md:mt-6 scroll-mt-4"
                             >
-                                <span className="font-milker tracking-wider text-lg md:text-2xl xl:text-3xl font-bold text-[#64964E]">Back</span>
-                                <i className="fa-solid fa-caret-up text-xl md:text-3xl text-[#64964E] absolute right-6 md:right-8"></i>
+                                <span className="font-milker tracking-wider text-lg md:text-2xl xl:text-3xl 2xl:text-4xl font-bold text-[#64964E]">Back</span>
+                                <i className="fa-solid fa-caret-up text-xl md:text-3xl 2xl:text-4xl text-[#64964E] absolute right-6 md:right-8 2xl:right-10"></i>
                             </button>
                         </div>
                     </div>
@@ -213,61 +213,61 @@ export default function Home() {
                                 </div>
                             ) : user ? (
                                 /* Logged In: Dashboard & Redeem Buttons */
-                                <div className="space-y-12 md:space-y-16 flex flex-col items-center md:items-start">
+                                <div className="space-y-12 md:space-y-16 2xl:space-y-20 flex flex-col items-center md:items-start">
                                     <Link href="/dashboard" className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
-                                        <div className="group bg-gray-200 text-[#64964E] hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center shadow-xl shrink-0">
-                                            <span className="font-gondens tracking-wider text-4xl md:text-6xl xl:text-6xl my-auto leading-none flex-1 text-center">HISTORIES</span>
-                                            <div className="w-16 h-16 md:w-[96px] md:h-[96px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">
-                                                <i className="fa-solid fa-chart-column text-4xl md:text-5xl"></i>
+                                        <div className="group bg-gray-200 text-[#64964E] hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 2xl:px-12 2xl:py-9 rounded-2xl w-full max-w-[530px] md:w-[530px] 2xl:max-w-[620px] 2xl:w-[620px] flex justify-between items-center shadow-xl shrink-0">
+                                            <span className="font-gondens tracking-wider text-4xl md:text-6xl xl:text-6xl 2xl:text-7xl my-auto leading-none flex-1 text-center">HISTORIES</span>
+                                            <div className="w-16 h-16 md:w-[96px] md:h-[96px] 2xl:w-[110px] 2xl:h-[110px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">
+                                                <i className="fa-solid fa-chart-column text-4xl md:text-5xl 2xl:text-6xl"></i>
                                             </div>
                                         </div>
-                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 text-gray-700 font-medium text-left w-full md:w-auto px-4 md:px-0">
-                                            <p className="font-bold text-lg md:text-2xl xl:text-3xl text-[#64964E]">ดูสถิติและประวัติของคุณ</p>
-                                            <p className="font-light text-lg md:text-xl xl:text-2xl md:ml-6 mt-1 md:mt-2">• คะแนนสะสมของคุณ</p>
-                                            <p className="font-light text-lg md:text-xl xl:text-2xl md:ml-6 mt-1 md:mt-2">• จำนวนขยะสะสมของคุณ</p>
-                                            <p className="font-light text-lg md:text-xl xl:text-2xl md:ml-6 mt-1 md:mt-2">• ประวัติการรีไซเคิลและการแลก</p>
+                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 2xl:ml-12 text-gray-700 font-medium text-left w-full md:w-auto px-4 md:px-0">
+                                            <p className="font-bold text-lg md:text-2xl xl:text-3xl 2xl:text-4xl text-[#64964E]">ดูสถิติและประวัติของคุณ</p>
+                                            <p className="font-light text-lg md:text-xl xl:text-2xl 2xl:text-3xl md:ml-6 2xl:ml-8 mt-1 md:mt-2 2xl:mt-3">• คะแนนสะสมของคุณ</p>
+                                            <p className="font-light text-lg md:text-xl xl:text-2xl 2xl:text-3xl md:ml-6 2xl:ml-8 mt-1 md:mt-2 2xl:mt-3">• จำนวนขยะสะสมของคุณ</p>
+                                            <p className="font-light text-lg md:text-xl xl:text-2xl 2xl:text-3xl md:ml-6 2xl:ml-8 mt-1 md:mt-2 2xl:mt-3">• ประวัติการรีไซเคิลและการแลก</p>
                                         </div>
                                     </Link>
 
                                     <Link href="/redeem" className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
-                                        <div className="group bg-gray-200 text-[#64964E] hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center shadow-md shrink-0">
-                                            <span className="font-gondens tracking-wider text-4xl md:text-6xl xl:text-6xl my-auto leading-none flex-1 text-center">REWARDS</span>
-                                            <div className="w-16 h-16 md:w-[96px] md:h-[96px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">
-                                                <i className="fa-solid fa-gift text-4xl md:text-5xl"></i>
+                                        <div className="group bg-gray-200 text-[#64964E] hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 2xl:px-12 2xl:py-9 rounded-2xl w-full max-w-[530px] md:w-[530px] 2xl:max-w-[620px] 2xl:w-[620px] flex justify-between items-center shadow-md shrink-0">
+                                            <span className="font-gondens tracking-wider text-4xl md:text-6xl xl:text-6xl 2xl:text-7xl my-auto leading-none flex-1 text-center">REWARDS</span>
+                                            <div className="w-16 h-16 md:w-[96px] md:h-[96px] 2xl:w-[110px] 2xl:h-[110px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">
+                                                <i className="fa-solid fa-gift text-4xl md:text-5xl 2xl:text-6xl"></i>
                                             </div>
                                         </div>
-                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 text-gray-700 font-medium text-left w-full md:w-auto px-4 md:px-0">
-                                            <p className="font-bold text-xl md:text-2xl xl:text-3xl text-[#64964E]">ใช้แต้มสะสมแลกสิทธิพิเศษ</p>
-                                            <p className="font-light text-lg md:text-xl xl:text-2xl md:ml-6 mt-1 md:mt-2">• ของรางวัลพิเศษ</p>
-                                            <p className="font-light text-lg md:text-xl xl:text-2xl md:ml-6 mt-1 md:mt-2">• ส่วนลดร้านค้า</p>
-                                            <p className="font-light text-lg md:text-xl xl:text-2xl md:ml-6 mt-1 md:mt-2">• หน่วยกิตกิจกรรมต่างๆ</p>
+                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 2xl:ml-12 text-gray-700 font-medium text-left w-full md:w-auto px-4 md:px-0">
+                                            <p className="font-bold text-xl md:text-2xl xl:text-3xl 2xl:text-4xl text-[#64964E]">ใช้แต้มสะสมแลกสิทธิพิเศษ</p>
+                                            <p className="font-light text-lg md:text-xl xl:text-2xl 2xl:text-3xl md:ml-6 2xl:ml-8 mt-1 md:mt-2 2xl:mt-3">• ของรางวัลพิเศษ</p>
+                                            <p className="font-light text-lg md:text-xl xl:text-2xl 2xl:text-3xl md:ml-6 2xl:ml-8 mt-1 md:mt-2 2xl:mt-3">• ส่วนลดร้านค้า</p>
+                                            <p className="font-light text-lg md:text-xl xl:text-2xl 2xl:text-3xl md:ml-6 2xl:ml-8 mt-1 md:mt-2 2xl:mt-3">• หน่วยกิตกิจกรรมต่างๆ</p>
                                         </div>
                                     </Link>
                                 </div>
                             ) : (
                                 /* Guest Features */
-                                <div className="space-y-16 md:space-y-10 xl:space-y-20 flex flex-col items-center md:items-start md:mt-0 mt-10">
+                                <div className="space-y-16 md:space-y-10 xl:space-y-20 2xl:space-y-24 flex flex-col items-center md:items-start md:mt-0 mt-10">
                                     <Link href="/login?redirect=/" className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
-                                        <div className="group bg-black text-white hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center shadow-md shrink-0">
-                                            <span className="font-milker tracking-wider text-4xl md:text-6xl xl:text-6xl font-bold my-auto leading-none flex-1 text-center md:text-left">SIGN IN</span>
-                                            <div className="w-12 h-12 md:w-[96px] md:h-[96px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">
-                                                <i className="fa-solid fa-right-to-bracket text-2xl md:text-5xl"></i>
+                                        <div className="group bg-black text-white hover:text-black hover:bg-[#64964E] hover:ring-4 hover:ring-black hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 2xl:px-12 2xl:py-9 rounded-2xl w-full max-w-[530px] md:w-[530px] 2xl:max-w-[620px] 2xl:w-[620px] flex justify-between items-center shadow-md shrink-0">
+                                            <span className="font-milker tracking-wider text-4xl md:text-6xl xl:text-6xl 2xl:text-7xl font-bold my-auto leading-none flex-1 text-center md:text-left">SIGN IN</span>
+                                            <div className="w-12 h-12 md:w-[96px] md:h-[96px] 2xl:w-[110px] 2xl:h-[110px] bg-[#64964E] rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#64964E] transition shrink-0">
+                                                <i className="fa-solid fa-right-to-bracket text-2xl md:text-5xl 2xl:text-6xl"></i>
                                             </div>
                                         </div>
-                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 text-gray-700 text-lg md:text-xl xl:text-2xl font-medium leading-relaxed text-left px-4 md:px-0">
+                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 2xl:ml-12 text-gray-700 text-lg md:text-xl xl:text-2xl 2xl:text-3xl font-medium leading-relaxed text-left px-4 md:px-0">
                                             ดูสถิติและประวัติของคุณ <br className="hidden md:block" />
                                             แลกแต้มสะสมเป็นของรางวัล
                                         </div>
                                     </Link>
 
                                     <div className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start w-full max-w-[530px] md:max-w-none">
-                                        <div className="group bg-white text-gray-700 hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 rounded-2xl w-full max-w-[530px] md:w-[530px] flex justify-between items-center border-2 border-gray-200 border-dashed shrink-0">
-                                            <Link href="/register" className="font-milker tracking-wider text-4xl md:text-6xl xl:text-6xl font-bold text-gray-400 hover:text-[#64964E] my-auto leading-none flex-1 text-center md:text-left transition">SIGN UP</Link>
-                                            <Link href="/register" className="w-12 h-12 md:w-[96px] md:h-[96px] bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 hover:bg-[#64964E] hover:text-white transition cursor-pointer">
-                                                <i className="fa-solid fa-user-plus text-2xl md:text-5xl"></i>
+                                        <div className="group bg-white text-gray-700 hover:-translate-y-1 transition px-4 py-3 md:px-10 md:py-8 2xl:px-12 2xl:py-9 rounded-2xl w-full max-w-[530px] md:w-[530px] 2xl:max-w-[620px] 2xl:w-[620px] flex justify-between items-center border-2 border-gray-200 border-dashed shrink-0">
+                                            <Link href="/register" className="font-milker tracking-wider text-4xl md:text-6xl xl:text-6xl 2xl:text-7xl font-bold text-gray-400 hover:text-[#64964E] my-auto leading-none flex-1 text-center md:text-left transition">SIGN UP</Link>
+                                            <Link href="/register" className="w-12 h-12 md:w-[96px] md:h-[96px] 2xl:w-[110px] 2xl:h-[110px] bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 hover:bg-[#64964E] hover:text-white transition cursor-pointer">
+                                                <i className="fa-solid fa-user-plus text-2xl md:text-5xl 2xl:text-6xl"></i>
                                             </Link>
                                         </div>
-                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 text-gray-500 text-lg md:text-xl xl:text-2xl font-medium leading-relaxed text-left px-4 md:px-0 pb-10">
+                                        <div className="mt-3 md:mt-0 md:ml-8 lg:ml-10 2xl:ml-12 text-gray-500 text-lg md:text-xl xl:text-2xl 2xl:text-3xl font-medium leading-relaxed text-left px-4 md:px-0 pb-10">
                                             สมัครสมาชิกใหม่ฟรี <br className="hidden md:block" />
                                             รับแต้มสะสมทันที ทุกครั้งที่คุณช่วยเรารีไซเคิล
                                         </div>
@@ -277,8 +277,8 @@ export default function Home() {
                         </div>
 
                         {/* Right Column: Info1 SVG Illustration (30%) */}
-                        <div className="hidden lg:flex shrink-0 w-120 lg:w-[30%] justify-center items-center pointer-events-none select-none pl-2">
-                            <Info1 secondaryColor="#64964E" primaryColor="#5BA1C2" className="w-full h-auto max-w-sm" />
+                        <div className="hidden lg:flex shrink-0 w-120 lg:w-[30%] 2xl:w-[32%] justify-center items-center pointer-events-none select-none pl-2">
+                            <Info1 secondaryColor="#64964E" primaryColor="#5BA1C2" className="w-full h-auto max-w-sm 2xl:max-w-md" />
                         </div>
                     </div>
                 </div>
@@ -305,8 +305,8 @@ function HowtoSlideshow() {
     const slides = [
         {
             id: 1,
-            title: 'ขั้นตอนที่ 1: สมัครสมาชิก',
-            description: 'สมัครสมาชิกบนแพลตฟอร์ม SBAY Smart Recycling เพื่อเริ่มสะสมคะแนน',
+            title: 'ขั้นตอนที่ 1: คัดแยกขวดให้พร้อม',
+            description: 'เทของเหลวออกจากขวดพลาสติก กระป๋อง หรือกล่องเครื่องดื่มให้หมดก่อนนำมารีไซเคิล',
             image: '/images/Howto1.jpg'
         },
         {
@@ -334,7 +334,7 @@ function HowtoSlideshow() {
     };
 
     return (
-        <div className="w-full relative h-[450px] md:h-[550px] lg:h-[620px] flex items-center justify-center overflow-hidden group" style={{ backgroundImage: "url('/images/bg-white.jpg')" }}>
+        <div className="w-full relative h-[450px] md:h-[550px] lg:h-[620px] 2xl:h-[720px] flex items-center justify-center overflow-hidden group" style={{ backgroundImage: "url('/images/bg-white.jpg')" }}>
             {/* Slide Content */}
             {slides.map((slide, index) => (
                 <div
@@ -356,12 +356,12 @@ function HowtoSlideshow() {
 
                     {/* Floating Bottom Caption Bar */}
                     <div className="absolute bottom-12 md:bottom-14 left-4 right-4 md:left-auto md:right-auto z-20 text-center">
-                        <div className="bg-black/85 backdrop-blur-md border border-white/10 px-5 py-3 md:px-8 md:py-3.5 rounded-2xl shadow-2xl max-w-2xl mx-auto">
+                        <div className="bg-black/85 backdrop-blur-md border border-white/10 px-5 py-3 md:px-8 md:py-3.5 2xl:px-10 2xl:py-5 rounded-2xl shadow-2xl max-w-2xl 2xl:max-w-3xl mx-auto">
                             <div className="flex items-center justify-center gap-2 mb-1">
-                                <span className="bg-[#64964E] text-white text-[11px] md:text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0">
+                                <span className="bg-[#64964E] text-white text-[11px] md:text-xs 2xl:text-sm font-bold px-2.5 py-0.5 rounded-full shrink-0">
                                     #{index + 1}
                                 </span>
-                                <h3 className="text-sm md:text-lg lg:text-xl font-bold text-white">
+                                <h3 className="text-sm md:text-lg lg:text-xl 2xl:text-2xl font-bold text-white">
                                     {slide.title}
                                 </h3>
                             </div>
