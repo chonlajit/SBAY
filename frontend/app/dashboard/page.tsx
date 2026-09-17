@@ -293,19 +293,19 @@ export default function DashboardPage() {
     return (
         <div className="min-h-full px-2 sm:px-6 lg:px-8 py-4 md:py-2 lg:py-6 font-sans flex flex-col relative z-0">
             <div className="fixed inset-0 -z-10 bg-cover bg-center md:bg-fixed" style={{ backgroundImage: "url('/images/bg-white.jpg')" }}></div>
-            <div className="bg-white/30 backdrop-blur-md p-2 sm:p-4 lg:p-8 rounded-3xl lg:rounded-[3rem] shadow-2xl max-w-[1500px] 2xl:max-w-[1680px] mx-auto w-full border border-white/50 flex-1 flex flex-col relative overflow-visible">
-                <div className="max-w-[1440px] 2xl:max-w-[1650px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 2xl:gap-8 items-stretch flex-1 relative z-10 lg:h-[550px] xl:h-[600px] 2xl:h-[680px]">
+            <div className="bg-white/30 backdrop-blur-md p-2 sm:p-4 lg:p-8 rounded-3xl lg:rounded-[3rem] shadow-2xl max-w-[1500px] mx-auto w-full border border-white/50 flex-1 flex flex-col relative overflow-visible">
+                <div className="max-w-[1440px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch flex-1 relative z-10 lg:h-[550px] xl:h-[600px]">
                     {/* Unified Background for both columns */}
                     <div className={`absolute inset-0 rounded-2xl lg:rounded-[2.5rem] -z-10 shadow-xl border border-white/20 transition-colors duration-300 ${activeTab === 'recycle' ? 'bg-[#64964E]' : 'bg-[#5BA1C2]'}`}></div>
 
                     {/* ─── LEFT COLUMN: WHITE CONTAINER ─── */}
-                    <div className="lg:col-span-7 bg-white/60 backdrop-blur-md rounded-2xl lg:rounded-[2rem] p-3 sm:p-6 2xl:p-8 flex flex-col justify-start relative z-20">
+                    <div className="lg:col-span-7 bg-white/60 backdrop-blur-md rounded-2xl lg:rounded-[2rem] p-3 sm:p-6 flex flex-col justify-start relative z-20">
 
                         {/* Top Green Banner (User Profile & Points) */}
-                        <div className="bg-[#64964E] rounded-2xl lg:rounded-[2rem] p-3 sm:p-4 2xl:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 shadow-md shrink-0">
+                        <div className="bg-[#64964E] rounded-2xl lg:rounded-[2rem] p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 shadow-md shrink-0">
                             {/* User Profile Badge (Dark Left Box) */}
                             <div className="text-white p-2 sm:p-3.5 flex items-center space-x-3 sm:space-x-4 min-w-[200px] ">
-                                <div className="w-16 h-16 md:w-20 md:h-20 2xl:w-24 2xl:h-24 bg-black text-white font-black text-4xl md:text-6xl 2xl:text-7xl rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 shadow overflow-hidden">
+                                <div className="w-16 h-16 md:w-20 md:h-20 bg-black text-white font-black text-4xl md:text-6xl rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 shadow overflow-hidden">
                                     {user.profileImageUrl ? (
                                         <img
                                             src={getImageUrl(user.profileImageUrl)}
@@ -317,34 +317,34 @@ export default function DashboardPage() {
                                     )}
                                 </div>
                                 <div className="min-w-0 pr-2">
-                                    <h2 className="font-extrabold text-white text-xl md:text-4xl 2xl:text-5xl tracking-tight truncate">
+                                    <h2 className="font-extrabold text-white text-xl md:text-4xl tracking-tight truncate">
                                         {displayName}
                                     </h2>
                                 </div>
                             </div>
 
                             {/* Total Points Badge (White Right Box) */}
-                            <div className="bg-white text-[#64964E] rounded-xl md:rounded-[1.4rem] px-3 py-2 md:px-5 md:py-3 2xl:px-6 2xl:py-4 flex flex-col items-center justify-center text-center shadow-md border-2 border-white w-full sm:w-auto min-w-[200px] 2xl:min-w-[220px]">
-                                <span className="text-[#64964E] font-extrabold text-sm sm:text-base 2xl:text-lg">คะแนนทั้งหมด</span>
+                            <div className="bg-white text-[#64964E] rounded-xl md:rounded-[1.4rem] px-3 py-2 md:px-5 md:py-3 flex flex-col items-center justify-center text-center shadow-md border-2 border-white w-full sm:w-auto min-w-[200px]">
+                                <span className="text-[#64964E] font-extrabold text-sm sm:text-base">คะแนนทั้งหมด</span>
                                 <div className="flex items-baseline space-x-1.5 mt-0.5">
-                                    <span className="text-2xl md:text-4xl 2xl:text-5xl font-black text-gray-900">{user.points || 0}</span>
-                                    <span className="text-sm md:text-xl 2xl:text-2xl font-bold text-[#64964E]">Point</span>
+                                    <span className="text-2xl md:text-4xl font-black text-gray-900">{user.points || 0}</span>
+                                    <span className="text-sm md:text-xl font-bold text-[#64964E]">Point</span>
                                 </div>
-                                <span className="text-[10px] md:text-[11px] 2xl:text-xs text-gray-500 font-semibold mt-0.5">
+                                <span className="text-[10px] md:text-[11px] text-gray-500 font-semibold mt-0.5">
                                     จากทั้งหมด {history.length} รอบการทำงาน
                                 </span>
                             </div>
                         </div>
 
                         {/* Mode Tabs & 4 Stat Cards */}
-                        <div className="flex flex-col justify-start mt-3 md:mt-4 2xl:mt-5 flex-1 min-h-0">
+                        <div className="flex flex-col justify-start mt-3 md:mt-4 flex-1 min-h-0">
                             {/* Tab Switcher */}
                             <div className="flex items-end space-x-1 md:space-x-2 relative z-10 px-1 md:px-1 shrink-0">
                                 {/* Tab 1: การรีไซเคิล */}
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('recycle')}
-                                    className={`flex-1 py-2 md:py-3 2xl:py-3.5 px-2 sm:px-6 rounded-t-xl md:rounded-t-2xl text-center font-bold text-sm sm:text-lg 2xl:text-xl transition shadow-sm ${activeTab === 'recycle'
+                                    className={`flex-1 py-2 md:py-3 px-2 sm:px-6 rounded-t-xl md:rounded-t-2xl text-center font-bold text-sm sm:text-lg transition shadow-sm ${activeTab === 'recycle'
                                         ? 'bg-[#64964E] text-white z-20'
                                         : 'bg-[#D7F5D2] hover:bg-[#b5e6ae] text-gray-900 z-10'
                                         }`}
@@ -356,7 +356,7 @@ export default function DashboardPage() {
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('redeem')}
-                                    className={`flex-1 py-2 md:py-3 2xl:py-3.5 px-2 sm:px-6 rounded-t-xl md:rounded-t-2xl text-center font-bold text-sm sm:text-lg 2xl:text-xl transition shadow-sm ${activeTab === 'redeem'
+                                    className={`flex-1 py-2 md:py-3 px-2 sm:px-6 rounded-t-xl md:rounded-t-2xl text-center font-bold text-sm sm:text-lg transition shadow-sm ${activeTab === 'redeem'
                                         ? 'bg-[#5BA1C2] text-white z-20'
                                         : 'bg-[#E0F2FE] hover:bg-[#BAE6FD] text-gray-900 z-10'
                                         }`}
@@ -366,88 +366,88 @@ export default function DashboardPage() {
                             </div>
 
                             {/* 4 Stat Cards Container */}
-                            <div className="pt-3 md:pt-4 2xl:pt-5 flex-1 flex flex-col min-h-0">
+                            <div className="pt-3 md:pt-4 flex-1 flex flex-col min-h-0">
                                 {activeTab === 'recycle' ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-3.5 2xl:gap-4 flex-1 min-h-0">
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl p-3 sm:p-4 2xl:p-5 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
-                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg 2xl:text-xl text-center">แลกทั้งหมด</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-3.5 flex-1 min-h-0">
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">แลกทั้งหมด</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl 2xl:text-5xl font-black text-[#64964E]">
-                                                    {totalRecycleItems} <span className="text-xs sm:text-sm 2xl:text-base font-bold">ชิ้น</span>
+                                                <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
+                                                    {totalRecycleItems} <span className="text-xs sm:text-sm font-bold">ชิ้น</span>
                                                 </span>
-                                                <span className="text-[#64964E] font-bold text-xs sm:text-base 2xl:text-lg">
+                                                <span className="text-[#64964E] font-bold text-xs sm:text-base">
                                                     +{Number(totalRecyclePoints).toFixed(2).replace(/\.00$/, '')} แต้ม
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 2xl:p-5 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
-                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg 2xl:text-xl text-center">ขวดพลาสติก</h4>
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">ขวดพลาสติก</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl 2xl:text-5xl font-black text-[#64964E]">
-                                                    {wasteStats.bottleCount} <span className="text-xs sm:text-sm 2xl:text-base font-bold">ชิ้น</span>
+                                                <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
+                                                    {wasteStats.bottleCount} <span className="text-xs sm:text-sm font-bold">ชิ้น</span>
                                                 </span>
-                                                <span className="text-[#64964E] font-bold text-xs sm:text-base 2xl:text-lg">
+                                                <span className="text-[#64964E] font-bold text-xs sm:text-base">
                                                     +{Number(wasteStats.bottlePoints).toFixed(2).replace(/\.00$/, '')} แต้ม
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 2xl:p-5 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
-                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg 2xl:text-xl text-center">กระป๋องอลูมิเนียม</h4>
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">กระป๋องอลูมิเนียม</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl 2xl:text-5xl font-black text-[#64964E]">
-                                                    {wasteStats.canCount} <span className="text-xs sm:text-sm 2xl:text-base font-bold">ชิ้น</span>
+                                                <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
+                                                    {wasteStats.canCount} <span className="text-xs sm:text-sm font-bold">ชิ้น</span>
                                                 </span>
-                                                <span className="text-[#64964E] font-bold text-xs sm:text-base 2xl:text-lg">
+                                                <span className="text-[#64964E] font-bold text-xs sm:text-base">
                                                     +{Number(wasteStats.canPoints).toFixed(2).replace(/\.00$/, '')} แต้ม
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 2xl:p-5 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
-                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg 2xl:text-xl text-center">กล่องเครื่องดื่ม</h4>
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">กล่องเครื่องดื่ม</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl 2xl:text-5xl font-black text-[#64964E]">
-                                                    {wasteStats.cartonCount} <span className="text-xs sm:text-sm 2xl:text-base font-bold">ชิ้น</span>
+                                                <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
+                                                    {wasteStats.cartonCount} <span className="text-xs sm:text-sm font-bold">ชิ้น</span>
                                                 </span>
-                                                <span className="text-[#64964E] font-bold text-xs sm:text-base 2xl:text-lg">
+                                                <span className="text-[#64964E] font-bold text-xs sm:text-base">
                                                     +{Number(wasteStats.cartonPoints).toFixed(2).replace(/\.00$/, '')} แต้ม
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-3.5 2xl:gap-4 flex-1 min-h-0">
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl p-3 sm:p-4 2xl:p-5 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
-                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg 2xl:text-xl text-center">แลกทั้งหมด</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-3.5 flex-1 min-h-0">
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">แลกทั้งหมด</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl 2xl:text-5xl font-black text-gray-900">
-                                                    {redemptions.length} <span className="text-xs sm:text-sm 2xl:text-base font-bold">รายการ</span>
+                                                <span className="text-2xl sm:text-4xl font-black text-gray-900">
+                                                    {redemptions.length} <span className="text-xs sm:text-sm font-bold">รายการ</span>
                                                 </span>
-                                                <span className="text-[#5BA1C2] font-bold text-xs sm:text-base 2xl:text-lg">
+                                                <span className="text-[#5BA1C2] font-bold text-xs sm:text-base">
                                                     -{totalRedeemPoints} แต้ม
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 2xl:p-5 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
-                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg 2xl:text-xl text-center">สินค้า</h4>
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">สินค้า</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl 2xl:text-5xl font-black text-gray-900">
-                                                    {redemptions.filter(r => r.rewardType === 'PRODUCT' || r.type === 'GOODS' || r.rewardType === 'OTHER').length} <span className="text-xs sm:text-sm 2xl:text-base font-bold">รายการ</span>
+                                                <span className="text-2xl sm:text-4xl font-black text-gray-900">
+                                                    {redemptions.filter(r => r.rewardType === 'PRODUCT' || r.type === 'GOODS' || r.rewardType === 'OTHER').length} <span className="text-xs sm:text-sm font-bold">รายการ</span>
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 2xl:p-5 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
-                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg 2xl:text-xl text-center">ส่วนลด</h4>
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">ส่วนลด</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl 2xl:text-5xl font-black text-gray-900">
-                                                    {redemptions.filter(r => r.rewardType === 'DISCOUNT' || r.type === 'COUPON').length} <span className="text-xs sm:text-sm 2xl:text-base font-bold">รายการ</span>
+                                                <span className="text-2xl sm:text-4xl font-black text-gray-900">
+                                                    {redemptions.filter(r => r.rewardType === 'DISCOUNT' || r.type === 'COUPON').length} <span className="text-xs sm:text-sm font-bold">รายการ</span>
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 2xl:p-5 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
-                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg 2xl:text-xl text-center">หมวดหมู่สำหรับนักศึกษา</h4>
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
+                                            <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">หมวดหมู่สำหรับนักศึกษา</h4>
                                             <div className="flex items-baseline justify-between mt-2">
-                                                <span className="text-2xl sm:text-4xl 2xl:text-5xl font-black text-gray-900">
-                                                    {redemptions.filter(r => r.rewardType === 'ACTIVITY' || r.rewardType === 'VOLUNTEER' || r.type === 'VOUCHER').length} <span className="text-xs sm:text-sm 2xl:text-base font-bold">รายการ</span>
+                                                <span className="text-2xl sm:text-4xl font-black text-gray-900">
+                                                    {redemptions.filter(r => r.rewardType === 'ACTIVITY' || r.rewardType === 'VOLUNTEER' || r.type === 'VOUCHER').length} <span className="text-xs sm:text-sm font-bold">รายการ</span>
                                                 </span>
                                             </div>
                                         </div>
@@ -466,12 +466,12 @@ export default function DashboardPage() {
                                 ? 'bg-[#D7F5D2]/80 text-[#243d1b]'
                                 : 'bg-[#BAE6FD]/80 text-[#5BA1C2]'
                                 }`}>
-                                <h3 className="font-black text-xl sm:text-2xl 2xl:text-3xl tracking-tight">
+                                <h3 className="font-black text-xl sm:text-2xl tracking-tight">
                                     {activeTab === 'recycle' ? 'ประวัติการรีไซเคิล' : 'ประวัติการแลกรางวัล'}
                                 </h3>
                             </div>
 
-                            <div className="p-3.5 sm:p-4 2xl:p-5 flex-1 space-y-3 2xl:space-y-4 pb-8 md:pb-4 overflow-y-auto min-h-0" style={{ scrollbarWidth: 'thin' }}>
+                            <div className="p-3.5 sm:p-4 flex-1 space-y-3 pb-8 md:pb-4 overflow-y-auto min-h-0" style={{ scrollbarWidth: 'thin' }}>
                                 {loading ? (
                                     <div className="py-12 flex flex-col items-center justify-center space-y-2">
                                         <svg className="animate-spin w-8 h-8 text-[#64964E]" viewBox="0 0 24 24" fill="none">
@@ -495,20 +495,20 @@ export default function DashboardPage() {
                                             <div key={sessionId} className="border border-gray-100 rounded-xl overflow-hidden bg-gray-50/50">
                                                 <div
                                                     onClick={() => toggleSession(sessionId)}
-                                                    className="flex justify-between items-center p-3 2xl:p-4 bg-white cursor-pointer hover:bg-gray-50 transition"
+                                                    className="flex justify-between items-center p-3 bg-white cursor-pointer hover:bg-gray-50 transition"
                                                 >
                                                     <div className="flex flex-col">
-                                                        <span className="font-bold text-gray-800 text-sm 2xl:text-base">รายการวันที่ {dateStr} <span className="text-gray-500 font-medium ml-1">เวลา {timeStr}</span></span>
+                                                        <span className="font-bold text-gray-800 text-sm">รายการวันที่ {dateStr} <span className="text-gray-500 font-medium ml-1">เวลา {timeStr}</span></span>
                                                     </div>
                                                     <div className="flex items-center space-x-3">
-                                                        <span className="text-green-600 font-black text-sm 2xl:text-base">+{Number(sessionTotal).toFixed(2).replace(/\.00$/, '')} P</span>
-                                                        <svg className={`w-4 h-4 2xl:w-5 2xl:h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <span className="text-green-600 font-black text-sm">+{Number(sessionTotal).toFixed(2).replace(/\.00$/, '')} P</span>
+                                                        <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                                         </svg>
                                                     </div>
                                                 </div>
                                                 {isExpanded && session.items && (
-                                                    <div className="p-3 2xl:p-4 bg-gray-50/50 space-y-2 border-t border-gray-100">
+                                                    <div className="p-3 bg-gray-50/50 space-y-2 border-t border-gray-100">
                                                         {(() => {
                                                             const groupedItems: Record<string, { count: number, points: number }> = {};
                                                             session.items.forEach((item: any) => {
@@ -534,7 +534,7 @@ export default function DashboardPage() {
                                                             });
 
                                                             return Object.entries(groupedItems).map(([name, data], iIndex) => (
-                                                                <div key={iIndex} className="flex justify-between items-center text-xs 2xl:text-sm">
+                                                                <div key={iIndex} className="flex justify-between items-center text-xs">
                                                                     <span className="text-gray-600 font-medium w-1/3">{name}</span>
                                                                     <span className="text-gray-500 w-1/3 text-center">{data.count.toLocaleString()} ชิ้น</span>
                                                                     <span className="text-green-600 font-bold w-1/3 text-right">รวม {data.points.toFixed(2).replace(/\.00$/, '')} P</span>
@@ -559,27 +559,27 @@ export default function DashboardPage() {
                                             <div key={groupId} className="border border-gray-100 rounded-xl overflow-hidden bg-gray-50/50">
                                                 <div
                                                     onClick={() => toggleDate(groupId)}
-                                                    className="flex justify-between items-center p-3 2xl:p-4 bg-white cursor-pointer hover:bg-gray-50 transition"
+                                                    className="flex justify-between items-center p-3 bg-white cursor-pointer hover:bg-gray-50 transition"
                                                 >
                                                     <div className="flex flex-col flex-1 pr-4">
-                                                        <span className="font-bold text-gray-800 text-sm 2xl:text-base">{rewardName} <span className="text-blue-600 ml-1">x{count}</span></span>
-                                                        <span className="text-gray-400 text-xs 2xl:text-sm mt-0.5">รายการวันที่ {sessionKey}</span>
+                                                        <span className="font-bold text-gray-800 text-sm">{rewardName} <span className="text-blue-600 ml-1">x{count}</span></span>
+                                                        <span className="text-gray-400 text-xs mt-0.5">รายการวันที่ {sessionKey}</span>
                                                     </div>
                                                     <div className="flex items-center gap-3">
-                                                        <span className="text-red-500 font-bold text-sm 2xl:text-base whitespace-nowrap">-{totalPoints} P</span>
+                                                        <span className="text-red-500 font-bold text-sm whitespace-nowrap">-{totalPoints} P</span>
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 downloadGroupReceipt(txGroup);
                                                             }}
-                                                            className="p-1.5 2xl:p-2 bg-[#5BA1C2] text-white rounded-md hover:bg-[#4a85a0] transition-colors flex items-center justify-center shrink-0 shadow-sm"
+                                                            className="p-1.5 bg-[#5BA1C2] text-white rounded-md hover:bg-[#4a85a0] transition-colors flex items-center justify-center shrink-0 shadow-sm"
                                                             title="ดาวน์โหลดใบเสร็จ PDF รวม"
                                                         >
-                                                            <svg className="w-4 h-4 2xl:w-5 2xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                             </svg>
                                                         </button>
-                                                        <svg className={`w-4 h-4 2xl:w-5 2xl:h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                                         </svg>
                                                     </div>

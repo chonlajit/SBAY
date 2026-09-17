@@ -218,14 +218,14 @@ export default function ProfilePage() {
 
     return (
         <div style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }} className="pt-1 pb-12 font-sans px-4">
-            <div className="max-w-3xl 2xl:max-w-4xl mx-auto space-y-6 2xl:space-y-8">
+            <div className="max-w-3xl mx-auto space-y-6">
 
                 {/* Header Area */}
                 <div className="flex items-center space-x-4 mb-8">
-                    <button onClick={() => router.back()} className="w-10 h-10 2xl:w-12 2xl:h-12 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition text-gray-600">
-                        <i className="fa-solid fa-arrow-left 2xl:text-lg"></i>
+                    <button onClick={() => router.back()} className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition text-gray-600">
+                        <i className="fa-solid fa-arrow-left"></i>
                     </button>
-                    <h1 className="text-2xl 2xl:text-3xl font-black text-white">โปรไฟล์ของฉัน</h1>
+                    <h1 className="text-2xl font-black text-white">โปรไฟล์ของฉัน</h1>
                 </div>
 
                 {message.text && (
@@ -238,19 +238,19 @@ export default function ProfilePage() {
                 <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
                     <form onSubmit={handleSaveProfile}>
                         {/* Top banner / Avatar */}
-                        <div className="bg-[#64964E] h-32 2xl:h-40 relative flex justify-center">
-                            <div className="absolute -bottom-12 2xl:-bottom-16 relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                                <div className="w-28 h-28 2xl:w-36 2xl:h-36 bg-white rounded-full p-1 shadow-lg overflow-hidden">
+                        <div className="bg-[#64964E] h-32 relative flex justify-center">
+                            <div className="absolute -bottom-12 relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                                <div className="w-28 h-28 bg-white rounded-full p-1 shadow-lg overflow-hidden">
                                     {formData.profileImageUrl ? (
                                         <img src={getImageUrl(formData.profileImageUrl)} alt="avatar" className="w-full h-full object-cover rounded-full" />
                                     ) : (
-                                        <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center text-4xl 2xl:text-5xl text-gray-400 font-bold">
+                                        <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center text-4xl text-gray-400 font-bold">
                                             {(user.firstName || user.username || user.email || '?').charAt(0)}
                                         </div>
                                     )}
                                 </div>
                                 <div className="absolute inset-1 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <i className="fa-solid fa-camera text-white text-xl 2xl:text-2xl"></i>
+                                    <i className="fa-solid fa-camera text-white text-xl"></i>
                                 </div>
                                 {uploadingAvatar && (
                                     <div className="absolute inset-1 bg-white/80 rounded-full flex items-center justify-center">
@@ -261,61 +261,61 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        <div className="p-8 2xl:p-10 pt-16 2xl:pt-20">
+                        <div className="p-8 pt-16">
                             <div className="mb-6">
-                                <h2 className="text-xl 2xl:text-2xl font-bold text-gray-800 mb-2 border-b pb-2">ข้อมูลส่วนตัว (Preset)</h2>
-                                <p className="text-sm 2xl:text-base text-gray-500">ข้อมูลเหล่านี้จะถูกดึงไปใช้เพื่อกรอกอัตโนมัติเวลาที่คุณแลกของรางวัล</p>
+                                <h2 className="text-xl font-bold text-gray-800 mb-2 border-b pb-2">ข้อมูลส่วนตัว (Preset)</h2>
+                                <p className="text-sm text-gray-500">ข้อมูลเหล่านี้จะถูกดึงไปใช้เพื่อกรอกอัตโนมัติเวลาที่คุณแลกของรางวัล</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 2xl:gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-1">
-                                    <label className="text-sm 2xl:text-base font-bold text-gray-700">ชื่อผู้ใช้ (Username)</label>
-                                    <input type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 2xl:py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E] 2xl:text-base" placeholder="ชื่อผู้ใช้" />
+                                    <label className="text-sm font-bold text-gray-700">ชื่อผู้ใช้ (Username)</label>
+                                    <input type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="ชื่อผู้ใช้" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm 2xl:text-base font-bold text-gray-700">อายุ</label>
-                                    <input type="number" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 2xl:py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E] 2xl:text-base" placeholder="อายุ (ปี)" />
+                                    <label className="text-sm font-bold text-gray-700">อายุ</label>
+                                    <input type="number" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="อายุ (ปี)" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm 2xl:text-base font-bold text-gray-700">ชื่อ</label>
-                                    <input type="text" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 2xl:py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E] 2xl:text-base" placeholder="ชื่อจริง" />
+                                    <label className="text-sm font-bold text-gray-700">ชื่อ</label>
+                                    <input type="text" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="ชื่อจริง" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm 2xl:text-base font-bold text-gray-700">นามสกุล</label>
-                                    <input type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 2xl:py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E] 2xl:text-base" placeholder="นามสกุล" />
+                                    <label className="text-sm font-bold text-gray-700">นามสกุล</label>
+                                    <input type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="นามสกุล" />
                                 </div>
                             </div>
 
-                            <div className="mt-5 2xl:mt-6 space-y-1">
-                                <label className="text-sm 2xl:text-base font-bold text-gray-700">ที่อยู่จัดส่ง / ติดต่อ</label>
-                                <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={3} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 2xl:py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E] resize-none 2xl:text-base" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"></textarea>
+                            <div className="mt-5 space-y-1">
+                                <label className="text-sm font-bold text-gray-700">ที่อยู่จัดส่ง / ติดต่อ</label>
+                                <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={3} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E] resize-none" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"></textarea>
                             </div>
 
                             <div className="mt-8 mb-4 border-b pb-2">
-                                <h2 className="text-lg 2xl:text-xl font-bold text-gray-800">ข้อมูลนักศึกษา</h2>
+                                <h2 className="text-lg font-bold text-gray-800">ข้อมูลนักศึกษา</h2>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 2xl:gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-1">
-                                    <label className="text-sm 2xl:text-base font-bold text-gray-700">รหัสนักศึกษา</label>
-                                    <input type="text" value={formData.studentId} onChange={e => setFormData({ ...formData, studentId: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 2xl:py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E] 2xl:text-base" placeholder="รหัสนักศึกษา 13 หลัก" />
+                                    <label className="text-sm font-bold text-gray-700">รหัสนักศึกษา</label>
+                                    <input type="text" value={formData.studentId} onChange={e => setFormData({ ...formData, studentId: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="รหัสนักศึกษา 13 หลัก" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm 2xl:text-base font-bold text-gray-700">คณะ</label>
-                                    <input type="text" value={formData.faculty} onChange={e => setFormData({ ...formData, faculty: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 2xl:py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E] 2xl:text-base" placeholder="คณะที่กำลังศึกษา" />
+                                    <label className="text-sm font-bold text-gray-700">คณะ</label>
+                                    <input type="text" value={formData.faculty} onChange={e => setFormData({ ...formData, faculty: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="คณะที่กำลังศึกษา" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm 2xl:text-base font-bold text-gray-700">สาขาวิชา</label>
-                                    <input type="text" value={formData.major} onChange={e => setFormData({ ...formData, major: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 2xl:py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E] 2xl:text-base" placeholder="สาขาวิชาเอก" />
+                                    <label className="text-sm font-bold text-gray-700">สาขาวิชา</label>
+                                    <input type="text" value={formData.major} onChange={e => setFormData({ ...formData, major: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="สาขาวิชาเอก" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm 2xl:text-base font-bold text-gray-700">ปีการศึกษา</label>
-                                    <input type="text" value={formData.academicYear || ''} onChange={e => setFormData({ ...formData, academicYear: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 2xl:py-3 focus:outline-none focus:ring-2 focus:ring-[#64964E] 2xl:text-base" placeholder="เช่น 2569" />
+                                    <label className="text-sm font-bold text-gray-700">ปีการศึกษา</label>
+                                    <input type="text" value={formData.academicYear || ''} onChange={e => setFormData({ ...formData, academicYear: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="เช่น 2569" />
                                 </div>
                             </div>
 
                             <div className="mt-10 flex justify-end">
-                                <button type="submit" disabled={loading} className="bg-[#64964E] text-white px-8 2xl:px-10 py-3 2xl:py-4 rounded-xl 2xl:rounded-2xl font-bold 2xl:text-lg shadow-lg shadow-green-900/20 hover:bg-[#527d40] transition disabled:opacity-50 flex items-center space-x-2">
+                                <button type="submit" disabled={loading} className="bg-[#64964E] text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-green-900/20 hover:bg-[#527d40] transition disabled:opacity-50 flex items-center space-x-2">
                                     {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <i className="fa-solid fa-save"></i>}
                                     <span>บันทึกข้อมูล</span>
                                 </button>
