@@ -32,8 +32,8 @@ public class User {
     
     private int points;
     
-    private double volunteerHours;
-    private int activityCredits;
+    private Double volunteerHours;
+    private Integer activityCredits;
     
     private String role; // "USER", "ADMIN", or "PARTNER"
     private String partnerId; // กำหนดเมื่อ role = PARTNER เชื่อมกับ Partner document

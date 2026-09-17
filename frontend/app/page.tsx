@@ -7,6 +7,7 @@ import { useSmartBin } from './context/SmartBinContext';
 import StatsDashboard from '../components/StatsDashboard';
 import Info1 from '../components/icons/Info1';
 import Logo from '../components/icons/Logo';
+import { getImageUrl } from './utils/image';
 
 export default function Home() {
     const { user, isInitialized } = useSmartBin();
@@ -23,7 +24,7 @@ export default function Home() {
                 Locked to max-w-[1440px] with responsive split background for larger screens
             */}
             <div id="top-section" className="w-full relative z-0 bg-white">
-                <div className="w-full flex flex-col lg:flex-row relative z-10 lg:h-[calc(100vh-4rem)] lg:min-h-[580px] lg:max-h-[740px]">
+                <div className="w-full flex flex-col lg:flex-row relative z-10 lg:h-[calc(100vh-4rem)] lg:min-h-[580px]">
                     {/* ─── Left Column Wrapper ─── */}
                     <div className="w-full lg:w-[42%] shrink-0 flex flex-col min-h-[calc(100vh-4rem)] lg:min-h-0 lg:h-full justify-between relative z-10 bg-white">
 
@@ -56,18 +57,30 @@ export default function Home() {
                                     </div>
                                 ) : user ? (
                                     /* User Card */
-                                    <div className="bg-[#64964E] rounded-xl xl:rounded-[32px] shadow-md px-4 py-2.5 md:px-6 md:py-4 xl:px-4 xl:py-4 border border-white/40 w-fit inline-flex items-center mt-12 md:mt-8 xl:mt-4">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-13 h-13 md:w-15 md:h-15 xl:w-20 xl:h-20 bg-black rounded-lg xl:rounded-2xl flex items-center justify-center text-white text-4xl px-4 py-2 md:px-4 md:py-2 md:text-5xl xl:text-5xl font-bold shadow-sm shrink-0">
-                                                {(user.username || user.firstName || user.email || '?').charAt(0).toUpperCase()}
+                                    <Link
+                                        href="/profile"
+                                        title="แก้ไขโปรไฟล์"
+                                        className="bg-[#64964E] hover:brightness-105 transition rounded-[15px] md:rounded-[20px] xl:rounded-[25px] shadow-md px-2 py-2 md:px-3 md:py-3 xl:px-4 xl:py-3 border border-white/40 max-w-[220px] xs:max-w-[260px] sm:max-w-[320px] md:max-w-[380px] xl:max-w-[440px] inline-flex items-center mt-12 md:mt-8 xl:mt-4 cursor-pointer"
+                                    >
+                                        <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 w-full">
+                                            <div className="w-12 h-12 md:w-16 md:h-16 xl:w-20 xl:h-20 bg-black rounded-lg md:rounded-xl xl:rounded-2xl flex items-center justify-center text-white text-4xl md:text-5xl xl:text-6xl font-bold shadow-sm shrink-0 overflow-hidden">
+                                                {user.profileImageUrl ? (
+                                                    <img
+                                                        src={getImageUrl(user.profileImageUrl)}
+                                                        alt="profile"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    (user.username || user.firstName || user.email || '?').charAt(0).toUpperCase()
+                                                )}
                                             </div>
-                                            <div className="min-w-0 pr-2">
-                                                <h3 className="font-bold text-white text-3xl md:text-5xl leading-tight truncate">
+                                            <div className="min-w-0 flex-1 pr-1">
+                                                <h3 className="font-bold text-white text-3xl md:text-4xl xl:text-5xl leading-tight truncate" title={user.username || user.firstName || user.email || 'ผู้ใช้งาน'}>
                                                     {user.username || user.firstName || user.email || 'ผู้ใช้งาน'}
                                                 </h3>
                                             </div>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ) : (
                                     <span className="font-gondens text-5xl md:text-6xl xl:text-7xl font-bold text-white tracking-normal drop-shadow-md mt-12 md:mt-8 xl:mt-4">
                                         EVERYONE

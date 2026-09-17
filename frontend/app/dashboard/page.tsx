@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSmartBin } from '../context/SmartBinContext';
+import { getImageUrl } from '../utils/image';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -298,14 +299,22 @@ export default function DashboardPage() {
                     <div className={`absolute inset-0 rounded-2xl lg:rounded-[2.5rem] -z-10 shadow-xl border border-white/20 transition-colors duration-300 ${activeTab === 'recycle' ? 'bg-[#64964E]' : 'bg-[#5BA1C2]'}`}></div>
 
                     {/* ─── LEFT COLUMN: WHITE CONTAINER ─── */}
-                    <div className="lg:col-span-7 bg-white/60 backdrop-blur-md rounded-2xl lg:rounded-[2rem] p-3 sm:p-6 space-y-3 md:space-y-5 flex flex-col justify-between relative z-20">
+                    <div className="lg:col-span-7 bg-white/60 backdrop-blur-md rounded-2xl lg:rounded-[2rem] p-3 sm:p-6 flex flex-col justify-start relative z-20">
 
                         {/* Top Green Banner (User Profile & Points) */}
-                        <div className="bg-[#64964E] rounded-2xl lg:rounded-[2rem] p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 shadow-md">
+                        <div className="bg-[#64964E] rounded-2xl lg:rounded-[2rem] p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 shadow-md shrink-0">
                             {/* User Profile Badge (Dark Left Box) */}
                             <div className="text-white p-2 sm:p-3.5 flex items-center space-x-3 sm:space-x-4 min-w-[200px] ">
-                                <div className="w-16 h-16 md:w-20 md:h-20 bg-black text-white font-black text-4xl md:text-6xl rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 shadow">
-                                    {initialLetter}
+                                <div className="w-16 h-16 md:w-20 md:h-20 bg-black text-white font-black text-4xl md:text-6xl rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 shadow overflow-hidden">
+                                    {user.profileImageUrl ? (
+                                        <img
+                                            src={getImageUrl(user.profileImageUrl)}
+                                            alt="profile"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        initialLetter
+                                    )}
                                 </div>
                                 <div className="min-w-0 pr-2">
                                     <h2 className="font-extrabold text-white text-xl md:text-4xl tracking-tight truncate">
@@ -328,9 +337,9 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Mode Tabs & 4 Stat Cards */}
-                        <div className="space-y-0 flex flex-col justify-start mt-4">
+                        <div className="flex flex-col justify-start mt-3 md:mt-4 flex-1 min-h-0">
                             {/* Tab Switcher */}
-                            <div className="flex items-end space-x-1 md:space-x-2 relative z-10 px-1 md:px-1">
+                            <div className="flex items-end space-x-1 md:space-x-2 relative z-10 px-1 md:px-1 shrink-0">
                                 {/* Tab 1: การรีไซเคิล */}
                                 <button
                                     type="button"
@@ -357,10 +366,10 @@ export default function DashboardPage() {
                             </div>
 
                             {/* 4 Stat Cards Container */}
-                            <div className="pt-4">
+                            <div className="pt-3 md:pt-4 flex-1 flex flex-col min-h-0">
                                 {activeTab === 'recycle' ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-3.5">
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[130px]">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-3.5 flex-1 min-h-0">
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">แลกทั้งหมด</h4>
                                             <div className="flex items-baseline justify-between mt-2">
                                                 <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
@@ -371,7 +380,7 @@ export default function DashboardPage() {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[130px]">
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">ขวดพลาสติก</h4>
                                             <div className="flex items-baseline justify-between mt-2">
                                                 <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
@@ -382,7 +391,7 @@ export default function DashboardPage() {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[130px]">
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">กระป๋องอลูมิเนียม</h4>
                                             <div className="flex items-baseline justify-between mt-2">
                                                 <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
@@ -393,7 +402,7 @@ export default function DashboardPage() {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[130px]">
+                                        <div className="bg-white border-2 border-[#64964E] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">กล่องเครื่องดื่ม</h4>
                                             <div className="flex items-baseline justify-between mt-2">
                                                 <span className="text-2xl sm:text-4xl font-black text-[#64964E]">
@@ -406,8 +415,8 @@ export default function DashboardPage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-3.5">
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[130px]">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-3.5 flex-1 min-h-0">
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">แลกทั้งหมด</h4>
                                             <div className="flex items-baseline justify-between mt-2">
                                                 <span className="text-2xl sm:text-4xl font-black text-gray-900">
@@ -418,7 +427,7 @@ export default function DashboardPage() {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[130px]">
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-tr-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">สินค้า</h4>
                                             <div className="flex items-baseline justify-between mt-2">
                                                 <span className="text-2xl sm:text-4xl font-black text-gray-900">
@@ -426,7 +435,7 @@ export default function DashboardPage() {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[130px]">
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-bl-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">ส่วนลด</h4>
                                             <div className="flex items-baseline justify-between mt-2">
                                                 <span className="text-2xl sm:text-4xl font-black text-gray-900">
@@ -434,7 +443,7 @@ export default function DashboardPage() {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[130px]">
+                                        <div className="bg-white border-2 border-[#5BA1C2] rounded-xl sm:rounded-2xl sm:rounded-br-[2rem] p-3 sm:p-4 flex flex-col justify-between shadow-sm min-h-[90px] sm:min-h-[120px] h-full">
                                             <h4 className="text-gray-900 font-extrabold text-sm sm:text-lg text-center">หมวดหมู่สำหรับนักศึกษา</h4>
                                             <div className="flex items-baseline justify-between mt-2">
                                                 <span className="text-2xl sm:text-4xl font-black text-gray-900">

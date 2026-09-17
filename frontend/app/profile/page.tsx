@@ -20,6 +20,7 @@ export default function ProfilePage() {
     // Profile form state
     const [formData, setFormData] = useState({
         profileImageUrl: '',
+        username: '',
         firstName: '',
         lastName: '',
         studentId: '',
@@ -49,6 +50,7 @@ export default function ProfilePage() {
         }
         setFormData({
             profileImageUrl: user.profileImageUrl || '',
+            username: user.username || '',
             firstName: user.firstName || '',
             lastName: user.lastName || '',
             studentId: user.studentId || '',
@@ -267,16 +269,20 @@ export default function ProfilePage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-1">
+                                    <label className="text-sm font-bold text-gray-700">ชื่อผู้ใช้ (Username)</label>
+                                    <input type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="ชื่อผู้ใช้" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-bold text-gray-700">อายุ</label>
+                                    <input type="number" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="อายุ (ปี)" />
+                                </div>
+                                <div className="space-y-1">
                                     <label className="text-sm font-bold text-gray-700">ชื่อ</label>
                                     <input type="text" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="ชื่อจริง" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-gray-700">นามสกุล</label>
                                     <input type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="นามสกุล" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-sm font-bold text-gray-700">อายุ</label>
-                                    <input type="number" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#64964E]" placeholder="อายุ (ปี)" />
                                 </div>
                             </div>
 

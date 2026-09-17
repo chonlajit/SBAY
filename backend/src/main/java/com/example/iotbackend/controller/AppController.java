@@ -194,14 +194,26 @@ public class AppController {
             newUser.setEmail(email.toLowerCase().trim());
             newUser.setPhoneNumber((String) payload.get("phoneNumber"));
             newUser.setUsername((String) payload.get("username"));
-            newUser.setTitle((String) payload.getOrDefault("title", "นาย"));
-            newUser.setFirstName((String) payload.getOrDefault("firstName", ""));
-            newUser.setLastName((String) payload.getOrDefault("lastName", ""));
-            newUser.setStudentId((String) payload.get("studentId"));
-            newUser.setFaculty((String) payload.get("faculty"));
-            newUser.setMajor((String) payload.get("major"));
             newUser.setPoints(0);
             newUser.setRole("USER");
+
+            String title = cleanString(payload.get("title"));
+            if (title != null) newUser.setTitle(title);
+
+            String firstName = cleanString(payload.get("firstName"));
+            if (firstName != null) newUser.setFirstName(firstName);
+
+            String lastName = cleanString(payload.get("lastName"));
+            if (lastName != null) newUser.setLastName(lastName);
+
+            String studentId = cleanString(payload.get("studentId"));
+            if (studentId != null) newUser.setStudentId(studentId);
+
+            String faculty = cleanString(payload.get("faculty"));
+            if (faculty != null) newUser.setFaculty(faculty);
+
+            String major = cleanString(payload.get("major"));
+            if (major != null) newUser.setMajor(major);
 
             userRepository.save(newUser);
             recycleService.bindUserToMachine(machineId, newUser.getId());
@@ -244,13 +256,7 @@ public class AppController {
         User newUser = new User();
         newUser.setPhoneNumber((String) payload.get("phoneNumber"));
         newUser.setUsername((String) payload.get("username"));
-        newUser.setTitle((String) payload.get("title"));
-        newUser.setFirstName((String) payload.get("firstName"));
-        newUser.setLastName((String) payload.get("lastName"));
         newUser.setEmail(email.toLowerCase().trim());
-        newUser.setStudentId((String) payload.get("studentId"));
-        newUser.setFaculty((String) payload.get("faculty"));
-        newUser.setMajor((String) payload.get("major"));
         newUser.setPoints(0);
         newUser.setRole("USER");
 
@@ -258,6 +264,24 @@ public class AppController {
         if (password != null && !password.isBlank()) {
             newUser.setPassword(hashPassword(password));
         }
+
+        String title = cleanString(payload.get("title"));
+        if (title != null) newUser.setTitle(title);
+
+        String firstName = cleanString(payload.get("firstName"));
+        if (firstName != null) newUser.setFirstName(firstName);
+
+        String lastName = cleanString(payload.get("lastName"));
+        if (lastName != null) newUser.setLastName(lastName);
+
+        String studentId = cleanString(payload.get("studentId"));
+        if (studentId != null) newUser.setStudentId(studentId);
+
+        String faculty = cleanString(payload.get("faculty"));
+        if (faculty != null) newUser.setFaculty(faculty);
+
+        String major = cleanString(payload.get("major"));
+        if (major != null) newUser.setMajor(major);
 
         userRepository.save(newUser);
         recycleService.bindUserToMachine(machineId, newUser.getId());
@@ -512,29 +536,45 @@ public class AppController {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
         
-        if (payload.containsKey("title")) existing.setTitle((String) payload.get("title"));
-        if (payload.containsKey("firstName")) existing.setFirstName((String) payload.get("firstName"));
-        if (payload.containsKey("lastName")) existing.setLastName((String) payload.get("lastName"));
-        if (payload.containsKey("studentId")) existing.setStudentId((String) payload.get("studentId"));
-        if (payload.containsKey("faculty")) existing.setFaculty((String) payload.get("faculty"));
-        if (payload.containsKey("major")) existing.setMajor((String) payload.get("major"));
-        if (payload.containsKey("academicYear")) existing.setAcademicYear((String) payload.get("academicYear"));
-        if (payload.containsKey("username")) existing.setUsername((String) payload.get("username"));
-        if (payload.containsKey("phoneNumber")) existing.setPhoneNumber((String) payload.get("phoneNumber"));
-        if (payload.containsKey("address")) existing.setAddress((String) payload.get("address"));
-        if (payload.containsKey("profileImageUrl")) existing.setProfileImageUrl((String) payload.get("profileImageUrl"));
+        if (payload.containsKey("title")) existing.setTitle(cleanString(payload.get("title")));
+        if (payload.containsKey("firstName")) existing.setFirstName(cleanString(payload.get("firstName")));
+        if (payload.containsKey("lastName")) existing.setLastName(cleanString(payload.get("lastName")));
+        if (payload.containsKey("studentId")) existing.setStudentId(cleanString(payload.get("studentId")));
+        if (payload.containsKey("faculty")) existing.setFaculty(cleanString(payload.get("faculty")));
+        if (payload.containsKey("major")) existing.setMajor(cleanString(payload.get("major")));
+        if (payload.containsKey("academicYear")) existing.setAcademicYear(cleanString(payload.get("academicYear")));
+        if (payload.containsKey("username")) {
+            String u = cleanString(payload.get("username"));
+            if (u != null) existing.setUsername(u);
+        }
+        if (payload.containsKey("phoneNumber")) {
+            String p = cleanString(payload.get("phoneNumber"));
+            if (p != null) existing.setPhoneNumber(p);
+        }
+        if (payload.containsKey("address")) existing.setAddress(cleanString(payload.get("address")));
+        if (payload.containsKey("profileImageUrl")) existing.setProfileImageUrl(cleanString(payload.get("profileImageUrl")));
         if (payload.containsKey("age")) {
             Object ageObj = payload.get("age");
             if (ageObj instanceof Integer) {
                 existing.setAge((Integer) ageObj);
-            } else if (ageObj instanceof String) {
+            } else if (ageObj instanceof String && !((String) ageObj).isBlank()) {
                 try {
-                    existing.setAge(Integer.parseInt((String) ageObj));
-                } catch (NumberFormatException ignored) {}
+                    existing.setAge(Integer.parseInt(((String) ageObj).trim()));
+                } catch (NumberFormatException ignored) {
+                    existing.setAge(null);
+                }
+            } else {
+                existing.setAge(null);
             }
         }
         
         return userRepository.save(existing);
+    }
+
+    private String cleanString(Object val) {
+        if (val == null) return null;
+        String s = val.toString().trim();
+        return s.isBlank() ? null : s;
     }
 
     // ─── Forgot Password ───────────────────────────────────────────────────────
