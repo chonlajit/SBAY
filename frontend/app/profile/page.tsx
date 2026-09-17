@@ -179,7 +179,7 @@ export default function ProfilePage() {
 
     if (!isInitialized || !user) {
         return (
-            <div style={{ backgroundImage: "url('../images/bg_loginregis.jpg')" }} className="pt-24 pb-12 font-sans px-4 min-h-screen animate-pulse">
+            <div style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }} className="pt-24 pb-12 font-sans px-4 min-h-screen animate-pulse">
                 <div className="max-w-3xl mx-auto space-y-6">
                     {/* Header Area */}
                     <div className="flex items-center space-x-4 mb-8">
@@ -215,7 +215,7 @@ export default function ProfilePage() {
     }
 
     return (
-        <div style={{ backgroundImage: "url('../images/bg_loginregis.jpg')" }} className="pt-12 pb-12 font-sans px-4">
+        <div style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }} className="pt-1 pb-12 font-sans px-4">
             <div className="max-w-3xl mx-auto space-y-6">
 
                 {/* Header Area */}

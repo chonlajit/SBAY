@@ -71,6 +71,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/public:/var/www/public:ro
     extra_hosts:
       - "host.docker.internal:${WINDOWS_IP}"
     restart: always
