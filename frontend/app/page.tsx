@@ -46,7 +46,7 @@ export default function Home() {
 
                             {/* Top row: Greeting & User Card */}
                             <div className="flex flex-wrap lg:flex-nowrap items-center gap-3 md:gap-3.5 relative z-10">
-                                <h2 className="font-gondens text-5xl md:text-6xl xl:text-7xl tall:text-[5.5rem] font-bold text-white tracking-normal shrink-0 drop-shadow-md mt-12 md:mt-8 xl:mt-4">HI.</h2>
+                                <h2 className="font-gondens text-5xl md:text-6xl xl:text-7xl tall:text-[5.75rem] font-bold text-white tracking-normal shrink-0 drop-shadow-md mt-12 md:mt-8 xl:mt-4">HI.</h2>
                                 {!isInitialized ? (
                                     /* Skeleton User Card */
                                     <div className="bg-white/80 rounded-xl xl:rounded-3xl shadow p-3 border border-white/50 animate-pulse w-fit mt-12 md:mt-8 xl:mt-4">
@@ -60,10 +60,10 @@ export default function Home() {
                                     <Link
                                         href="/profile"
                                         title="แก้ไขโปรไฟล์"
-                                        className="bg-[#64964E] hover:brightness-105 transition rounded-[15px] md:rounded-[20px] xl:rounded-[25px] shadow-md px-2 py-2 md:px-3 md:py-3 xl:px-4 xl:py-3 tall:px-5 tall:py-3.5 border border-white/40 max-w-[220px] xs:max-w-[260px] sm:max-w-[320px] md:max-w-[380px] xl:max-w-[440px] tall:max-w-[480px] inline-flex items-center mt-12 md:mt-8 xl:mt-4 cursor-pointer"
+                                        className="bg-[#64964E] hover:brightness-105 transition rounded-[15px] md:rounded-[20px] xl:rounded-[25px] shadow-md px-2 py-2 md:px-3 md:py-3 xl:px-4 xl:py-3 tall:px-5 tall:py-3.5 border border-white/40 max-w-[220px] xs:max-w-[260px] sm:max-w-[320px] md:max-w-[380px] xl:max-w-[440px] tall:max-w-[500px] inline-flex items-center mt-12 md:mt-8 xl:mt-4 cursor-pointer"
                                     >
                                         <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 w-full">
-                                            <div className="w-12 h-12 md:w-16 md:h-16 xl:w-20 xl:h-20 tall:w-[84px] tall:h-[84px] bg-black rounded-lg md:rounded-xl xl:rounded-2xl flex items-center justify-center text-white text-4xl md:text-5xl xl:text-6xl tall:text-7xl font-bold shadow-sm shrink-0 overflow-hidden">
+                                            <div className="w-12 h-12 md:w-16 md:h-16 xl:w-20 xl:h-20 tall:w-24 tall:h-24 bg-black rounded-lg md:rounded-xl xl:rounded-2xl flex items-center justify-center text-white text-4xl md:text-5xl xl:text-6xl tall:text-7xl font-bold shadow-sm shrink-0 overflow-hidden">
                                                 {user.profileImageUrl ? (
                                                     <img
                                                         src={getImageUrl(user.profileImageUrl)}
@@ -82,7 +82,7 @@ export default function Home() {
                                         </div>
                                     </Link>
                                 ) : (
-                                    <span className="font-gondens text-5xl md:text-6xl xl:text-7xl tall:text-[5.5rem] font-bold text-white tracking-normal drop-shadow-md mt-12 md:mt-8 xl:mt-4">
+                                    <span className="font-gondens text-5xl md:text-6xl xl:text-7xl tall:text-[5.75rem] font-bold text-white tracking-normal drop-shadow-md mt-12 md:mt-8 xl:mt-4">
                                         EVERYONE
                                     </span>
                                 )}
@@ -92,13 +92,13 @@ export default function Home() {
                             <div className="my-auto flex flex-col justify-center relative z-10">
                                 <div>
                                     <h1 className="font-gondens tracking-wide font-normal drop-shadow-md mt-2 md:mt-8 xl:mt-10">
-                                        <span className="text-white xl:text-[5rem] md:text-[4rem] text-[3.25rem] tall:text-[5.75rem]">WELCOME TO</span>
-                                        <span className="block text-white xl:text-[4.25rem] md:text-[3.4rem] text-[2.735rem] tall:text-[4.85rem] mt-2 md:mt-2 xl:mt-1">SBAY Platform</span>
+                                        <span className="text-white xl:text-[5rem] md:text-[4rem] text-[3.25rem] tall:text-[6.25rem]">WELCOME TO</span>
+                                        <span className="block text-white xl:text-[4.25rem] md:text-[3.4rem] text-[2.735rem] tall:text-[5.25rem] mt-2 md:mt-2 xl:mt-1 tall:mt-3">SBAY Platform</span>
                                     </h1>
                                 </div>
 
-                                <div className="mt-6 sm:mt-10 flex flex-col items-center xl:text-center md:items-end md:text-right text-center">
-                                    <p className="text-white xl:text-[1.4rem] md:text-[1.3rem] text-[0.85rem] tall:text-[1.6rem] font-bold leading-relaxed drop-shadow-md max-w-[98%] xl:mt-0 md:mt-2 mt-6">
+                                <div className="mt-6 sm:mt-10 tall:mt-12 flex flex-col items-center xl:text-center md:items-end md:text-right text-center">
+                                    <p className="text-white xl:text-[1.4rem] md:text-[1.3rem] text-[0.85rem] tall:text-[1.75rem] font-bold leading-relaxed drop-shadow-md max-w-[98%] xl:mt-0 md:mt-2 mt-6">
                                         ระบบรีไซเคิลอัจฉริยะ สะสมแต้มทุกครั้งที่คุณรีไซเคิล<br />
                                         "เพื่อสิ่งแวดล้อมที่ดีกว่า"
                                     </p>
@@ -137,32 +137,36 @@ export default function Home() {
                         style={{ backgroundImage: "url('/images/bg_loginregis.jpg')" }}
                     >
                         <div className="absolute inset-0 bg-[#64964E]/40 rounded-bl-[2.5rem] z-0"></div>
-                        <div className="w-full max-w-[940px] tall:max-w-[1020px] rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)] relative z-10">
-                            <StatsDashboard />
-                        </div>
+                        
+                        {/* Top Group: Stats Dashboard + Attached About Us & Sponsors */}
+                        <div className="w-full max-w-[940px] tall:max-w-[1060px] flex flex-col relative z-10">
+                            <div className="w-full rounded-[2.5rem] shadow-[0_15px_10px_-10px_rgba(0,0,0,0.1)]">
+                                <StatsDashboard />
+                            </div>
 
-                        {/* Row below Statistics Card: About Us (Left) & Sponsors (Right) */}
-                        <div className="flex justify-between items-center pt-2 sm:pt-3 px-1 sm:px-2 pb-0.5 relative z-10 max-w-[940px] tall:max-w-[1020px] w-full">
-                            {/* About Us Button (Bottom-Left of Stats Card) */}
-                            <Link
-                                href="/about"
-                                className="font-milker tracking-wider text-[#64964E] text-sm sm:text-base tall:text-lg font-bold px-6 py-2 sm:px-7 sm:py-2.5 tall:px-8 tall:py-3 bg-white/90 hover:bg-white rounded-full transition shadow-lg border border-white/30 active:scale-95"
-                            >
-                                about us.
-                            </Link>
+                            {/* Row below Statistics Card: About Us (Left) & Sponsors (Right) */}
+                            <div className="flex justify-between items-center pt-2.5 sm:pt-3 px-1 sm:px-2 pb-0.5 w-full">
+                                {/* About Us Button (Bottom-Left of Stats Card) */}
+                                <Link
+                                    href="/about"
+                                    className="font-milker tracking-wider text-[#64964E] text-sm sm:text-base tall:text-lg font-bold px-6 py-2 sm:px-7 sm:py-2.5 tall:px-8 tall:py-3 bg-white/90 hover:bg-white rounded-full transition shadow-lg border border-white/30 active:scale-95"
+                                >
+                                    about us.
+                                </Link>
 
-                            {/* Sponsors (Bottom-Right) */}
-                            <div className="flex items-center space-x-3 sm:space-x-4">
-                                <div className="w-10 h-10 md:w-14 md:h-14 tall:w-16 tall:h-16 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
-                                <div className="w-10 h-10 md:w-14 md:h-14 tall:w-16 tall:h-16 bg-white/40 rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
-                                    <span className="text-[10px] mt-1 font-semibold text-gray-700/80">(sponsor)</span>
+                                {/* Sponsors (Bottom-Right) */}
+                                <div className="flex items-center space-x-3 sm:space-x-4">
+                                    <div className="w-10 h-10 md:w-14 md:h-14 tall:w-16 tall:h-16 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
+                                    <div className="w-10 h-10 md:w-14 md:h-14 tall:w-16 tall:h-16 bg-white/40 rounded-lg shadow-sm border border-white/50 flex flex-col items-center justify-center text-white">
+                                        <span className="text-[10px] mt-1 font-semibold text-gray-700/80">(sponsor)</span>
+                                    </div>
+                                    <div className="w-10 h-10 md:w-14 md:h-14 tall:w-16 tall:h-16 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
                                 </div>
-                                <div className="w-10 h-10 md:w-14 md:h-14 tall:w-16 tall:h-16 bg-white/40 rounded-lg shadow-sm border border-white/50 flex items-center justify-center text-white text-xs"></div>
                             </div>
                         </div>
 
                         {/* Statistics Tab — Button to scroll back up to Top Section (Mobile & Desktop) */}
-                        <div className="pt-1 w-full max-w-[940px] tall:max-w-[1020px] flex justify-center relative z-10">
+                        <div className="pt-1 w-full max-w-[940px] tall:max-w-[1060px] flex justify-center relative z-10 mt-auto">
                             <button
                                 id="mobile-back-button"
                                 onClick={() => {

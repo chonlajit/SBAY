@@ -33,7 +33,7 @@ const config: Config = {
         spartan: ['"League Spartan"', 'sans-serif'],
       },
       screens: {
-        'tall': { 'raw': '(min-width: 1440px) and (min-height: 1000px)' },
+        'tall': { 'raw': '(min-width: 1440px) and (min-height: 980px)' },
       },
     },
   },
