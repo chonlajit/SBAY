@@ -121,7 +121,7 @@ class DetectionService:
         self.widths_buffer.clear()
         self.labels_buffer.clear()
 
-    def detect_once(self):
+    def detect_once(self, check_full_callback=None):
         """อ่านภาพ 1 เฟรมและส่งเข้า YOLO (ถ้าพ้น Cooldown)"""
 
 
@@ -224,7 +224,33 @@ class DetectionService:
 
         result = self.calculator.calculate(stable_label, size_ml)
 
-        # Hardware action
+        # ตรวจสอบว่าช่องประเภทนี้เต็มหรือไม่
+        is_full = False
+        if check_full_callback:
+            try:
+                is_full = bool(check_full_callback(stable_label))
+            except Exception as e:
+                logger.error(f"Error checking compartment full status: {e}")
+
+        if is_full:
+            logger.warning(f"Compartment {stable_label} is FULL! Returning item (Sort RETURN + Release RETURN)...")
+            sort_item("RETURN")
+            time.sleep(0.3)
+            release_item("RETURN")
+
+            self.reset_buffers()
+            self.last_detection_time = current_time
+
+            return {
+                "type": stable_label,
+                "size_ml": size_ml,
+                "weight": result["weight"],
+                "score": 0,
+                "returned": True,
+                "full": True
+            }
+
+        # Hardware action (ปกติ)
         sort_item(stable_label)
         time.sleep(0.3)
         release_item(stable_label)
@@ -239,7 +265,9 @@ class DetectionService:
             "type": stable_label,
             "size_ml": size_ml,
             "weight": result["weight"],
-            "score": result["score"]
+            "score": result["score"],
+            "returned": False,
+            "full": False
         }
 
     def is_item_present(self):

@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(root_dir, 'bin-device'))
 sys.path.insert(0, root_dir)
 
 from settings.config import (
-    DEVICE_ID, USE_GUI, USE_IR, USE_RESET_BUTTONS,
+    DEVICE_ID, USE_GUI, USE_IR,
     DETECT_TIMEOUT, SORT_ANGLE_RETURN, RELEASE_ANGLE_RETURN,
     SERVO_HOLD_ON_DROP
 )
@@ -25,6 +25,7 @@ from api_client import ApiClient
 from heartbeat_service import HeartbeatService
 from session_manager import SessionManager
 from detection_service import DetectionService
+from ultrasonic_service import UltrasonicService
 
 # ============================
 # Logging Setup
@@ -59,53 +60,11 @@ class SmartBinController:
         self.session = SessionManager()
         self.detection = DetectionService()
         self.heartbeat = HeartbeatService(self.api_client, DEVICE_ID)
+        self.ultrasonic = UltrasonicService(self.api_client, DEVICE_ID)
 
         # GUI (optional)
         self.gui = None
         self.detecting = False
-        
-        # Reset buttons threads
-        if USE_RESET_BUTTONS:
-            self._start_reset_buttons_monitor()
-
-    def _start_reset_buttons_monitor(self):
-        try:
-            from gpiozero import Button
-            from settings.config import RESET_PIN_PLASTIC, RESET_PIN_CAN, RESET_PIN_CARTON, RESET_PIN_ALL
-            
-            logger.info("Initializing Reset Buttons monitor...")
-            
-            self.btn_plastic = Button(RESET_PIN_PLASTIC, pull_up=True, hold_time=2.0)
-            self.btn_can = Button(RESET_PIN_CAN, pull_up=True, hold_time=2.0)
-            self.btn_carton = Button(RESET_PIN_CARTON, pull_up=True, hold_time=2.0)
-            self.btn_all = Button(RESET_PIN_ALL, pull_up=True, hold_time=2.0)
-            
-            self.btn_plastic.when_held = lambda: self._on_reset_btn_held("PLASTIC_BOTTLE", "ขวดพลาสติก")
-            self.btn_can.when_held = lambda: self._on_reset_btn_held("ALUMINUM_CAN", "กระป๋อง")
-            self.btn_carton.when_held = lambda: self._on_reset_btn_held("BEVERAGE_CARTON", "กล่องเครื่องดื่ม")
-            self.btn_all.when_held = lambda: self._on_reset_btn_held(None, "ทุกประเภท")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize reset buttons: {e}")
-
-    def _on_reset_btn_held(self, waste_type, th_name):
-        logger.info(f"Reset Button HELD for {th_name}. Triggering reset...")
-        if self.gui:
-            self.gui.schedule(self.gui.update_status, f"กำลังรีเซ็ตปริมาณขยะ ({th_name})...", "#f59e0b")
-            
-        success = self.api_client.reset_bin(DEVICE_ID, waste_type)
-        
-        if self.gui:
-            if success:
-                self.gui.schedule(self.gui.update_status, f"รีเซ็ตขยะ ({th_name}) สำเร็จ!", "#10b981")
-                # clear status back to standby after 3s
-                def clear_status():
-                    time.sleep(3)
-                    status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
-                    self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
-                threading.Thread(target=clear_status, daemon=True).start()
-            else:
-                self.gui.schedule(self.gui.update_status, f"รีเซ็ตขยะล้มเหลว ตรวจสอบอินเทอร์เน็ต", "#ef4444")
 
     def start(self):
         """เริ่มระบบทั้งหมด"""
@@ -133,6 +92,9 @@ class SmartBinController:
                 logger.error(f"Failed to init LED status callback: {e}")
                 self.cleanup_leds = lambda: None
 
+        # Start ultrasonic monitoring
+        self.ultrasonic.start()
+
         # Start heartbeat
         self.heartbeat.start()
         
@@ -155,7 +117,13 @@ class SmartBinController:
             on_phone_submit=self._on_phone_submit,
             on_finish=self._on_finish
         )
-        self.gui.run()
+        try:
+            self.gui.run()
+        finally:
+            self.detecting = False
+            self.heartbeat.stop()
+            self.ultrasonic.stop()
+            self.detection.stop_camera()
 
     def _on_phone_submit(self, phone):
         """Callback: ผู้ใช้กรอกเบอร์เสร็จ"""
@@ -236,39 +204,62 @@ class SmartBinController:
 
             # 2. ถ้ามีของอยู่ข้างใน (หรือเปิดกล้องตลอดเวลา) ให้วิเคราะห์ AI
             if processing_item or not USE_IR:
-                result = self.detection.detect_once()
+                result = self.detection.detect_once(check_full_callback=self.ultrasonic.is_compartment_full)
 
                 if self.gui and self.detection.latest_frame is not None:
                     frame_to_show = self.detection.latest_frame.copy()
                     self.gui.schedule(self.gui.update_camera_frame, frame_to_show)
 
                 if result:
-                    # 🎯 AI ตรวจเจอขยะสำเร็จและเสถียรแล้ว
-                    item = self.session.add_item(
-                        item_type=result["type"],
-                        size_ml=result["size_ml"],
-                        weight=result["weight"],
-                        score=result["score"]
-                    )
+                    if result.get("returned"):
+                        # ⚠️ ช่องปลายทางเต็ม AI คืนขยะออกทางช่อง Return ให้แล้ว ไม่คิดคะแนน
+                        th_names = {
+                            "PLASTIC_BOTTLE": "ขวดพลาสติก",
+                            "ALUMINUM_CAN": "กระป๋อง",
+                            "BEVERAGE_CARTON": "กล่องเครื่องดื่ม"
+                        }
+                        type_th = th_names.get(result["type"], result["type"])
+                        logger.warning(f"Compartment for {result['type']} is full! Item returned.")
 
-                    if self.gui:
-                        self.gui.schedule(
-                            self.gui.add_detected_item,
-                            result["type"],
-                            result["size_ml"],
-                            result["score"]
+                        if USE_IR:
+                            self.detection.stop_camera()
+
+                        if self.gui:
+                            self.gui.schedule(self.gui.update_status, f"⚠️ ช่อง {type_th} เต็มแล้ว! (คืนขยะเรียบร้อย)", "#ef4444")
+                            time.sleep(3.0)
+                            status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
+                            self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
+                            self.gui.schedule(self.gui.update_camera_frame, None)
+
+                        time.sleep(1.0)
+                        processing_item = False
+                    else:
+                        # 🎯 AI ตรวจเจอขยะสำเร็จและเสถียรแล้ว
+                        item = self.session.add_item(
+                            item_type=result["type"],
+                            size_ml=result["size_ml"],
+                            weight=result["weight"],
+                            score=result["score"]
                         )
-                    
-                    if USE_IR:
-                        self.detection.stop_camera()
+
+                        if self.gui:
+                            self.gui.schedule(
+                                self.gui.add_detected_item,
+                                result["type"],
+                                result["size_ml"],
+                                result["score"]
+                            )
                         
-                    if self.gui:
-                        status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
-                        self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
-                        self.gui.schedule(self.gui.update_camera_frame, None)
-                    
-                    time.sleep(2.0) # Wait for item to sort/release completely
-                    processing_item = False # กลับไปรอรับของชิ้นใหม่ได้
+                        if USE_IR:
+                            self.detection.stop_camera()
+                            
+                        if self.gui:
+                            status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
+                            self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
+                            self.gui.schedule(self.gui.update_camera_frame, None)
+                        
+                        time.sleep(2.0) # Wait for item to sort/release completely
+                        processing_item = False # กลับไปรอรับของชิ้นใหม่ได้
                     
                 else:
                     # ⏳ AI ยังหาไม่เจอ หรือยังไม่เสถียร เช็คว่าหมดเวลา (Timeout) หรือยัง
@@ -442,6 +433,7 @@ class SmartBinController:
             print("\n\n🛑 กำลังปิดระบบ...")
         finally:
             self.heartbeat.stop()
+            self.ultrasonic.stop()
             self.detection.stop_camera()
             print("👋 ปิดระบบเรียบร้อย")
 

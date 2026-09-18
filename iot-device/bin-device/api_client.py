@@ -202,3 +202,38 @@ class ApiClient:
             logger.error(f"Failed to send fill level: {e}")
             return False
 
+    def update_waste_levels(self, device_id, waste_levels, max_capacities=None, is_full=False, full_waste_type=None):
+        """
+        ส่งข้อมูลระดับความเต็มของถังขยะทั้ง 3 ช่องไปยัง Backend
+        Endpoint: POST /api/devices/{deviceId}/level
+        Data structure สอดคล้องกับ DeviceController.java และ Front-end (Admin Dashboard)
+        """
+        try:
+            if max_capacities is None:
+                max_capacities = {
+                    "PLASTIC_BOTTLE": 100.0,
+                    "ALUMINUM_CAN": 100.0,
+                    "BEVERAGE_CARTON": 100.0
+                }
+
+            payload = {
+                "wasteLevels": waste_levels,
+                "maxCapacities": max_capacities,
+                "isFull": bool(is_full),
+                "fullWasteType": full_waste_type
+            }
+
+            resp = requests.post(
+                f"{self.api_base}/devices/{device_id}/level",
+                json=payload,
+                headers={"X-Device-Secret": DEVICE_SECRET},
+                timeout=3
+            )
+            resp.raise_for_status()
+            logger.debug(f"Successfully updated waste levels for {device_id}")
+            return True
+        except requests.RequestException as e:
+            logger.warning(f"Failed to update waste levels: {e}")
+            return False
+
+
