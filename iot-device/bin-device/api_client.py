@@ -10,6 +10,7 @@ import threading
 import time
 import logging
 import os
+from datetime import datetime
 
 from settings.config import API_BASE, OFFLINE_DB_PATH, RETRY_INTERVAL, DEVICE_SECRET, DEVICE_NAME, DEVICE_LOCATION
 
@@ -178,3 +179,26 @@ class ApiClient:
         except requests.RequestException as e:
             logger.error(f"Failed to reset bin: {e}")
             return False
+
+    def send_fill_level(self, device_id, fill_level, timestamp=None):
+        """ส่งข้อมูล Fill Level (0-100%) จาก Ultrasonic Sensor ไปยัง Backend"""
+        try:
+            clamped_level = max(0, min(100, int(round(fill_level))))
+            payload = {
+                "machineId": device_id,
+                "fillLevel": clamped_level,
+                "timestamp": timestamp or datetime.now().isoformat()
+            }
+            resp = requests.post(
+                f"{self.api_base}/devices/fill-level",
+                json=payload,
+                headers={"X-Device-Secret": DEVICE_SECRET},
+                timeout=5
+            )
+            resp.raise_for_status()
+            logger.info(f"Fill level sent successfully: {device_id} -> {clamped_level}%")
+            return True
+        except requests.RequestException as e:
+            logger.error(f"Failed to send fill level: {e}")
+            return False
+

@@ -55,12 +55,45 @@ RELEASE_ANGLE_CAN = 55
 RELEASE_ANGLE_CARTON = 55
 RELEASE_ANGLE_RETURN = 55
 
-# --- Reset Buttons & LEDs (GPIO) ---
-USE_RESET_BUTTONS = True
-RESET_PIN_PLASTIC = 22
-RESET_PIN_CAN = 23
-RESET_PIN_CARTON = 24
-RESET_PIN_ALL = 25
+# --- Ultrasonic Sensors (GPIO BCM) ---
+# Compartments: Plastic, Can, Carton
+# Circuit Note: ECHO pins connect through 1k/2k voltage dividers (5V -> 3.3V safe for Pi)
+ULTRASONIC_TRIG_PLASTIC = 22
+ULTRASONIC_ECHO_PLASTIC = 23
+
+ULTRASONIC_TRIG_CAN = 24
+ULTRASONIC_ECHO_CAN = 25
+
+ULTRASONIC_TRIG_CARTON = 26
+ULTRASONIC_ECHO_CARTON = 20
+
+# PCB FP3 Pin - Spare GPIO (ห้ามนำไปใช้งานโดยไม่มีเหตุผล)
+SPARE_FP3_PIN = 8
+
+ULTRASONIC_PINS = {
+    "PLASTIC_BOTTLE": {"trig": ULTRASONIC_TRIG_PLASTIC, "echo": ULTRASONIC_ECHO_PLASTIC},
+    "ALUMINUM_CAN": {"trig": ULTRASONIC_TRIG_CAN, "echo": ULTRASONIC_ECHO_CAN},
+    "BEVERAGE_CARTON": {"trig": ULTRASONIC_TRIG_CARTON, "echo": ULTRASONIC_ECHO_CARTON},
+}
+
+# --- Ultrasonic Calibration (Distance in cm) ---
+# ปรับแต่งระยะถังเปล่า (empty) และระยะถังเต็ม (full) แยกตามประเภท
+# หมายเหตุ: ค่าเริ่มต้นเป็น placeholder ต้องทำการ calibrate วัดระยะหน้างานจริงหลังติดตั้ง
+ULTRASONIC_CALIBRATION = {
+    "PLASTIC_BOTTLE": {"empty_distance": 50.0, "full_distance": 10.0},
+    "ALUMINUM_CAN": {"empty_distance": 50.0, "full_distance": 10.0},
+    "BEVERAGE_CARTON": {"empty_distance": 50.0, "full_distance": 10.0},
+}
+
+# --- Fill Status Thresholds (%) ---
+FILL_THRESHOLD_WARNING = 70.0
+FILL_THRESHOLD_FULL = 90.0
+
+# --- Ultrasonic Timing & Stability ---
+ULTRASONIC_SENSOR_DELAY_MS = 60       # หน่วงเวลาระหว่างยิงแต่ละตัว (ms) ป้องกัน cross-talk
+ULTRASONIC_CYCLE_INTERVAL_SEC = 2.0   # ความถี่วนรอบอ่านค่าทั้ง 3 ตัว (วินาที)
+ULTRASONIC_UPDATE_THRESHOLD_PCT = 2.0 # ส่งข้อมูลไป Backend เมื่อระดับขยะเปลี่ยนเกินกี่ %
+ULTRASONIC_FILTER_WINDOW = 5          # จำนวนค่า reading ที่ใช้ทำ rolling median filter
 
 # ไฟ LED แจ้งเตือนสถานะถังเต็ม
 LED_BIN_FULL_PIN = 7
