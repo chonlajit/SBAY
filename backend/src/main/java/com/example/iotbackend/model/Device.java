@@ -28,4 +28,8 @@ public class Device {
     private Map<String, Double> maxCapacities = new HashMap<>();
     private Boolean isFull = false;
     private String fullWasteType;
+
+    // Ultrasonic Fill Level (0-100%)
+    private Integer fillLevel;
+    private LocalDateTime lastFillLevelUpdate;
 }

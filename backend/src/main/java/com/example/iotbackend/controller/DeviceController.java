@@ -67,6 +67,88 @@ public class DeviceController {
         return ResponseEntity.ok(device);
     }
 
+    @PostMapping("/fill-level")
+    public ResponseEntity<?> updateFillLevelDirect(@RequestBody Map<String, Object> payload) {
+        String machineId = (String) payload.get("machineId");
+        if (machineId == null || machineId.trim().isEmpty()) {
+            machineId = (String) payload.get("deviceId");
+        }
+        if (machineId == null || machineId.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "machineId is required"));
+        }
+        return processFillLevelUpdate(machineId, payload);
+    }
+
+    @PostMapping("/{deviceId}/fill-level")
+    public ResponseEntity<?> updateFillLevelByPath(
+            @PathVariable String deviceId,
+            @RequestBody Map<String, Object> payload) {
+        return processFillLevelUpdate(deviceId, payload);
+    }
+
+    private ResponseEntity<?> processFillLevelUpdate(String machineId, Map<String, Object> payload) {
+        Device device = deviceRepository.findById(machineId).orElseGet(() -> {
+            Device d = new Device();
+            d.setId(machineId);
+            d.setName("Smart Bin " + machineId);
+            d.setLocation("ไม่ระบุสถานที่");
+            return d;
+        });
+
+        Object rawLevel = payload.get("fillLevel");
+        if (rawLevel == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "fillLevel is required"));
+        }
+
+        int fillLevel;
+        try {
+            if (rawLevel instanceof Number) {
+                fillLevel = ((Number) rawLevel).intValue();
+            } else {
+                fillLevel = (int) Math.round(Double.parseDouble(rawLevel.toString()));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid fillLevel format"));
+        }
+
+        // Clamp to 0 - 100
+        int clampedLevel = Math.max(0, Math.min(100, fillLevel));
+        device.setFillLevel(clampedLevel);
+
+        LocalDateTime updateTime = LocalDateTime.now();
+        if (payload.containsKey("timestamp") && payload.get("timestamp") != null) {
+            try {
+                updateTime = LocalDateTime.parse(payload.get("timestamp").toString());
+            } catch (Exception ignored) {
+                // Keep updateTime as now
+            }
+        }
+        device.setLastFillLevelUpdate(updateTime);
+        device.setLastHeartbeat(LocalDateTime.now());
+        device.setStatus("ONLINE");
+
+        // Status thresholds: 0-79% NORMAL, 80-94% NEAR_FULL, 95-100% FULL
+        if (clampedLevel >= 95) {
+            device.setIsFull(true);
+        } else {
+            device.setIsFull(false);
+        }
+
+        deviceRepository.save(device);
+
+        // Broadcast to WebSocket for live admin updates
+        Map<String, Object> broadcastData = Map.of(
+                "machineId", machineId,
+                "fillLevel", clampedLevel,
+                "isFull", device.getIsFull(),
+                "timestamp", updateTime.toString()
+        );
+        messagingTemplate.convertAndSend("/topic/devices", broadcastData);
+        messagingTemplate.convertAndSend("/topic/devices/" + machineId, broadcastData);
+
+        return ResponseEntity.ok(device);
+    }
+
     @PostMapping("/{deviceId}/level")
     public ResponseEntity<?> updateLevel(@PathVariable String deviceId, @RequestBody Map<String, Object> payload) {
         Device device = deviceRepository.findById(deviceId).orElseThrow(() -> new RuntimeException("Device not found"));
@@ -82,6 +164,21 @@ public class DeviceController {
             Map<String, Number> capacities = (Map<String, Number>) payload.get("maxCapacities");
             for (Map.Entry<String, Number> entry : capacities.entrySet()) {
                 device.getMaxCapacities().put(entry.getKey(), entry.getValue().doubleValue());
+            }
+        }
+
+        if (payload.containsKey("fillLevel")) {
+            Object rawLevel = payload.get("fillLevel");
+            if (rawLevel instanceof Number) {
+                int fill = ((Number) rawLevel).intValue();
+                int clamped = Math.max(0, Math.min(100, fill));
+                device.setFillLevel(clamped);
+                device.setLastFillLevelUpdate(LocalDateTime.now());
+                if (clamped >= 95) {
+                    device.setIsFull(true);
+                } else {
+                    device.setIsFull(false);
+                }
             }
         }
 

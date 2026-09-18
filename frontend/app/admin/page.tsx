@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSmartBin } from '../context/SmartBinContext';
 import { getImageUrl } from '../utils/image';
+import { Client } from '@stomp/stompjs';
 
 export default function AdminPage() {
     const router = useRouter();
@@ -130,26 +131,6 @@ export default function AdminPage() {
         }
     };
 
-    const handleResetBin = async (deviceId: string) => {
-        if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการล้างจำนวนขยะในตู้ ${deviceId}? (ใช้สำหรับตอนเอาขยะออกเพื่อรีเซ็ตตู้)`)) return;
-        if (!token) return;
-
-        try {
-            const res = await fetch(`${apiBase}/admin/devices/${deviceId}/reset`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (res.ok) {
-                alert("ล้างขยะในตู้เรียบร้อยแล้ว!");
-                fetchData(); // Refresh list
-            } else {
-                alert("ไม่สามารถล้างข้อมูลตู้ได้");
-            }
-        } catch (e) {
-            console.error("Reset bin failed", e);
-        }
-    };
 
     const handleApproveRedemption = async (redemptionId: string) => {
         if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการอนุมัติการแลกคะแนนนี้?")) return;
@@ -225,7 +206,63 @@ export default function AdminPage() {
 
         fetchData();
         const interval = setInterval(fetchData, 10000);
-        return () => clearInterval(interval);
+
+        // STOMP WebSocket for real-time device updates
+        let client: Client | null = null;
+        if (typeof window !== 'undefined') {
+            try {
+                const hostname = window.location.hostname;
+                const port = window.location.port;
+                const protocol = window.location.protocol;
+                const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+                let wsUrl = '';
+                if (port === '3000') {
+                    wsUrl = `ws://${hostname}:8070/ws-native`;
+                } else {
+                    const portStr = port ? `:${port}` : '';
+                    wsUrl = `${wsProtocol}//${hostname}${portStr}/ws-native`;
+                }
+
+                client = new Client({
+                    brokerURL: wsUrl,
+                    reconnectDelay: 5000,
+                    onConnect: () => {
+                        client?.subscribe('/topic/devices', (msg) => {
+                            if (msg.body) {
+                                try {
+                                    const update = JSON.parse(msg.body);
+                                    setDevices(prev => prev.map(d => {
+                                        if (d.id === update.machineId) {
+                                            return {
+                                                ...d,
+                                                fillLevel: update.fillLevel,
+                                                isFull: update.isFull,
+                                                lastFillLevelUpdate: update.timestamp,
+                                                status: 'ONLINE'
+                                            };
+                                        }
+                                        return d;
+                                    }));
+                                } catch (err) {
+                                    console.error('Error parsing device WS update', err);
+                                }
+                            }
+                        });
+                    },
+                    onStompError: (frame) => console.error('Admin WS Error:', frame.headers['message']),
+                });
+                client.activate();
+            } catch (e) {
+                console.error("Failed to initialize admin WS client", e);
+            }
+        }
+
+        return () => {
+            clearInterval(interval);
+            if (client) {
+                client.deactivate();
+            }
+        };
     }, [user, token, isInitialized]);
 
     if (loading) {
@@ -362,61 +399,112 @@ export default function AdminPage() {
                         </span>
                     </div>
                     <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {devices.map(device => (
-                            <div key={device.id} className={`rounded-xl border p-4 ${device.isFull ? 'border-red-300 bg-red-50/30' : 'border-slate-200 bg-white'} relative overflow-hidden`}>
-                                {device.isFull && (
-                                    <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">
-                                        เต็มแล้ว: {device.fullWasteType || 'ไม่ทราบประเภท'}
-                                    </div>
-                                )}
-                                <div className="flex justify-between items-start mb-3">
-                                    <div>
-                                        <div className="font-bold text-slate-800">{device.name || 'Unknown Device'}</div>
-                                        <div className="text-xs text-slate-500">{device.location || 'Unknown Location'}</div>
-                                    </div>
-                                    <div className={`px-2 py-1 rounded text-[10px] font-bold ${device.status === 'ONLINE' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                                        {device.status}
-                                    </div>
-                                </div>
-                                
-                                <div className="space-y-3 mt-4">
-                                    {["PLASTIC_BOTTLE", "ALUMINUM_CAN", "BEVERAGE_CARTON"].map(type => {
-                                        const max = device.maxCapacities?.[type] || 100;
-                                        const current = (device.wasteLevels && device.wasteLevels[type]) || 0;
-                                        const percentage = Math.min(100, Math.max(0, (current / max) * 100));
-                                        
-                                        let barColor = "bg-blue-500";
-                                        if (percentage > 80) barColor = "bg-red-500";
-                                        else if (percentage > 50) barColor = "bg-orange-400";
+                        {devices.map(device => {
+                            // Safe clamping of fillLevel (0-100%)
+                            const rawLevel = Number(device.fillLevel);
+                            const fillLevel = isNaN(rawLevel) ? 0 : Math.min(100, Math.max(0, Math.round(rawLevel)));
 
-                                        return (
-                                            <div key={type}>
-                                                <div className="flex justify-between text-[10px] font-bold mb-1">
-                                                    <span className="text-slate-600">
-                                                        {{
-                                                            "PLASTIC_BOTTLE": "ขวดพลาสติก",
-                                                            "ALUMINUM_CAN": "กระป๋องอลูมิเนียม",
-                                                            "BEVERAGE_CARTON": "กล่องเครื่องดื่ม"
-                                                        }[type] || type}
+                            // Status thresholds: 0-79% NORMAL, 80-94% NEAR_FULL, 95-100% FULL
+                            let statusLabel = "ปกติ";
+                            let statusColor = "text-emerald-700 bg-emerald-50 border-emerald-200";
+                            let barColor = "from-emerald-500 to-teal-500";
+                            let isFullBin = device.isFull || fillLevel >= 95;
+
+                            if (fillLevel >= 95) {
+                                statusLabel = "เต็มแล้ว";
+                                statusColor = "text-red-700 bg-red-50 border-red-200";
+                                barColor = "from-red-500 to-rose-600";
+                            } else if (fillLevel >= 80) {
+                                statusLabel = "ใกล้เต็ม";
+                                statusColor = "text-amber-700 bg-amber-50 border-amber-200";
+                                barColor = "from-amber-500 to-orange-500";
+                            }
+
+                            // Format last update time
+                            const updateTimeStr = (() => {
+                                const timeVal = device.lastFillLevelUpdate || device.lastHeartbeat;
+                                if (!timeVal) return 'ยังไม่มีข้อมูล';
+                                try {
+                                    const d = new Date(timeVal);
+                                    if (isNaN(d.getTime())) return 'ยังไม่มีข้อมูล';
+                                    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' น.';
+                                } catch {
+                                    return 'ยังไม่มีข้อมูล';
+                                }
+                            })();
+
+                            return (
+                                <div 
+                                    key={device.id} 
+                                    className={`rounded-2xl border p-5 transition-all shadow-sm ${
+                                        isFullBin ? 'border-red-300 bg-red-50/30' : 'border-slate-200 bg-white hover:border-slate-300'
+                                    } relative overflow-hidden flex flex-col justify-between`}
+                                >
+                                    {isFullBin && (
+                                        <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-bl-xl shadow-sm">
+                                            ⚠️ เต็มแล้ว (100%)
+                                        </div>
+                                    )}
+                                    
+                                    <div>
+                                        {/* Header: Machine ID & Online Status */}
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-mono font-bold text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
+                                                        {device.id}
                                                     </span>
-                                                    <span className="text-slate-500">{current.toFixed(1)} / {max.toFixed(1)}</span>
+                                                    <span className="font-bold text-slate-800 text-base">{device.name || 'Smart Bin'}</span>
                                                 </div>
-                                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                                    <div className={`${barColor} h-1.5 rounded-full transition-all duration-500`} style={{ width: `${percentage}%` }}></div>
+                                                <div className="text-xs text-slate-500 mt-1 flex items-center space-x-1">
+                                                    <span>📍</span>
+                                                    <span>{device.location || 'ไม่ระบุสถานที่'}</span>
                                                 </div>
                                             </div>
-                                        )
-                                    })}
+                                            <div className={`px-2 py-1 rounded-full text-[10px] font-bold border ${
+                                                device.status === 'ONLINE' 
+                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                                            }`}>
+                                                <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${
+                                                    device.status === 'ONLINE' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                                                }`}></span>
+                                                {device.status || 'OFFLINE'}
+                                            </div>
+                                        </div>
+
+                                        {/* Fill Level Section */}
+                                        <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                                            <div className="flex justify-between items-end mb-2">
+                                                <div>
+                                                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">ระดับความเต็ม</div>
+                                                    <div className="text-3xl font-black text-slate-800 tracking-tight">
+                                                        {fillLevel}<span className="text-lg font-bold text-slate-500 ml-0.5">%</span>
+                                                    </div>
+                                                </div>
+                                                <div className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${statusColor}`}>
+                                                    สถานะ: {statusLabel}
+                                                </div>
+                                            </div>
+
+                                            {/* Progress Bar (0 - 100%) */}
+                                            <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner p-0.5">
+                                                <div 
+                                                    className={`h-full rounded-full transition-all duration-700 ease-out bg-gradient-to-r ${barColor}`} 
+                                                    style={{ width: `${fillLevel}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Footer: Last Update info */}
+                                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                                        <span>⏱️ อัปเดตล่าสุด:</span>
+                                        <span className="font-medium text-slate-600 font-mono">{updateTimeStr}</span>
+                                    </div>
                                 </div>
-                                
-                                <button
-                                    onClick={() => handleResetBin(device.id)}
-                                    className="mt-4 w-full bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-600 font-semibold py-2 rounded-lg text-xs transition-colors border border-slate-200 hover:border-red-200 shadow-sm"
-                                >
-                                    🧹 ล้างปริมาณขยะในตู้ (Reset)
-                                </button>
-                            </div>
-                        ))}
+                            );
+                        })}
                         {devices.length === 0 && (
                             <div className="col-span-full py-8 text-center text-slate-400 font-medium">
                                 ไม่พบตู้ในระบบ
