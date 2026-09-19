@@ -21,7 +21,8 @@ public class JwtUtil {
     private String secretString;
 
     private Key secretKey;
-    private static final long EXPIRATION_TIME = 86400000; // 24 Hours
+    public static final long EXPIRATION_SHORT = 5L * 60 * 60 * 1000;       // 5 Hours (18,000,000 ms)
+    public static final long EXPIRATION_REMEMBER = 30L * 24 * 60 * 60 * 1000; // 30 Days (2,592,000,000 ms)
 
     @PostConstruct
     public void init() {
@@ -31,18 +32,24 @@ public class JwtUtil {
         this.secretKey = Keys.hmacShaKeyFor(secretString.getBytes());
     }
 
-    public String generateToken(User user) {
+    public String generateToken(User user, boolean rememberMe) {
+        long expirationTime = rememberMe ? EXPIRATION_REMEMBER : EXPIRATION_SHORT;
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole());
         claims.put("name", user.getFirstName() + " " + user.getLastName());
+        claims.put("rememberMe", rememberMe);
         
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(user.getId())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public String generateToken(User user) {
+        return generateToken(user, false);
     }
 
     public boolean validateToken(String token) {

@@ -55,6 +55,7 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
     const [showLoginPassword, setShowLoginPassword] = useState(false);
     const [loginError, setLoginError] = useState('');
     const [isLoginLoading, setIsLoginLoading] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true);
     const [notRegistered, setNotRegistered] = useState<{ show: boolean; email: string }>({ show: false, email: '' });
 
     // ── Forgot Password State ──
@@ -257,7 +258,7 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
                 const userInfo = await userInfoRes.json();
                 const email = userInfo.email;
 
-                const result = await loginWithGoogle(tokenResponse.access_token, machineId);
+                const result = await loginWithGoogle(tokenResponse.access_token, machineId, rememberMe);
                 setIsLoginLoading(false);
 
                 if (result.success) {
@@ -292,7 +293,7 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
         setLoginError('');
         setNotRegistered({ show: false, email: '' });
 
-        const result = await loginWithPassword(identifier.trim(), loginPassword, machineId);
+        const result = await loginWithPassword(identifier.trim(), loginPassword, machineId, rememberMe);
 
         setIsLoginLoading(false);
 
@@ -464,19 +465,18 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
             {/* ─── Right Section: Liquid Glass Morphing Panel ─── */}
             <motion.div
                 className="w-full bg-transparent flex flex-col justify-start lg:justify-center items-center h-full overflow-hidden shrink-0"
+                initial={false}
                 animate={{
                     width: isMobile ? '100%' : (mode === 'login' ? '48%' : '56%')
                 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 26 }}
             >
                 <div className="w-full h-full bg-white/30 backdrop-blur-xl border-l-0 lg:border-l border-white/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.1)] rounded-none lg:rounded-l-[3.5rem] px-3 sm:px-8 py-4 lg:py-6 flex flex-col justify-start lg:justify-center items-center overflow-hidden">
-                    <motion.div
-                        className="w-full h-full flex flex-col items-center justify-start lg:justify-center overflow-y-auto py-2 lg:py-4"
+                    <div
+                        className={`w-full h-full flex flex-col items-center justify-start lg:justify-center overflow-y-auto py-2 lg:py-4 transition-all duration-300 ease-out ${
+                            isMobile ? 'max-w-full' : (mode === 'login' ? 'max-w-[460px]' : 'max-w-[680px]')
+                        }`}
                         style={{ scrollbarWidth: 'none' }}
-                        animate={{
-                            maxWidth: isMobile ? '100%' : (mode === 'login' ? 460 : 680)
-                        }}
-                        transition={{ type: 'spring', stiffness: 280, damping: 26 }}
                     >
                         <AnimatePresence mode="wait">
                             {mode === 'login' ? (
@@ -581,6 +581,19 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
                                                         <FontAwesomeIcon icon={showLoginPassword ? faEye : faEyeSlash} className="text-xs" />
                                                     </button>
                                                 </div>
+                                            </div>
+
+                                            <div className="flex items-center space-x-2 pt-0.5">
+                                                <input
+                                                    type="checkbox"
+                                                    id="rememberMe"
+                                                    checked={rememberMe}
+                                                    onChange={e => setRememberMe(e.target.checked)}
+                                                    className="w-4 h-4 text-[#64964E] accent-[#64964E] rounded border-gray-300 cursor-pointer focus:ring-[#64964E]"
+                                                />
+                                                <label htmlFor="rememberMe" className="text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                                                    จดจำอุปกรณ์นี้ไว้ในระบบ (30 วัน)
+                                                </label>
                                             </div>
 
                                             {loginError && (
@@ -1058,7 +1071,7 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </motion.div>
+                    </div>
                 </div>
             </motion.div>
         </div >

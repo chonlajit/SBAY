@@ -3,13 +3,13 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import { useRouter } from 'next/navigation';
+import { isTokenExpired, getTokenRemainingTime } from '../utils/jwt';
 
 // Types
 export interface User {
     id: string;
     phoneNumber: string;
     username?: string;
-    title?: string;
     firstName?: string;
     lastName?: string;
     email?: string;
@@ -21,8 +21,6 @@ export interface User {
     age?: number;
     profileImageUrl?: string;
     points: number;
-    volunteerHours?: number;
-    activityCredits?: number;
     role?: string;
 }
 
@@ -41,14 +39,14 @@ interface SmartBinContextType {
     wasteTypes: WasteType[];
     // OTP: Email Login
     sendOtp: (email: string) => Promise<{ success: boolean; message?: string }>;
-    login: (email: string, otp: string, machineId: string) => Promise<{ success: boolean; message?: string }>;
+    login: (email: string, otp: string, machineId: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string }>;
     // OTP: Phone Login
     sendPhoneOtp: (phone: string) => Promise<{ success: boolean; message?: string }>;
-    loginWithPhone: (phone: string, otp: string, machineId: string) => Promise<{ success: boolean; message?: string }>;
+    loginWithPhone: (phone: string, otp: string, machineId: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string }>;
     // Password Login
-    loginWithPassword: (identifier: string, password: string, machineId: string) => Promise<{ success: boolean; message?: string }>;
+    loginWithPassword: (identifier: string, password: string, machineId: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string }>;
     // Google Login
-    loginWithGoogle: (accessToken: string, machineId: string) => Promise<{ success: boolean; message?: string; email?: string }>;
+    loginWithGoogle: (accessToken: string, machineId: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string; email?: string }>;
     // Register: Manual (Email OTP)
     sendRegisterOtp: (email: string) => Promise<{ success: boolean; message?: string }>;
     sendForgotOtp: (email: string) => Promise<{ success: boolean; message?: string }>;
@@ -83,7 +81,36 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
     const [wasteTypes, setWasteTypes] = useState<WasteType[]>([]);
 
     const clientRef = useRef<Client | null>(null);
+    const logoutTimerRef = useRef<NodeJS.Timeout | null>(null);
     const router = useRouter();
+
+    const scheduleAutoLogout = (jwtToken: string) => {
+        if (logoutTimerRef.current) {
+            clearTimeout(logoutTimerRef.current);
+            logoutTimerRef.current = null;
+        }
+        const remainingMs = getTokenRemainingTime(jwtToken);
+        if (remainingMs <= 0) {
+            console.warn("Session expired. Automatically logging out.");
+            logout();
+            return;
+        }
+
+        // JavaScript setTimeout max safe delay is 2,147,483,647 ms (~24.8 days).
+        // Larger values (like 30 days = 2,592,000,000 ms) overflow 32-bit int and execute immediately (1ms)!
+        // We cap each setTimeout step to at most 12 hours (43,200,000 ms), and recheck iteratively.
+        const SAFE_MAX_DELAY = 12 * 60 * 60 * 1000; // 12 hours
+        const delay = Math.min(remainingMs, SAFE_MAX_DELAY);
+
+        logoutTimerRef.current = setTimeout(() => {
+            if (isTokenExpired(jwtToken)) {
+                console.warn("Session expired. Automatically logging out.");
+                logout();
+            } else {
+                scheduleAutoLogout(jwtToken);
+            }
+        }, delay);
+    };
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -113,28 +140,61 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
                 .then(data => setWasteTypes(data))
                 .catch(e => console.error("Error fetching waste types:", e));
 
-            const savedUser = localStorage.getItem('sbay_user');
-            const savedToken = localStorage.getItem('sbay_token');
+            // Check sessionStorage first (session-only), then localStorage (remembered device)
+            let savedUser = sessionStorage.getItem('sbay_user');
+            let savedToken = sessionStorage.getItem('sbay_token');
+            let isSessionStorage = true;
+            if (!savedUser || !savedToken) {
+                savedUser = localStorage.getItem('sbay_user');
+                savedToken = localStorage.getItem('sbay_token');
+                isSessionStorage = false;
+            }
+
             if (savedUser && savedToken) {
-                const parsedUser = JSON.parse(savedUser);
-                setUser(parsedUser);
-                setToken(savedToken);
-                
-                // Fetch fresh user data from backend
-                fetch(`${currentApiBase}/user/${parsedUser.id}`)
-                    .then(res => res.ok ? res.json() : null)
-                    .then(freshUser => {
-                        if (freshUser && !freshUser.error) {
-                            setUser(freshUser);
-                            localStorage.setItem('sbay_user', JSON.stringify(freshUser));
-                        }
-                    })
-                    .catch(e => console.error(e));
-                
-                // Keep WS connected for global user updates
-                setTimeout(() => {
-                    connectWebSocket(parsedUser.id, 'background', currentWsBase);
-                }, 500);
+                if (isTokenExpired(savedToken)) {
+                    console.warn("Saved token has expired. Clearing session.");
+                    localStorage.removeItem('sbay_user');
+                    localStorage.removeItem('sbay_token');
+                    sessionStorage.removeItem('sbay_user');
+                    sessionStorage.removeItem('sbay_token');
+                    setUser(null);
+                    setToken(null);
+                } else {
+                    const parsedUser = JSON.parse(savedUser);
+                    setUser(parsedUser);
+                    setToken(savedToken);
+                    scheduleAutoLogout(savedToken);
+                    
+                    // Fetch fresh user data from backend
+                    fetch(`${currentApiBase}/user/${parsedUser.id}`)
+                        .then(res => {
+                            if (res.status === 401 || res.status === 403 || res.status === 404) {
+                                throw new Error("Invalid session");
+                            }
+                            return res.ok ? res.json() : null;
+                        })
+                        .then(freshUser => {
+                            if (freshUser && !freshUser.error) {
+                                setUser(freshUser);
+                                if (isSessionStorage) {
+                                    sessionStorage.setItem('sbay_user', JSON.stringify(freshUser));
+                                } else {
+                                    localStorage.setItem('sbay_user', JSON.stringify(freshUser));
+                                }
+                            }
+                        })
+                        .catch(e => {
+                            console.error(e);
+                            if (e.message === "Invalid session") {
+                                logout();
+                            }
+                        });
+                    
+                    // Keep WS connected for global user updates
+                    setTimeout(() => {
+                        connectWebSocket(parsedUser.id, 'background', currentWsBase);
+                    }, 500);
+                }
             }
             setIsInitialized(true);
         }
@@ -191,13 +251,23 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
         clientRef.current = client;
     };
 
-    const saveSession = (userData: User, tokenData: string, machineId: string) => {
+    const saveSession = (userData: User, tokenData: string, machineId: string, rememberMe: boolean = true) => {
         setUser(userData);
         setToken(tokenData);
-        localStorage.setItem('sbay_user', JSON.stringify(userData));
-        localStorage.setItem('sbay_token', tokenData);
+        if (rememberMe) {
+            localStorage.setItem('sbay_user', JSON.stringify(userData));
+            localStorage.setItem('sbay_token', tokenData);
+            sessionStorage.removeItem('sbay_user');
+            sessionStorage.removeItem('sbay_token');
+        } else {
+            sessionStorage.setItem('sbay_user', JSON.stringify(userData));
+            sessionStorage.setItem('sbay_token', tokenData);
+            localStorage.removeItem('sbay_user');
+            localStorage.removeItem('sbay_token');
+        }
         setSessionPoints(0);
         setSessionHistory([]);
+        scheduleAutoLogout(tokenData);
         connectWebSocket(userData.id, machineId);
     };
 
@@ -213,15 +283,15 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
         } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
 
-    const login = async (email: string, otp: string, machineId: string) => {
+    const login = async (email: string, otp: string, machineId: string, rememberMe: boolean = true) => {
         try {
             const res = await fetch(`${apiBase}/auth/otp/verify`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, otp, machineId })
+                body: JSON.stringify({ email, otp, machineId, rememberMe })
             });
             const data = await res.json();
             if (data.error) return { success: false, message: data.error };
-            if (data.user && data.token) { saveSession(data.user, data.token, machineId); return { success: true }; }
+            if (data.user && data.token) { saveSession(data.user, data.token, machineId, rememberMe); return { success: true }; }
             return { success: false, message: 'Invalid server response' };
         } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
@@ -238,43 +308,43 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
         } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
 
-    const loginWithPhone = async (phone: string, otp: string, machineId: string) => {
+    const loginWithPhone = async (phone: string, otp: string, machineId: string, rememberMe: boolean = true) => {
         try {
             const res = await fetch(`${apiBase}/auth/otp/verify-phone`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phoneNumber: phone, otp, machineId })
+                body: JSON.stringify({ phoneNumber: phone, otp, machineId, rememberMe })
             });
             const data = await res.json();
             if (data.error) return { success: false, message: data.error };
-            if (data.user && data.token) { saveSession(data.user, data.token, machineId); return { success: true }; }
+            if (data.user && data.token) { saveSession(data.user, data.token, machineId, rememberMe); return { success: true }; }
             return { success: false, message: 'Invalid server response' };
         } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
 
     // Password Login
-    const loginWithPassword = async (identifier: string, password: string, machineId: string) => {
+    const loginWithPassword = async (identifier: string, password: string, machineId: string, rememberMe: boolean = true) => {
         try {
             const res = await fetch(`${apiBase}/auth/login-password`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier, password, machineId })
+                body: JSON.stringify({ identifier, password, machineId, rememberMe })
             });
             const data = await res.json();
             if (data.error) return { success: false, message: data.error };
-            if (data.user && data.token) { saveSession(data.user, data.token, machineId); return { success: true }; }
+            if (data.user && data.token) { saveSession(data.user, data.token, machineId, rememberMe); return { success: true }; }
             return { success: false, message: 'Invalid server response' };
         } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
 
     // Google Login
-    const loginWithGoogle = async (accessToken: string, machineId: string) => {
+    const loginWithGoogle = async (accessToken: string, machineId: string, rememberMe: boolean = true) => {
         try {
             const res = await fetch(`${apiBase}/auth/google`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: accessToken, machineId })
+                body: JSON.stringify({ idToken: accessToken, machineId, rememberMe })
             });
             const data = await res.json();
             if (data.error) return { success: false, message: data.error, email: data.email };
-            if (data.user && data.token) { saveSession(data.user, data.token, machineId); return { success: true }; }
+            if (data.user && data.token) { saveSession(data.user, data.token, machineId, rememberMe); return { success: true }; }
             return { success: false, message: 'Invalid server response' };
         } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
@@ -312,10 +382,7 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             const data = await res.json();
             if (data.error) return { success: false, message: data.error };
             if (data.user && data.token) {
-                setUser(data.user); setToken(data.token);
-                localStorage.setItem('sbay_user', JSON.stringify(data.user));
-                localStorage.setItem('sbay_token', data.token);
-                setSessionPoints(0); setSessionHistory([]);
+                saveSession(data.user, data.token, 'default-machine');
                 return { success: true };
             }
             return { success: false, message: 'เกิดข้อผิดพลาด' };
@@ -332,10 +399,7 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             const data = await res.json();
             if (data.error) return { success: false, message: data.error, email: data.email };
             if (data.user && data.token) {
-                setUser(data.user); setToken(data.token);
-                localStorage.setItem('sbay_user', JSON.stringify(data.user));
-                localStorage.setItem('sbay_token', data.token);
-                setSessionPoints(0); setSessionHistory([]);
+                saveSession(data.user, data.token, 'default-machine');
                 return { success: true };
             }
             return { success: false, message: 'เกิดข้อผิดพลาด' };
@@ -375,6 +439,10 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
     };
 
     const logout = (machineId = 'default') => {
+        if (logoutTimerRef.current) {
+            clearTimeout(logoutTimerRef.current);
+            logoutTimerRef.current = null;
+        }
         if (user) {
             fetch(`${apiBase}/auth/logout`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -384,6 +452,7 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
         if (clientRef.current) { clientRef.current.deactivate(); clientRef.current = null; }
         setUser(null); setToken(null); setSessionPoints(0); setSessionHistory([]);
         localStorage.removeItem('sbay_user'); localStorage.removeItem('sbay_token');
+        sessionStorage.removeItem('sbay_user'); sessionStorage.removeItem('sbay_token');
         router.push('/');
     };
 

@@ -16,7 +16,6 @@ public class User {
     
     private String username;
     
-    private String title;
     private String firstName;
     private String lastName;
     private String email;
@@ -31,9 +30,6 @@ public class User {
     private String password; // Added for password login
     
     private int points;
-    
-    private Double volunteerHours;
-    private Integer activityCredits;
     
     private String role; // "USER", "ADMIN", or "PARTNER"
     private String partnerId; // กำหนดเมื่อ role = PARTNER เชื่อมกับ Partner document

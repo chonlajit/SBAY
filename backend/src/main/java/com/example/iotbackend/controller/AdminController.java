@@ -44,6 +44,9 @@ public class AdminController {
     
     @Autowired
     private com.example.iotbackend.repository.DeviceRepository deviceRepository;
+
+    @Autowired
+    private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
     
     private void validateAdmin(String token) {
         if (token == null || !token.startsWith("Bearer ")) {
@@ -78,9 +81,25 @@ public class AdminController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Device not found"));
         
         device.getWasteLevels().clear();
+        device.getWasteLevels().put("PLASTIC_BOTTLE", 0.0);
+        device.getWasteLevels().put("ALUMINUM_CAN", 0.0);
+        device.getWasteLevels().put("BEVERAGE_CARTON", 0.0);
+        device.setFillLevel(0);
         device.setIsFull(false);
         device.setFullWasteType(null);
         deviceRepository.save(device);
+
+        Map<String, Object> broadcastData = new java.util.HashMap<>();
+        broadcastData.put("machineId", id);
+        broadcastData.put("fillLevel", 0);
+        broadcastData.put("wasteLevels", device.getWasteLevels());
+        broadcastData.put("maxCapacities", device.getMaxCapacities());
+        broadcastData.put("isFull", false);
+        broadcastData.put("fullWasteType", "");
+        broadcastData.put("status", device.getStatus() != null ? device.getStatus() : "OFFLINE");
+        broadcastData.put("timestamp", java.time.LocalDateTime.now().toString());
+        messagingTemplate.convertAndSend("/topic/devices", broadcastData);
+        messagingTemplate.convertAndSend("/topic/devices/" + id, broadcastData);
         
         return Map.of("message", "Device waste levels have been reset.");
     }

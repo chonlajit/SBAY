@@ -25,16 +25,14 @@ def main():
         client = MongoClient(MONGO_URI)
         db = client[DB_NAME]
         
-        # 1. Reset all users' points and credits to 0
+        # 1. Reset all users' points to 0
         user_result = db.users.update_many(
             {}, # match all users
             {"$set": {
-                "points": 0,
-                "activityCredits": 0,
-                "volunteerHours": 0
+                "points": 0
             }}
         )
-        print(f" - Reset points and credits for {user_result.modified_count} users.")
+        print(f" - Reset points for {user_result.modified_count} users.")
         
         # 2. Delete all transactions
         tx_result = db.transactions.delete_many({})

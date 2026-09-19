@@ -100,8 +100,9 @@ public class AppController {
         if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้");
 
         User user = userOpt.get();
+        boolean rememberMe = "true".equalsIgnoreCase(payload.get("rememberMe"));
         recycleService.bindUserToMachine(machineId, user.getId());
-        String token = jwtUtil.generateToken(user);
+        String token = jwtUtil.generateToken(user, rememberMe);
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("user", user);
         response.put("token", token);
@@ -125,8 +126,9 @@ public class AppController {
         if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้");
 
         User user = userOpt.get();
+        boolean rememberMe = "true".equalsIgnoreCase(payload.get("rememberMe"));
         recycleService.bindUserToMachine(machineId, user.getId());
-        String token = jwtUtil.generateToken(user);
+        String token = jwtUtil.generateToken(user, rememberMe);
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("user", user);
         response.put("token", token);
@@ -154,8 +156,9 @@ public class AppController {
             if (userOpt.isEmpty()) return Map.of("error", "ไม่พบอีเมลนี้ในระบบ กรุณาลงทะเบียนก่อน", "email", email);
 
             User user = userOpt.get();
+            boolean rememberMe = "true".equalsIgnoreCase(payload.get("rememberMe"));
             recycleService.bindUserToMachine(machineId, user.getId());
-            String token = jwtUtil.generateToken(user);
+            String token = jwtUtil.generateToken(user, rememberMe);
             Map<String, Object> resp = new java.util.HashMap<>();
             resp.put("user", user);
             resp.put("token", token);
@@ -197,8 +200,6 @@ public class AppController {
             newUser.setPoints(0);
             newUser.setRole("USER");
 
-            String title = cleanString(payload.get("title"));
-            if (title != null) newUser.setTitle(title);
 
             String firstName = cleanString(payload.get("firstName"));
             if (firstName != null) newUser.setFirstName(firstName);
@@ -218,7 +219,7 @@ public class AppController {
             userRepository.save(newUser);
             recycleService.bindUserToMachine(machineId, newUser.getId());
 
-            String token = jwtUtil.generateToken(newUser);
+            String token = jwtUtil.generateToken(newUser, true);
             Map<String, Object> resp = new java.util.HashMap<>();
             resp.put("user", newUser);
             resp.put("token", token);
@@ -265,8 +266,6 @@ public class AppController {
             newUser.setPassword(hashPassword(password));
         }
 
-        String title = cleanString(payload.get("title"));
-        if (title != null) newUser.setTitle(title);
 
         String firstName = cleanString(payload.get("firstName"));
         if (firstName != null) newUser.setFirstName(firstName);
@@ -286,7 +285,7 @@ public class AppController {
         userRepository.save(newUser);
         recycleService.bindUserToMachine(machineId, newUser.getId());
 
-        String token = jwtUtil.generateToken(newUser);
+        String token = jwtUtil.generateToken(newUser, true);
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("user", newUser);
         response.put("token", token);
@@ -366,8 +365,9 @@ public class AppController {
             return Map.of("error", "รหัสผ่านไม่ถูกต้อง");
         }
 
+        boolean rememberMe = "true".equalsIgnoreCase(payload.get("rememberMe"));
         recycleService.bindUserToMachine(machineId, user.getId());
-        String token = jwtUtil.generateToken(user);
+        String token = jwtUtil.generateToken(user, rememberMe);
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("user", user);
         response.put("token", token);
@@ -536,7 +536,6 @@ public class AppController {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
         
-        if (payload.containsKey("title")) existing.setTitle(cleanString(payload.get("title")));
         if (payload.containsKey("firstName")) existing.setFirstName(cleanString(payload.get("firstName")));
         if (payload.containsKey("lastName")) existing.setLastName(cleanString(payload.get("lastName")));
         if (payload.containsKey("studentId")) existing.setStudentId(cleanString(payload.get("studentId")));

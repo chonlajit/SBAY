@@ -42,16 +42,14 @@ def main():
     print(f"\nResetting account for {email}...")
     
     try:
-        # 1. Reset user points and credits to 0
+        # 1. Reset user points to 0
         db.users.update_one(
             {"_id": user["_id"]},
             {"$set": {
-                "points": 0,
-                "activityCredits": 0,
-                "volunteerHours": 0
+                "points": 0
             }}
         )
-        print(" - Reset points, activityCredits, and volunteerHours to 0.")
+        print(" - Reset points to 0.")
         
         # 2. Delete all transactions
         tx_result = db.transactions.delete_many({"userId": user_id})

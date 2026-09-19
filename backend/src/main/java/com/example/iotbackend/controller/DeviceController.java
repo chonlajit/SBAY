@@ -137,12 +137,15 @@ public class DeviceController {
         deviceRepository.save(device);
 
         // Broadcast to WebSocket for live admin updates
-        Map<String, Object> broadcastData = Map.of(
-                "machineId", machineId,
-                "fillLevel", clampedLevel,
-                "isFull", device.getIsFull(),
-                "timestamp", updateTime.toString()
-        );
+        Map<String, Object> broadcastData = new java.util.HashMap<>();
+        broadcastData.put("machineId", machineId);
+        broadcastData.put("fillLevel", clampedLevel);
+        broadcastData.put("wasteLevels", device.getWasteLevels() != null ? device.getWasteLevels() : Map.of());
+        broadcastData.put("maxCapacities", device.getMaxCapacities() != null ? device.getMaxCapacities() : Map.of());
+        broadcastData.put("isFull", device.getIsFull() != null ? device.getIsFull() : false);
+        broadcastData.put("fullWasteType", device.getFullWasteType() != null ? device.getFullWasteType() : "");
+        broadcastData.put("status", device.getStatus() != null ? device.getStatus() : "ONLINE");
+        broadcastData.put("timestamp", updateTime.toString());
         messagingTemplate.convertAndSend("/topic/devices", broadcastData);
         messagingTemplate.convertAndSend("/topic/devices/" + machineId, broadcastData);
 
@@ -167,19 +170,33 @@ public class DeviceController {
             }
         }
 
+        LocalDateTime now = LocalDateTime.now();
         if (payload.containsKey("fillLevel")) {
             Object rawLevel = payload.get("fillLevel");
             if (rawLevel instanceof Number) {
                 int fill = ((Number) rawLevel).intValue();
                 int clamped = Math.max(0, Math.min(100, fill));
                 device.setFillLevel(clamped);
-                device.setLastFillLevelUpdate(LocalDateTime.now());
+                device.setLastFillLevelUpdate(now);
                 if (clamped >= 95) {
                     device.setIsFull(true);
                 } else {
                     device.setIsFull(false);
                 }
             }
+        } else if (device.getWasteLevels() != null && !device.getWasteLevels().isEmpty()) {
+            // Auto-calculate fillLevel from the highest percentage among compartments
+            double maxPct = 0.0;
+            for (Map.Entry<String, Double> entry : device.getWasteLevels().entrySet()) {
+                double cap = device.getMaxCapacities().getOrDefault(entry.getKey(), 100.0);
+                if (cap > 0) {
+                    double pct = (entry.getValue() / cap) * 100.0;
+                    if (pct > maxPct) maxPct = pct;
+                }
+            }
+            int clamped = Math.max(0, Math.min(100, (int) Math.round(maxPct)));
+            device.setFillLevel(clamped);
+            device.setLastFillLevelUpdate(now);
         }
 
         if (payload.containsKey("isFull")) {
@@ -190,8 +207,24 @@ public class DeviceController {
             device.setFullWasteType((String) payload.get("fullWasteType"));
         }
 
+        device.setStatus("ONLINE");
+        device.setLastHeartbeat(now);
         deviceRepository.save(device);
-        return ResponseEntity.ok().build();
+
+        // Broadcast to WebSocket for live admin updates
+        Map<String, Object> broadcastData = new java.util.HashMap<>();
+        broadcastData.put("machineId", deviceId);
+        broadcastData.put("fillLevel", device.getFillLevel() != null ? device.getFillLevel() : 0);
+        broadcastData.put("wasteLevels", device.getWasteLevels() != null ? device.getWasteLevels() : Map.of());
+        broadcastData.put("maxCapacities", device.getMaxCapacities() != null ? device.getMaxCapacities() : Map.of());
+        broadcastData.put("isFull", device.getIsFull() != null ? device.getIsFull() : false);
+        broadcastData.put("fullWasteType", device.getFullWasteType() != null ? device.getFullWasteType() : "");
+        broadcastData.put("status", device.getStatus() != null ? device.getStatus() : "ONLINE");
+        broadcastData.put("timestamp", now.toString());
+        messagingTemplate.convertAndSend("/topic/devices", broadcastData);
+        messagingTemplate.convertAndSend("/topic/devices/" + deviceId, broadcastData);
+
+        return ResponseEntity.ok(device);
     }
 
     @PostMapping("/{deviceId}/reset")
