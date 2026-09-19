@@ -174,14 +174,6 @@ public class RecycleService {
         User user = userRepository.findById(redemption.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if ("VOLUNTEER".equalsIgnoreCase(redemption.getRewardType())) {
-            user.setVolunteerHours(user.getVolunteerHours() + redemption.getValue());
-        } else if ("ACTIVITY".equalsIgnoreCase(redemption.getRewardType())) {
-            user.setActivityCredits(user.getActivityCredits() + (int) redemption.getValue());
-        }
-
-        userRepository.save(user);
-        
         redemption.setStatus("APPROVED");
         redemptionRepository.save(redemption);
 
