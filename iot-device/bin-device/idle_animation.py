@@ -36,23 +36,31 @@ class IdleSleepingFace:
         self.sleep_frame_idx = 0
         self.timer_id = None
 
+        self.scale = max(0.5, min(self.width / 960.0, self.height / 540.0))
+        s_title = max(18, int(32 * self.scale))
+        s_thai = max(14, int(20 * self.scale))
+        s_thai_bold = max(15, int(22 * self.scale))
+        s_z_sm = max(20, int(36 * self.scale))
+        s_z_md = max(28, int(52 * self.scale))
+        s_z_lg = max(38, int(72 * self.scale))
+
         # โหลดฟอนต์ระบบ
         try:
-            self.font_title = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", 32)
-            self.font_thai = ImageFont.truetype("C:/Windows/Fonts/leelawad.ttf", 20)
-            self.font_thai_bold = ImageFont.truetype("C:/Windows/Fonts/leelawad.ttf", 22)
-            self.font_z_sm = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", 36)
-            self.font_z_md = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", 52)
-            self.font_z_lg = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", 72)
+            self.font_title = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", s_title)
+            self.font_thai = ImageFont.truetype("C:/Windows/Fonts/leelawad.ttf", s_thai)
+            self.font_thai_bold = ImageFont.truetype("C:/Windows/Fonts/leelawad.ttf", s_thai_bold)
+            self.font_z_sm = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", s_z_sm)
+            self.font_z_md = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", s_z_md)
+            self.font_z_lg = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", s_z_lg)
         except Exception:
             # Fallback สำหรับเครื่อง Linux / Raspberry Pi
             try:
-                self.font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)
-                self.font_thai = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 20)
-                self.font_thai_bold = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 22)
-                self.font_z_sm = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
-                self.font_z_md = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 52)
-                self.font_z_lg = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 72)
+                self.font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", s_title)
+                self.font_thai = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", s_thai)
+                self.font_thai_bold = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", s_thai_bold)
+                self.font_z_sm = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", s_z_sm)
+                self.font_z_md = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", s_z_md)
+                self.font_z_lg = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", s_z_lg)
             except Exception:
                 self.font_title = ImageFont.load_default()
                 self.font_thai = ImageFont.load_default()
@@ -96,18 +104,20 @@ class IdleSleepingFace:
 
 
     def _draw_tilted_z(self, img, x, y, text, font, angle, color):
-        txt_img = Image.new("RGBA", (140, 140), (0, 0, 0, 0))
+        dim = max(100, int(150 * self.scale))
+        txt_img = Image.new("RGBA", (dim, dim), (0, 0, 0, 0))
         d = ImageDraw.Draw(txt_img)
-        d.text((25, 25), text, font=font, fill=color)
+        pad = int(25 * self.scale)
+        d.text((pad, pad), text, font=font, fill=color)
         rotated = txt_img.rotate(angle, resample=Image.BICUBIC)
-        img.paste(rotated, (int(x - 70), int(y - 70)), rotated)
+        img.paste(rotated, (int(x - dim // 2), int(y - dim // 2)), rotated)
 
     def _render_single_eye(self, open_ratio=0.0, radius=75, scale_x=1.0, scale_y=1.0):
-        dim = int((radius * 2 + 90) * max(scale_x, scale_y))
+        dim = int((radius * 2 + 90 * self.scale) * max(scale_x, scale_y))
         center = dim // 2
         rx = int(radius * scale_x)
         ry = int(radius * scale_y)
-        rim_offset = int(12 * scale_y)
+        rim_offset = int(12 * scale_y * self.scale)
 
         # 1. ฐานลูกตาสีเขียว (เห็นชัดเจนเมื่อเปลือกตาเลื่อนเปิดขึ้น)
         eye_img = Image.new("RGBA", (dim, dim), (0, 0, 0, 0))
@@ -124,7 +134,7 @@ class IdleSleepingFace:
             fill=GREEN_EYE
         )
         # ประกายตาสีขาวด้านใน
-        sparkle_scale = min(scale_x, scale_y)
+        sparkle_scale = min(scale_x, scale_y) * self.scale
         eye_draw.ellipse(
             [center + int(18*sparkle_scale), center - int(36*sparkle_scale), 
              center + int(38*sparkle_scale), center - int(16*sparkle_scale)], 
@@ -139,53 +149,64 @@ class IdleSleepingFace:
         if open_ratio >= 1.0:
             return eye_img
 
-        # 2. เปลือกตาสีเทา + ขอบตาล่างสีดำที่จะเลื่อนขึ้น
-        lift_offset = int(open_ratio * (ry * 2 + 25))
-        lid_img = Image.new("RGBA", (dim, dim), (0, 0, 0, 0))
-        lid_draw = ImageDraw.Draw(lid_img)
-        lid_cy = center - lift_offset
-
-        lid_draw.ellipse(
-            [center - rx, lid_cy - ry + rim_offset, center + rx, lid_cy + ry + rim_offset],
-            fill=BLACK_RIM
-        )
-        lid_draw.ellipse(
-            [center - rx, lid_cy - ry, center + rx, lid_cy + ry],
+        # 2. แผ่นเปลือกตาสีเทา (#7e897e) ที่จะค่อยๆ สไลด์เปิดขึ้นด้านบน
+        eyelid_layer = Image.new("RGBA", (dim, dim), (0, 0, 0, 0))
+        eyelid_draw = ImageDraw.Draw(eyelid_layer)
+        eyelid_draw.ellipse(
+            [center - rx, center - ry, center + rx, center + ry],
             fill=GRAY_EYE
         )
 
-        # 3. Mask ให้ขอบเปลือกตาไม่ล้นออกนอกเบ้าตา
+        # คำนวณความสูงของเปลือกตาที่เลื่อนขึ้น
+        travel_dist = int(ry * 2.3)
+        slide_offset = int(open_ratio * travel_dist)
+
+        moved_eyelid = Image.new("RGBA", (dim, dim), (0, 0, 0, 0))
+        moved_eyelid.paste(eyelid_layer, (0, -slide_offset))
+
+        # หน้ากากจำกัดขอบเขตตา (Mask)
         mask_img = Image.new("L", (dim, dim), 0)
         mask_draw = ImageDraw.Draw(mask_img)
-        mask_draw.ellipse([center - rx, center - ry + rim_offset, center + rx, center + ry + rim_offset], fill=255)
+        mask_draw.ellipse(
+            [center - rx, center - ry, center + rx, center + ry + rim_offset],
+            fill=255
+        )
 
-        combined_mask = ImageChops.multiply(lid_img.split()[3], mask_img)
-        eye_img.paste(lid_img, (0, 0), combined_mask)
+        final_eye = Image.composite(moved_eyelid, eye_img, mask_img)
 
-        return eye_img
+        # วาดเส้นขอบตาสีดำด้านล่างทับหน้าสุดท้าย
+        final_draw = ImageDraw.Draw(final_eye)
+        final_draw.arc(
+            [center - rx, center - ry + rim_offset, center + rx, center + ry + rim_offset],
+            start=0, end=180, fill=BLACK_RIM, width=max(4, int(7 * self.scale))
+        )
+        return final_eye
 
     def _draw_mouth(self, draw, cx, cy, open_ratio=0.0, startle_ratio=0.0, is_settled=False):
-        mouth_y = cy + 105
-        if open_ratio < 0.2:
+        """วาดปากตามสถานะ (หลับลึก -> ตกใจสะดุ้ง -> ยิ้มหวาน)"""
+        mouth_y = cy + int(115 * self.scale)
+        stroke = max(4, int(7 * self.scale))
+
+        if open_ratio < 0.1:
             # ปากคนหลับ (เส้นโค้งคว่ำ)
-            mouth_w = 42
-            mouth_h = 24
+            mouth_w = int(42 * self.scale)
+            mouth_h = int(24 * self.scale)
             draw.arc(
                 [cx - mouth_w, mouth_y - mouth_h, cx + mouth_w, mouth_y + mouth_h],
-                start=210, end=330, fill=BLACK_RIM, width=7
+                start=210, end=330, fill=BLACK_RIM, width=stroke
             )
         elif startle_ratio > 0.15 and not is_settled:
             # ปากสะดุ้งตกใจ ('อ๊ะ!')
-            ow = int(14 + 10 * startle_ratio)
-            oh = int(14 + 16 * startle_ratio)
+            ow = int((14 + 10 * startle_ratio) * self.scale)
+            oh = int((14 + 16 * startle_ratio) * self.scale)
             draw.ellipse([cx - ow, mouth_y - oh, cx + ow, mouth_y + oh], fill=BLACK_RIM)
         else:
             # ปากยิ้มหวานสดใส
-            smile_w = 46
-            smile_h = 26
+            smile_w = int(46 * self.scale)
+            smile_h = int(26 * self.scale)
             draw.arc(
                 [cx - smile_w, mouth_y - smile_h, cx + smile_w, mouth_y + smile_h],
-                start=30, end=150, fill=BLACK_RIM, width=7
+                start=30, end=150, fill=BLACK_RIM, width=stroke
             )
 
     def _render_frame(self, t=0.0, open_ratio=0.0, dy=0.0, scale_x=1.0, scale_y=1.0, startle_ratio=0.0, is_settled=False):
@@ -194,8 +215,8 @@ class IdleSleepingFace:
 
         cx = self.width // 2
         cy = int(self.height * 0.40 + dy)
-        eye_spacing = int(170 * scale_x)
-        radius = 75
+        eye_spacing = int(170 * scale_x * self.scale)
+        radius = int(75 * self.scale)
 
         # วาดดวงตาทั้ง 2 ข้าง
         eye_single = self._render_single_eye(open_ratio=open_ratio, radius=radius, scale_x=scale_x, scale_y=scale_y)
@@ -211,9 +232,9 @@ class IdleSleepingFace:
         # ตัวอักษร Z z z (เฉพาะตอนยังหลับ)
         if open_ratio < 0.1:
             z_offset = (t * 18) % 45
-            self._draw_tilted_z(img, cx - 350, cy + 155 - z_offset, "Z", self.font_z_sm, -25, (*Z_COLOR, 200))
-            self._draw_tilted_z(img, cx - 390, cy + 90 - z_offset, "Z", self.font_z_md, -35, (*Z_COLOR, 230))
-            self._draw_tilted_z(img, cx - 420, cy + 15 - z_offset, "Z", self.font_z_lg, -45, (*Z_COLOR, 255))
+            self._draw_tilted_z(img, cx - int(350 * self.scale), cy + int(155 * self.scale) - z_offset, "Z", self.font_z_sm, -25, (*Z_COLOR, 200))
+            self._draw_tilted_z(img, cx - int(390 * self.scale), cy + int(90 * self.scale) - z_offset, "Z", self.font_z_md, -35, (*Z_COLOR, 230))
+            self._draw_tilted_z(img, cx - int(420 * self.scale), cy + int(15 * self.scale) - z_offset, "Z", self.font_z_lg, -45, (*Z_COLOR, 255))
 
         # ข้อความแบรนด์และคำแนะนำ
         title_text = "SBAY Smart Bin"

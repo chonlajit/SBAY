@@ -24,15 +24,15 @@ from PIL import Image, ImageTk
 
 # กำหนด Path ให้เข้าถึงโมดูลหลักได้เสมอ
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from settings.config import WASTE_LABELS, USE_IR
+from settings.config import WASTE_LABELS, USE_IR, GUI_FULLSCREEN
 
 logger = logging.getLogger("gui")
 
 # กำหนดฟอนต์ตามระบบปฏิบัติการ
 FONT = "Segoe UI" if sys.platform.startswith("win") else "DejaVu Sans"
 
-# ขนาดหน้าจอมาตรฐาน Eco-Tech Kiosk (รองรับขยายเต็มจอได้)
-WIDTH, HEIGHT = 1024, 600
+# ขนาดหน้าจอมาตรฐานสำหรับคำนวณสเกล (Base Reference Resolution)
+BASE_WIDTH, BASE_HEIGHT = 1024, 600
 
 # พาเลทสี Eco-tech จาก Concept Design
 COLORS = {
@@ -53,6 +53,7 @@ class SmartBinGUI:
     """
     SBAY Smart Bin - Eco-tech Canvas GUI
     รวมดีไซน์ Eco-tech Organic เข้ากับระบบถังขยะอัจฉริยะ และ Idle Sleeping Face Animation
+    รองรับการปรับขยายขนาดเต็มหน้าจอทุกความละเอียด (Responsive Scaling / Fullscreen)
     """
 
     def __init__(self, on_phone_submit=None, on_finish=None):
@@ -61,7 +62,27 @@ class SmartBinGUI:
 
         self.root = tk.Tk()
         self.root.title("SBAY · Eco-Tech Smart Bin")
-        self.root.geometry(f"{WIDTH}x{HEIGHT}")
+
+        import settings.config as config
+        # ควบคุม Fullscreen (เปิดอัตโนมัติบน Linux/Pi หรือตาม config.py)
+        self.is_fullscreen = getattr(config, "GUI_FULLSCREEN", sys.platform.startswith("linux"))
+
+        screen_w = self.root.winfo_screenwidth()
+        screen_h = self.root.winfo_screenheight()
+
+        if self.is_fullscreen:
+            try:
+                self.root.attributes("-fullscreen", True)
+            except Exception:
+                pass
+            self.width = screen_w
+            self.height = screen_h
+            self.root.geometry(f"{self.width}x{self.height}+0+0")
+        else:
+            self.width = min(1024, screen_w)
+            self.height = min(600, screen_h)
+            self.root.geometry(f"{self.width}x{self.height}")
+
         self.root.configure(bg=COLORS["deep"])
 
         # คีย์ลัด
@@ -70,24 +91,24 @@ class SmartBinGUI:
         self.root.bind("<c>", self._toggle_cursor)
         self.root.bind("<C>", self._toggle_cursor)
         self.root.bind("<Key>", self._on_key_press)
+        self.root.bind("<Configure>", self._on_window_configure)
 
         # จัดการเส้นทางบันทึกประวัติ (data/history.json)
         self.history_path = Path(__file__).resolve().parent / "data" / "history.json"
         self.history_path.parent.mkdir(exist_ok=True)
 
         # ควบคุม Cursor เมาส์
-        import settings.config as config
         self.cursor_hidden = getattr(config, "HIDE_CURSOR", False)
 
-        # Canvas หลักสำหรับวาด Eco-tech UI ทั้งหมด
+        # Canvas หลักสำหรับวาด Eco-tech UI ทั้งหมด เต็มพื้นที่หน้าต่าง
         self.container = tk.Frame(self.root, bg=COLORS["deep"])
         self.container.pack(fill="both", expand=True)
 
         self.canvas = tk.Canvas(
-            self.container, width=WIDTH, height=HEIGHT,
+            self.container, width=self.width, height=self.height,
             bg=COLORS["deep"], bd=0, highlightthickness=0
         )
-        self.canvas.place(relx=0.5, rely=0.5, anchor="center")
+        self.canvas.pack(fill="both", expand=True)
 
         # สถานะระบบ
         self.page = "idle"
@@ -100,10 +121,88 @@ class SmartBinGUI:
         self.cam_photo = None
         self.cam_label = None
 
+        self._recalculate_scale()
+        self._setup_scaled_canvas()
         self._apply_cursor()
 
         # เริ่มต้นที่หน้าจอ IDLE (Sleeping Animation)
         self.show_idle()
+
+    # ============================================================
+    # RESPONSIVE SCALING & CANVAS ADAPTER
+    # ============================================================
+    def _recalculate_scale(self):
+        """คำนวณสเกลการแสดงผลและจุดกึ่งกลาง (Offset) ตามขนาดจอจริง"""
+        self.root.update_idletasks()
+        w = self.root.winfo_width()
+        h = self.root.winfo_height()
+        if w <= 1 or h <= 1:
+            w = self.root.winfo_screenwidth()
+            h = self.root.winfo_screenheight()
+
+        self.width = w
+        self.height = h
+
+        # สเกลตามแบบมาตรฐาน BASE_WIDTH x BASE_HEIGHT (1024x600)
+        self.scale = max(0.5, min(self.width / float(BASE_WIDTH), self.height / float(BASE_HEIGHT)))
+        self.offset_x = int((self.width - BASE_WIDTH * self.scale) / 2.0)
+        self.offset_y = int((self.height - BASE_HEIGHT * self.scale) / 2.0)
+
+    def sx(self, x):
+        return int(x * self.scale + self.offset_x)
+
+    def sy(self, y):
+        return int(y * self.scale + self.offset_y)
+
+    def sr(self, r):
+        return max(2, int(r * self.scale))
+
+    def sf(self, size):
+        return max(7, int(size * self.scale))
+
+    def _setup_scaled_canvas(self):
+        """เชื่อมต่อ Canvas methods เพื่อให้พิกัดและขนาดฟอนต์สเกลตามหน้าจอโดยอัตโนมัติ"""
+        self._orig_create_text = self.canvas.create_text
+        self._orig_create_oval = self.canvas.create_oval
+        self._orig_create_polygon = self.canvas.create_polygon
+        self._orig_create_line = self.canvas.create_line
+        self._orig_create_window = self.canvas.create_window
+
+        def scaled_create_text(x, y, *args, **kwargs):
+            sx, sy = self.sx(x), self.sy(y)
+            if "font" in kwargs and kwargs["font"]:
+                f = kwargs["font"]
+                if isinstance(f, tuple) and len(f) >= 2 and isinstance(f[1], (int, float)):
+                    kwargs["font"] = (f[0], self.sf(f[1])) + tuple(f[2:])
+            if "width" in kwargs and kwargs["width"]:
+                kwargs["width"] = int(kwargs["width"] * self.scale)
+            return self._orig_create_text(sx, sy, *args, **kwargs)
+
+        def scaled_create_oval(x1, y1, x2, y2, *args, **kwargs):
+            if "ambient" in kwargs.get("tags", ""):
+                return self._orig_create_oval(x1, y1, x2, y2, *args, **kwargs)
+            return self._orig_create_oval(self.sx(x1), self.sy(y1), self.sx(x2), self.sy(y2), *args, **kwargs)
+
+        def scaled_create_line(x1, y1, x2, y2, *args, **kwargs):
+            if "background" in kwargs.get("tags", "") or "ambient" in kwargs.get("tags", ""):
+                return self._orig_create_line(x1, y1, x2, y2, *args, **kwargs)
+            w = kwargs.get("width", 1)
+            if w > 1:
+                kwargs["width"] = max(1, int(w * self.scale))
+            return self._orig_create_line(self.sx(x1), self.sy(y1), self.sx(x2), self.sy(y2), *args, **kwargs)
+
+        def scaled_create_window(x, y, *args, **kwargs):
+            sx, sy = self.sx(x), self.sy(y)
+            if "width" in kwargs and kwargs["width"]:
+                kwargs["width"] = max(10, int(kwargs["width"] * self.scale))
+            if "height" in kwargs and kwargs["height"]:
+                kwargs["height"] = max(10, int(kwargs["height"] * self.scale))
+            return self._orig_create_window(sx, sy, *args, **kwargs)
+
+        self.canvas.create_text = scaled_create_text
+        self.canvas.create_oval = scaled_create_oval
+        self.canvas.create_line = scaled_create_line
+        self.canvas.create_window = scaled_create_window
 
     # ============================================================
     # DRAWING & ENVIRONMENT UTILITIES (จาก SBAY_GUI_Concept)
@@ -117,48 +216,68 @@ class SmartBinGUI:
         ]
 
     def round_rect(self, x1, y1, x2, y2, radius=24, **kwargs):
-        return self.canvas.create_polygon(
-            self.rounded_points(x1, y1, x2, y2, radius),
+        sx1, sy1 = self.sx(x1), self.sy(y1)
+        sx2, sy2 = self.sx(x2), self.sy(y2)
+        sr = self.sr(radius)
+        return self._orig_create_polygon(
+            self.rounded_points(sx1, sy1, sx2, sy2, sr),
             smooth=True, splinesteps=24, **kwargs,
         )
 
     def gradient(self, top="#174A36", bottom="#0A2B22"):
         tr, tg, tb = self.root.winfo_rgb(top)
         br, bg, bb = self.root.winfo_rgb(bottom)
-        for y in range(HEIGHT):
-            ratio = y / HEIGHT
+        step = max(2, int(3 * self.scale))
+        for y in range(0, self.height, step):
+            ratio = y / max(1, self.height)
             r = int((tr + (br - tr) * ratio) / 256)
             g = int((tg + (bg - tg) * ratio) / 256)
             b = int((tb + (bb - tb) * ratio) / 256)
-            self.canvas.create_line(0, y, WIDTH, y, fill=f"#{r:02x}{g:02x}{b:02x}", tags="background")
+            self._orig_create_line(0, y, self.width, y, fill=f"#{r:02x}{g:02x}{b:02x}", width=step, tags="background")
 
     def draw_environment(self):
-        """วาดพื้นหลัง organic, คลื่นด้านล่าง, ใบไม้ และอนุภาคเคลื่อนไหว"""
+        """วาดพื้นหลัง organic, คลื่นด้านล่าง, ใบไม้ และอนุภาคเคลื่อนไหว เต็มพื้นที่หน้าจอ"""
         self._stop_animation()
         self.canvas.delete("all")
         self.particles.clear()
         self.gradient()
 
-        # คลื่นด้านล่างแบบ Organic
-        self.canvas.create_polygon(
-            -30, 505, 100, 465, 250, 520, 410, 485, 575, 530,
-            740, 475, 890, 510, 1050, 470, 1050, 630, -30, 630,
-            smooth=True, splinesteps=36, fill="#1D6046", outline="", tags="background",
-        )
-        self.canvas.create_polygon(
-            -30, 550, 140, 515, 310, 565, 490, 520, 660, 570,
-            830, 525, 1050, 555, 1050, 630, -30, 630,
-            smooth=True, splinesteps=36, fill="#247C57", outline="", tags="background",
-        )
+        w, h = self.width, self.height
+
+        # คลื่นด้านล่างแบบ Organic เต็มความกว้างหน้าจอจริง
+        wave1_pts = [
+            -30, int(h - 95 * self.scale),
+            int(w * 0.10), int(h - 135 * self.scale),
+            int(w * 0.25), int(h - 80 * self.scale),
+            int(w * 0.40), int(h - 115 * self.scale),
+            int(w * 0.55), int(h - 70 * self.scale),
+            int(w * 0.72), int(h - 125 * self.scale),
+            int(w * 0.88), int(h - 90 * self.scale),
+            w + 30, int(h - 130 * self.scale),
+            w + 30, h + 30, -30, h + 30
+        ]
+        self._orig_create_polygon(wave1_pts, smooth=True, splinesteps=36, fill="#1D6046", outline="", tags="background")
+
+        wave2_pts = [
+            -30, int(h - 50 * self.scale),
+            int(w * 0.14), int(h - 85 * self.scale),
+            int(w * 0.31), int(h - 35 * self.scale),
+            int(w * 0.48), int(h - 80 * self.scale),
+            int(w * 0.65), int(h - 30 * self.scale),
+            int(w * 0.82), int(h - 75 * self.scale),
+            w + 30, int(h - 45 * self.scale),
+            w + 30, h + 30, -30, h + 30
+        ]
+        self._orig_create_polygon(wave2_pts, smooth=True, splinesteps=36, fill="#247C57", outline="", tags="background")
 
         # สร้างอนุภาคแสงระยิบระยับลอยละล่อง
         random.seed(12)
         palette = ["#2D6D50", "#3B805D", "#82C958", "#65F0A1", "#62B9D6"]
-        for index in range(18):
-            size = random.randint(5, 16)
-            x = random.randint(0, WIDTH)
-            y = random.randint(20, HEIGHT - 50)
-            item = self.canvas.create_oval(
+        for index in range(20):
+            size = random.randint(5, 16) * max(1.0, self.scale * 0.8)
+            x = random.randint(0, self.width)
+            y = random.randint(20, max(50, self.height - 50))
+            item = self._orig_create_oval(
                 x - size, y - size, x + size, y + size,
                 fill=random.choice(palette), outline="", stipple="gray50",
                 tags=("ambient", f"particle_{index}"),
@@ -170,13 +289,18 @@ class SmartBinGUI:
                 "phase": random.random() * math.tau,
             })
 
-        # ใบไม้ลอยแบบไม่ต้องพึ่งพาไฟล์รูปภาพภายนอก
-        for x, y, scale in [(70, 90, 1.0), (915, 80, 0.8), (930, 465, 1.1)]:
-            self.canvas.create_line(x, y, x + 48 * scale, y + 70 * scale, fill="#75C762", width=4, tags="ambient")
+        # ใบไม้ลอยตามมุมจอ
+        leaves = [
+            (self.sx(70), self.sy(90), 1.0 * self.scale),
+            (self.sx(915), self.sy(80), 0.85 * self.scale),
+            (self.sx(930), self.sy(465), 1.1 * self.scale)
+        ]
+        for lx, ly, lscale in leaves:
+            self._orig_create_line(lx, ly, lx + 48 * lscale, ly + 70 * lscale, fill="#75C762", width=max(2, int(4 * self.scale)), tags="ambient")
             for offset in (12, 30, 48):
-                self.canvas.create_oval(
-                    x + offset * scale - 15 * scale, y + offset * scale - 9 * scale,
-                    x + offset * scale + 12 * scale, y + offset * scale + 9 * scale,
+                self._orig_create_oval(
+                    lx + offset * lscale - 15 * lscale, ly + offset * lscale - 9 * lscale,
+                    lx + offset * lscale + 12 * lscale, ly + offset * lscale + 9 * lscale,
                     fill="#8AD66B", outline="", tags="ambient",
                 )
 
@@ -237,13 +361,13 @@ class SmartBinGUI:
                 self.canvas.move(p["id"], p["dx"] + math.sin(now * 1.2 + p["phase"]) * 0.08, p["dy"])
                 x1, y1, x2, y2 = self.canvas.coords(p["id"])
                 if x2 < 0:
-                    self.canvas.move(p["id"], WIDTH + 30, 0)
-                elif x1 > WIDTH:
-                    self.canvas.move(p["id"], -WIDTH - 30, 0)
+                    self.canvas.move(p["id"], self.width + 30, 0)
+                elif x1 > self.width:
+                    self.canvas.move(p["id"], -self.width - 30, 0)
                 if y2 < 0:
-                    self.canvas.move(p["id"], 0, HEIGHT + 30)
-                elif y1 > HEIGHT:
-                    self.canvas.move(p["id"], 0, -HEIGHT - 30)
+                    self.canvas.move(p["id"], 0, self.height + 30)
+                elif y1 > self.height:
+                    self.canvas.move(p["id"], 0, -self.height - 30)
             except (tk.TclError, ValueError):
                 pass
         self.anim_id = self.root.after(33, self._animate_step)
@@ -311,8 +435,8 @@ class SmartBinGUI:
             root=self.root,
             container=self.container,
             canvas=self.canvas,
-            width=WIDTH,
-            height=HEIGHT,
+            width=self.width,
+            height=self.height,
             on_wake_complete=self.show_phone_input  # เมื่อสะดุ้งตื่นแล้ว เปิดเข้าสู่หน้ากรอกเบอร์โทรศัพท์ทันที
         )
         self.idle_face.start()
@@ -783,9 +907,38 @@ class SmartBinGUI:
         self.cursor_hidden = not self.cursor_hidden
         self._apply_cursor()
 
+    def _on_window_configure(self, event):
+        if event.widget == self.root:
+            if abs(event.width - self.width) > 30 or abs(event.height - self.height) > 30:
+                self._recalculate_scale()
+                self._refresh_current_page()
+
     def _toggle_fullscreen(self, _event=None):
         is_fs = bool(self.root.attributes("-fullscreen"))
         self.root.attributes("-fullscreen", not is_fs)
+        self.root.update_idletasks()
+        self._recalculate_scale()
+        self._refresh_current_page()
+
+    def _refresh_current_page(self):
+        """วาดหน้าปัจจุบันใหม่เมื่อปรับขนาดจอหรือสลับ Fullscreen"""
+        if self.page == "idle":
+            self.show_idle()
+        elif self.page == "phone":
+            self.show_phone_input()
+        elif self.page == "welcome":
+            self.show_welcome("Guest" if not self.phone else self.phone)
+        elif self.page == "detecting":
+            self.show_detecting()
+        elif self.page == "result":
+            self.show_result(
+                len(self.items_list) if self.items_list else 2,
+                sum(x["ml"] for x in self.items_list) if self.items_list else 650,
+                sum(x["score"] for x in self.items_list) if self.items_list else 4.0,
+                True
+            )
+        elif self.page == "history":
+            self.show_history()
 
     def _on_escape(self, _event=None):
         if self.page == "phone":
