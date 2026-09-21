@@ -35,9 +35,9 @@ except ImportError:
     RELEASE_ANGLE_CARTON = 55
     RELEASE_ANGLE_RETURN = 55
     DROP_ANGLE_CLOSED = 90
-    DROP_ANGLE_OPEN = 0
+    DROP_ANGLE_OPEN = 180
     RETURN_ANGLE_CLOSED = 90
-    RETURN_ANGLE_OPEN = 0
+    RETURN_ANGLE_OPEN = 180
 
 SERVO_SORT_PIN = 18
 SERVO_RELEASE_PIN = 19
@@ -219,18 +219,43 @@ def drop_item():
     time.sleep(1.0)
     set_angle(SERVO_DROP_PIN, DROP_ANGLE_CLOSED)
 
-def return_item():
-    """เปิดเพื่อคืนขวดให้ผู้ใช้ จากนั้นปิดกลับ (สำหรับมอเตอร์ 180 องศา)"""
-    set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_OPEN)
-    time.sleep(1.0)
+def open_return_door():
+    """เปิดประตูช่องคืนขวด (หมุน Return Servo ไปตำแหน่งเปิด และเกร็งค้างไว้)"""
+    hold_torque(SERVO_RETURN_PIN, RETURN_ANGLE_OPEN)
+
+def close_return_door():
+    """ปิดประตูช่องคืนขวด (หมุน Return Servo กลับตำแหน่งปิด และตัดไฟพักมอเตอร์)"""
     set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_CLOSED)
 
-def return_bottle():
-    """ทิศคืนขวด: หมุนตัวปัดไปยังทิศคืนขวด ปล่อยแผ่นรอง และสั่งตัวคืนขวด (ถ้ามี)"""
-    sort_item("RETURN")
+def return_item():
+    """เปิดเพื่อคืนขวดให้ผู้ใช้ จากนั้นปิดกลับ (สำหรับมอเตอร์ 180 องศา)"""
+    open_return_door()
     time.sleep(1.0)
+    close_return_door()
+
+def return_bottle():
+    """
+    Flow การคืนขวด (Return Bottle Flow):
+    1. Return servo หมุนเปิดประตูก่อน (Open Return Door)
+    2. ค่อยหมุน Sort servo ไปทิศคืนขวด (Sort to RETURN)
+    3. ปล่อยแผ่นรองขวด (Release Servo -> RETURN)
+    4. หมุนกลับมาทิศ default ก่อน (release_item จะหมุน Release และ Sort กลับมา Default ให้อัตโนมัติ)
+    5. แล้วค่อยปิดประตู return (Close Return Door)
+    """
+    # 1. หมุน Return Servo เพื่อเปิดประตูก่อน
+    open_return_door()
+    time.sleep(1.0)
+
+    # 2. ค่อยหมุนไปทิศคืนขวด
+    sort_item("RETURN")
+    time.sleep(0.5)
+
+    # 3. ปล่อยแผ่นรองขวด และ 4. หมุนกลับมาทิศ default
     release_item("RETURN")
-    return_item()
+    time.sleep(0.5)
+
+    # 5. แล้วค่อยปิดประตู return
+    close_return_door()
 
 def cleanup():
     if HARDWARE_PWM_ENABLED:

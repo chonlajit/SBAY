@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(root_dir, 'bin-device'))
 sys.path.insert(0, root_dir)
 
 from settings.config import (
-    DEVICE_ID, USE_GUI, USE_IR,
+    DEVICE_ID, USE_GUI, USE_IR, USE_HARDWARE, USE_SERVO,
     DETECT_TIMEOUT, SORT_ANGLE_RETURN, RELEASE_ANGLE_RETURN,
     SERVO_HOLD_ON_DROP
 )
@@ -270,13 +270,14 @@ class SmartBinController:
                     if (USE_IR or processing_item) and has_timed_out:
                         logger.warning(f"Detection timeout ({timeout_limit}s) - no valid bottle found, returning item...")
                         
-                        # สั่งหมุน Sort Servo ไปมุมคืนขวด (135°) แล้วเปิด Release Servo (55°) เพื่อคืนขวด
+                        # สั่งคืนขวดตาม Flow: เปิดประตู Return -> หมุนไปทิศ Return -> ปล่อยขวด -> กลับทิศ Default -> ปิดประตู Return
                         try:
-                            from hardware.servo import sort_item, release_item
-                            logger.info(f"Returning item → Sort: {SORT_ANGLE_RETURN}°, Release: {RELEASE_ANGLE_RETURN}°")
-                            sort_item("RETURN")
-                            time.sleep(0.5)
-                            release_item("RETURN")
+                            if USE_HARDWARE and USE_SERVO:
+                                from hardware.servo import return_bottle
+                                logger.info("Returning item via return_bottle()...")
+                                return_bottle()
+                            else:
+                                logger.info("[SIMULATE] Returning item via return_bottle()")
                         except Exception as e:
                             logger.error(f"Failed to return item via servo: {e}")
 

@@ -91,6 +91,73 @@ class TestFullReturnFlow(unittest.TestCase):
 
         service.stop()
 
+    def test_return_bottle_servo_sequence(self):
+        """ทดสอบ Flow การคืนขวด: ต้องเปิดประตู Return ก่อน -> หมุนไปทิศคืนขวด -> ปล่อยขวด -> หมุนกลับ Default -> ปิดประตู Return"""
+        import sys
+        from unittest.mock import patch, MagicMock
+
+        if "rpi_hardware_pwm" not in sys.modules:
+            sys.modules["rpi_hardware_pwm"] = MagicMock()
+        if "gpiozero" not in sys.modules:
+            sys.modules["gpiozero"] = MagicMock()
+        if "gpiozero.pins.lgpio" not in sys.modules:
+            sys.modules["gpiozero.pins.lgpio"] = MagicMock()
+
+        import hardware.servo as servo
+
+        call_log = []
+
+        def mock_open():
+            call_log.append("open_return_door")
+
+        def mock_sort(label):
+            call_log.append(f"sort_{label}")
+
+        def mock_release(label):
+            call_log.append(f"release_{label}")
+
+        def mock_close():
+            call_log.append("close_return_door")
+
+        with patch.object(servo, 'open_return_door', side_effect=mock_open), \
+             patch.object(servo, 'sort_item', side_effect=mock_sort), \
+             patch.object(servo, 'release_item', side_effect=mock_release), \
+             patch.object(servo, 'close_return_door', side_effect=mock_close), \
+             patch.object(servo.time, 'sleep'):
+            
+            servo.return_bottle()
+
+        expected_sequence = [
+            "open_return_door",
+            "sort_RETURN",
+            "release_RETURN",
+            "close_return_door"
+        ]
+        self.assertEqual(call_log, expected_sequence, "Return bottle sequence must match: open door -> sort -> release -> close door")
+
+    def test_return_door_helpers(self):
+        """ทดสอบว่า open_return_door และ close_return_door สั่ง pin และ angle ถูกต้อง"""
+        import sys
+        from unittest.mock import patch, MagicMock
+
+        if "rpi_hardware_pwm" not in sys.modules:
+            sys.modules["rpi_hardware_pwm"] = MagicMock()
+        if "gpiozero" not in sys.modules:
+            sys.modules["gpiozero"] = MagicMock()
+        if "gpiozero.pins.lgpio" not in sys.modules:
+            sys.modules["gpiozero.pins.lgpio"] = MagicMock()
+
+        import hardware.servo as servo
+
+        with patch.object(servo, 'hold_torque') as mock_hold, \
+             patch.object(servo, 'set_angle') as mock_set:
+            
+            servo.open_return_door()
+            mock_hold.assert_called_once_with(servo.SERVO_RETURN_PIN, servo.RETURN_ANGLE_OPEN)
+
+            servo.close_return_door()
+            mock_set.assert_called_once_with(servo.SERVO_RETURN_PIN, servo.RETURN_ANGLE_CLOSED)
+
 
 if __name__ == "__main__":
     unittest.main()

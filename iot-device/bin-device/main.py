@@ -104,10 +104,8 @@ try:
             if time.time() - detect_start > DETECT_TIMEOUT:
                 print("Detect timeout - Returning item...")
                 try:
-                    from hardware.servo import sort_item, release_item
-                    sort_item("RETURN")
-                    time.sleep(0.5)
-                    release_item("RETURN")
+                    from hardware.servo import return_bottle
+                    return_bottle()
                 except Exception as e:
                     print(f"Error returning item: {e}")
                 heights_buffer.clear()

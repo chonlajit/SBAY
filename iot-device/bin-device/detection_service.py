@@ -27,11 +27,12 @@ if USE_HARDWARE:
         def ir_detected(): return True
         
     if USE_SERVO:
-        from hardware.servo import sort_item, release_item, drop_item
+        from hardware.servo import sort_item, release_item, drop_item, return_bottle
     else:
         def sort_item(label): logger.debug(f"[SIMULATE] sort → {label}")
         def release_item(label="PLASTIC_BOTTLE"): logger.debug(f"[SIMULATE] release → {label}")
         def drop_item(): logger.debug("[SIMULATE] drop item")
+        def return_bottle(): logger.debug("[SIMULATE] return bottle")
 else:
     def ir_detected():
         return True
@@ -41,6 +42,8 @@ else:
         logger.debug(f"[SIMULATE] release → {label}")
     def drop_item():
         logger.debug("[SIMULATE] drop item")
+    def return_bottle():
+        logger.debug("[SIMULATE] return bottle")
 
 
 class DetectionService:
@@ -233,10 +236,8 @@ class DetectionService:
                 logger.error(f"Error checking compartment full status: {e}")
 
         if is_full:
-            logger.warning(f"Compartment {stable_label} is FULL! Returning item (Sort RETURN + Release RETURN)...")
-            sort_item("RETURN")
-            time.sleep(0.3)
-            release_item("RETURN")
+            logger.warning(f"Compartment {stable_label} is FULL! Returning item via return_bottle()...")
+            return_bottle()
 
             self.reset_buffers()
             self.last_detection_time = current_time
