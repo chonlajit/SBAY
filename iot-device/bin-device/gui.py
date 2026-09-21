@@ -24,7 +24,11 @@ from PIL import Image, ImageTk
 
 # กำหนด Path ให้เข้าถึงโมดูลหลักได้เสมอ
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from settings.config import WASTE_LABELS, USE_IR, GUI_FULLSCREEN
+from settings.config import WASTE_LABELS, USE_IR
+try:
+    from settings.config import GUI_FULLSCREEN
+except ImportError:
+    GUI_FULLSCREEN = sys.platform.startswith("linux")
 
 logger = logging.getLogger("gui")
 
