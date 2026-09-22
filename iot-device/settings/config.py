@@ -3,10 +3,41 @@
 # ============================
 
 import os
-from dotenv import load_dotenv
+import sys
 
-# Load variables from .env file
-load_dotenv()
+
+
+# Load variables from .env file (ค้นหาทั้งใน settings/, root ของ iot-device, และ CWD)
+_config_dir = os.path.dirname(os.path.abspath(__file__))
+_env_candidates = [
+    os.path.join(_config_dir, ".env"),
+    os.path.join(os.path.dirname(_config_dir), ".env"),
+    os.path.join(os.getcwd(), ".env"),
+]
+
+try:
+    from dotenv import load_dotenv
+    for _path in _env_candidates:
+        if os.path.isfile(_path):
+            load_dotenv(_path, override=False)
+    load_dotenv()
+except ImportError:
+    # Fallback parser กรณีที่เครื่องยังไม่ได้ติดตั้ง python-dotenv
+    for _path in _env_candidates:
+        if os.path.isfile(_path):
+            try:
+                with open(_path, "r", encoding="utf-8") as _f:
+                    for _line in _f:
+                        _line = _line.strip()
+                        if _line and not _line.startswith("#") and "=" in _line:
+                            _k, _v = _line.split("=", 1)
+                            _k = _k.strip()
+                            _v = _v.strip().strip("'\"")
+                            if _k not in os.environ:
+                                os.environ[_k] = _v
+            except Exception:
+                pass
+
 
 # --- Device Identity ---
 DEVICE_ID = os.getenv("DEVICE_ID", "BIN")
@@ -21,9 +52,13 @@ if not DEVICE_SECRET:
     raise ValueError("CRITICAL ERROR: DEVICE_SECRET environment variable is not set!")
 
 # --- Mode ---
-USE_HARDWARE = os.getenv("USE_HARDWARE", "true").lower() == "true"
+_default_use_hardware = "true" if sys.platform.startswith("linux") else "false"
+USE_HARDWARE = os.getenv("USE_HARDWARE", _default_use_hardware).lower() == "true"
+
 USE_CAMERA = os.getenv("USE_CAMERA", "true").lower() == "true"
 USE_GUI = os.getenv("USE_GUI", "true").lower() == "true"
+_default_fullscreen = "true" if sys.platform.startswith("linux") else "false"
+GUI_FULLSCREEN = os.getenv("GUI_FULLSCREEN", _default_fullscreen).lower() == "true"
 USE_IR = os.getenv("USE_IR", "true").lower() == "true"
 USE_SERVO = os.getenv("USE_SERVO", "true").lower() == "true"
 HIDE_CURSOR = os.getenv("HIDE_CURSOR", "true").lower() == "true"
@@ -44,6 +79,10 @@ DROP_ANGLE_OPEN = 180
 
 RETURN_ANGLE_CLOSED = 90
 RETURN_ANGLE_OPEN = 180
+
+# ควบคุมการสั่งรีเซ็ต Servo 180 องศา (Drop / Return) ตอนเปิดระบบ
+# ค่าเริ่มต้นเป็น False เพื่อป้องกันไม่ให้มอเตอร์สะบัด/หมุนจนสุดตอนรัน main_controller
+RESET_180_SERVOS_ON_STARTUP = os.getenv("RESET_180_SERVOS_ON_STARTUP", "false").lower() == "true"
 
 SORT_ANGLE_PLASTIC = 265
 SORT_ANGLE_CAN = 200

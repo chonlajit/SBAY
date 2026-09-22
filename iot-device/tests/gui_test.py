@@ -98,44 +98,20 @@ class SmartBinTestGUI:
     def show_idle(self):
         self._clear()
 
-        frame = tk.Frame(self.container, bg=self.BG)
-        frame.place(relx=0.5, rely=0.5, anchor="center")
+        self.root.configure(bg="#ffffff")
+        self.container.configure(bg="#ffffff")
 
-        # Recycle icon (ASCII art style)
-        icon_frame = tk.Frame(frame, bg=self.GREEN, width=80, height=80)
-        icon_frame.pack()
-        icon_frame.pack_propagate(False)
-        tk.Label(icon_frame, text="SB", font=("Helvetica", 30, "bold"),
-                 fg=self.WHITE, bg=self.GREEN).place(relx=0.5, rely=0.5, anchor="center")
-
-        tk.Label(frame, text="SBAY Smart Bin",
-                 font=("Helvetica", 32, "bold"), fg=self.WHITE, bg=self.BG
-                 ).pack(pady=(15, 5))
-
-        tk.Label(frame, text="[ TEST MODE ]",
-                 font=("Helvetica", 14, "bold"), fg=self.YELLOW, bg=self.BG
-                 ).pack(pady=(0, 10))
-
-        tk.Label(frame, text="Device: " + DEVICE_ID,
-                 font=("Helvetica", 11), fg=self.GRAY_DARK, bg=self.BG
-                 ).pack(pady=(0, 25))
-
-        start_btn = tk.Button(
-            frame, text="TAP TO START",
-            font=("Helvetica", 18, "bold"),
-            fg=self.WHITE, bg=self.GREEN, activebackground=self.GREEN_DARK,
-            activeforeground=self.WHITE, relief="flat", bd=0,
-            padx=40, pady=15, cursor="hand2",
-            command=self.show_phone_input
+        import sys, os
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'bin-device'))
+        from idle_animation import IdleSleepingFace
+        self.idle_face = IdleSleepingFace(
+            root=self.root,
+            container=self.container,
+            width=800,
+            height=460,
+            on_wake_complete=self.show_phone_input
         )
-        start_btn.pack()
-
-        # Queued count
-        queued = self.api_client.get_queued_count()
-        if queued > 0:
-            tk.Label(frame, text=f"Offline queue: {queued} pending",
-                     font=("Helvetica", 10), fg=self.ORANGE, bg=self.BG
-                     ).pack(pady=(15, 0))
+        self.idle_face.start()
 
     # ============================================================
     # SCREEN 2: PHONE INPUT
@@ -600,6 +576,13 @@ class SmartBinTestGUI:
     # Utilities
     # ============================================================
     def _clear(self):
+        if hasattr(self, 'idle_face') and self.idle_face:
+            self.idle_face.stop()
+            self.idle_face = None
+
+        self.root.configure(bg=self.BG)
+        self.container.configure(bg=self.BG)
+
         for w in self.container.winfo_children():
             w.destroy()
 
