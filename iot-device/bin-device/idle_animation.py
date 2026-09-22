@@ -37,34 +37,24 @@ class IdleSleepingFace:
         self.timer_id = None
 
         self.scale = max(0.5, min(self.width / 960.0, self.height / 540.0))
-        s_title = max(18, int(32 * self.scale))
-        s_thai = max(14, int(20 * self.scale))
-        s_thai_bold = max(15, int(22 * self.scale))
+        self.s_title = max(18, int(30 * self.scale))
+        self.s_thai = max(13, int(18 * self.scale))
+        self.s_thai_bold = max(14, int(20 * self.scale))
         s_z_sm = max(20, int(36 * self.scale))
         s_z_md = max(28, int(52 * self.scale))
         s_z_lg = max(38, int(72 * self.scale))
 
-        # โหลดฟอนต์ระบบ
+        # โหลดฟอนต์ตัว Z (ASCII)
         try:
-            self.font_title = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", s_title)
-            self.font_thai = ImageFont.truetype("C:/Windows/Fonts/leelawad.ttf", s_thai)
-            self.font_thai_bold = ImageFont.truetype("C:/Windows/Fonts/leelawad.ttf", s_thai_bold)
             self.font_z_sm = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", s_z_sm)
             self.font_z_md = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", s_z_md)
             self.font_z_lg = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", s_z_lg)
         except Exception:
-            # Fallback สำหรับเครื่อง Linux / Raspberry Pi
             try:
-                self.font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", s_title)
-                self.font_thai = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", s_thai)
-                self.font_thai_bold = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", s_thai_bold)
                 self.font_z_sm = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", s_z_sm)
                 self.font_z_md = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", s_z_md)
                 self.font_z_lg = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", s_z_lg)
             except Exception:
-                self.font_title = ImageFont.load_default()
-                self.font_thai = ImageFont.load_default()
-                self.font_thai_bold = ImageFont.load_default()
                 self.font_z_sm = ImageFont.load_default()
                 self.font_z_md = ImageFont.load_default()
                 self.font_z_lg = ImageFont.load_default()
@@ -95,6 +85,24 @@ class IdleSleepingFace:
         self.image_item = self.canvas.create_image(
             self.width // 2, self.height // 2,
             image=self.sleep_photo_frames[0],
+            tags="idle_sleeping_face"
+        )
+
+        # ข้อความแบรนด์และคำแนะนำ (วาดด้วย Tkinter Canvas เพื่อให้ภาษาไทยแสดงผลถูกต้องทุกแพลตฟอร์ม)
+        import sys
+        font_name = "Segoe UI" if sys.platform.startswith("win") else "DejaVu Sans"
+        self.title_item = self.canvas.create_text(
+            self.width // 2, int(self.height * 0.74),
+            text="SBAY Smart Bin",
+            fill="#699E55",
+            font=(font_name, self.s_title, "bold"),
+            tags="idle_sleeping_face"
+        )
+        self.sub_item = self.canvas.create_text(
+            self.width // 2, int(self.height * 0.83),
+            text="แตะหน้าจอเพื่อเริ่มต้น",
+            fill="#94A3B8",
+            font=(font_name, self.s_thai),
             tags="idle_sleeping_face"
         )
 
@@ -235,41 +243,6 @@ class IdleSleepingFace:
             self._draw_tilted_z(img, cx - int(350 * self.scale), cy + int(155 * self.scale) - z_offset, "Z", self.font_z_sm, -25, (*Z_COLOR, 200))
             self._draw_tilted_z(img, cx - int(390 * self.scale), cy + int(90 * self.scale) - z_offset, "Z", self.font_z_md, -35, (*Z_COLOR, 230))
             self._draw_tilted_z(img, cx - int(420 * self.scale), cy + int(15 * self.scale) - z_offset, "Z", self.font_z_lg, -45, (*Z_COLOR, 255))
-
-        # ข้อความแบรนด์และคำแนะนำ
-        title_text = "SBAY Smart Bin"
-        try:
-            bbox = draw.textbbox((0, 0), title_text, font=self.font_title)
-            tw = bbox[2] - bbox[0]
-        except Exception:
-            tw = 250
-        draw.text((cx - tw // 2, int(self.height * 0.74)), title_text, font=self.font_title, fill=TEXT_GREEN)
-
-        if open_ratio < 0.2:
-            sub_text = "แตะหน้าจอเพื่อเริ่มต้น"
-            try:
-                bbox_sub = draw.textbbox((0, 0), sub_text, font=self.font_thai)
-                sw = bbox_sub[2] - bbox_sub[0]
-            except Exception:
-                sw = 200
-            draw.text((cx - sw // 2, int(self.height * 0.83)), sub_text, font=self.font_thai, fill=TEXT_SUB)
-        elif not is_settled:
-            sub_text = ""
-            try:
-                bbox_sub = draw.textbbox((0, 0), sub_text, font=self.font_thai_bold)
-                sw = bbox_sub[2] - bbox_sub[0]
-            except Exception:
-                sw = 160
-            draw.text((cx - sw // 2, int(self.height * 0.83)), sub_text, font=self.font_thai_bold, fill=(234, 88, 12))
-        else:
-            sub_text = "ยินดีต้อนรับครับ!"
-            try:
-                bbox_sub = draw.textbbox((0, 0), sub_text, font=self.font_thai_bold)
-                sw = bbox_sub[2] - bbox_sub[0]
-            except Exception:
-                sw = 180
-            draw.text((cx - sw // 2, int(self.height * 0.83)), sub_text, font=self.font_thai_bold, fill=(22, 163, 74))
-
         return ImageTk.PhotoImage(img.convert("RGB"))
 
     def _pre_render_frames(self):
@@ -321,6 +294,13 @@ class IdleSleepingFace:
     def start(self):
         """เริ่มเล่น Animation นอนหลับ"""
         self.state = "sleeping"
+        if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
+            try:
+                import sys
+                font_name = "Segoe UI" if sys.platform.startswith("win") else "DejaVu Sans"
+                self.canvas.itemconfig(self.sub_item, text="แตะหน้าจอเพื่อเริ่มต้น", fill="#94A3B8", font=(font_name, self.s_thai))
+            except Exception:
+                pass
         self._play_sleep_loop()
 
     def _play_sleep_loop(self):
@@ -362,9 +342,21 @@ class IdleSleepingFace:
         if step_idx < len(self.waking_choreography):
             photo, duration = self.waking_choreography[step_idx]
             self.canvas.itemconfig(self.image_item, image=photo)
+            if step_idx == 0 and hasattr(self, 'sub_item') and self.sub_item and self.canvas:
+                try:
+                    self.canvas.itemconfig(self.sub_item, text="")
+                except Exception:
+                    pass
             self.timer_id = self.root.after(duration, lambda: self._play_startle_sequence(step_idx + 1))
         else:
             self.state = "awake"
+            if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
+                try:
+                    import sys
+                    font_name = "Segoe UI" if sys.platform.startswith("win") else "DejaVu Sans"
+                    self.canvas.itemconfig(self.sub_item, text="ยินดีต้อนรับครับ!", fill="#16A34A", font=(font_name, self.s_thai_bold, "bold"))
+                except Exception:
+                    pass
             # ตื่นนิ่งยิ้มหวานค้างไว้ 400ms ก่อนเรียก Callback เปลี่ยนหน้า
             self.timer_id = self.root.after(400, self._on_wake_finished)
 
@@ -385,11 +377,14 @@ class IdleSleepingFace:
             self.canvas.unbind("<Button-1>")
         except Exception:
             pass
-        if hasattr(self, 'image_item') and self.image_item and self.canvas:
-            try:
-                self.canvas.delete(self.image_item)
-            except Exception:
-                pass
+        for item_name in ('image_item', 'title_item', 'sub_item'):
+            item = getattr(self, item_name, None)
+            if item and self.canvas:
+                try:
+                    self.canvas.delete(item)
+                except Exception:
+                    pass
+                setattr(self, item_name, None)
         if getattr(self, 'created_canvas', False) and hasattr(self, 'canvas') and self.canvas:
             try:
                 self.canvas.destroy()
