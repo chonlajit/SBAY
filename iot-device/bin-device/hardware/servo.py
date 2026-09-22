@@ -89,25 +89,51 @@ with warnings.catch_warnings():
     except:
         pass
 
-# มอเตอร์ 180 องศา (MG996R) มักจะใช้ pulse width 0.5ms ถึง 2.5ms (หรือใกล้เคียง)
+# มอเตอร์ 180 องศา (MG996R)
+# กำหนด initial_angle=None เพื่อไม่ให้มอเตอร์ดีด/สะบัดไปที่ 0 องศาโดยไม่ตั้งใจตอน import โมดูล
+# และใช้ช่วง pulse 0.6ms - 2.4ms เพื่อความปลอดภัย ไม่ชนขอบ Mechanical stop ด้านใน
 try:
-    drop_motor = AngularServo(SERVO_DROP_PIN, min_angle=0, max_angle=180, min_pulse_width=0.5/1000, max_pulse_width=2.5/1000)
-    return_motor = AngularServo(SERVO_RETURN_PIN, min_angle=0, max_angle=180, min_pulse_width=0.5/1000, max_pulse_width=2.5/1000)
+    drop_motor = AngularServo(
+        SERVO_DROP_PIN,
+        min_angle=0,
+        max_angle=180,
+        initial_angle=None,
+        min_pulse_width=0.6/1000,
+        max_pulse_width=2.4/1000
+    )
+    return_motor = AngularServo(
+        SERVO_RETURN_PIN,
+        min_angle=0,
+        max_angle=180,
+        initial_angle=None,
+        min_pulse_width=0.6/1000,
+        max_pulse_width=2.4/1000
+    )
     SOFTWARE_PWM_ENABLED = True
 except Exception as e:
     print(f"❌ ERROR: ไม่สามารถสร้าง Software PWM ได้: {e}")
     SOFTWARE_PWM_ENABLED = False
 
 
-def set_angle(pin, angle):
+def set_angle(pin, angle, smooth=False):
     # กรณีเป็น Drop/Return (มอเตอร์ 180 องศาที่ใช้ gpiozero)
     if pin in [SERVO_DROP_PIN, SERVO_RETURN_PIN]:
         if not SOFTWARE_PWM_ENABLED:
             return
         
         target = drop_motor if pin == SERVO_DROP_PIN else return_motor
+        angle = max(0, min(180, float(angle)))
+
+        # ถ้าระบุ smooth และ target มีตำแหน่งเดิมอยู่แล้ว ให้ค่อยๆ หมุนเป็นจังหวะ ไม่กระชาก
+        if smooth and target.angle is not None:
+            curr = target.angle
+            step = 3 if angle > curr else -3
+            for a in range(int(curr), int(angle), step):
+                target.angle = a
+                time.sleep(0.015)
+
         target.angle = angle
-        time.sleep(1.0)
+        time.sleep(0.8)
         
         # ปิดสัญญาณ PWM เพื่อลดความร้อนมอเตอร์เมื่อไปถึงจุดที่ต้องการแล้ว
         if not KEEP_TORQUE:
@@ -141,7 +167,7 @@ def hold_torque(pin=SERVO_RELEASE_PIN, angle=None):
         target = drop_motor if pin == SERVO_DROP_PIN else return_motor
         ang = angle if angle is not None else (DROP_ANGLE_CLOSED if pin == SERVO_DROP_PIN else RETURN_ANGLE_CLOSED)
         if target:
-            target.angle = ang
+            target.angle = max(0, min(180, float(ang)))
     else:
         if not HARDWARE_PWM_ENABLED:
             return
@@ -171,11 +197,22 @@ def release_torque(pin=None):
     elif pin == SERVO_RETURN_PIN and SOFTWARE_PWM_ENABLED and return_motor:
         return_motor.value = None
 
-def reset_position():
+def reset_position(reset_180=None):
+    """
+    รีเซ็ตตำแหน่ง Servo:
+    - Sort Servo -> DEFAULT_SORT_ANGLE
+    - Release Servo -> DEFAULT_RELEASE_ANGLE
+    - Drop / Return (Servo 180) -> ควบคุมผ่าน RESET_180_SERVOS_ON_STARTUP ใน config.py (ค่าเริ่มต้น False)
+    """
     set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)
     set_angle(SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE)
-    set_angle(SERVO_DROP_PIN, DROP_ANGLE_CLOSED)
-    set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_CLOSED)
+
+    if reset_180 is None:
+        reset_180 = getattr(config, 'RESET_180_SERVOS_ON_STARTUP', False)
+
+    if reset_180:
+        set_angle(SERVO_DROP_PIN, DROP_ANGLE_CLOSED, smooth=True)
+        set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_CLOSED, smooth=True)
 
 def sort_item(label):
     mapping = {
@@ -215,9 +252,9 @@ def release_item(label="PLASTIC_BOTTLE"):
 
 def drop_item():
     """เปิดเพื่อให้ขวดหล่นลงมาในกล่อง จากนั้นปิดกลับ (สำหรับมอเตอร์ 180 องศา)"""
-    set_angle(SERVO_DROP_PIN, DROP_ANGLE_OPEN)
+    set_angle(SERVO_DROP_PIN, DROP_ANGLE_OPEN, smooth=True)
     time.sleep(1.0)
-    set_angle(SERVO_DROP_PIN, DROP_ANGLE_CLOSED)
+    set_angle(SERVO_DROP_PIN, DROP_ANGLE_CLOSED, smooth=True)
 
 def open_return_door():
     """เปิดประตูช่องคืนขวด (หมุน Return Servo ไปตำแหน่งเปิด และเกร็งค้างไว้)"""
@@ -225,7 +262,7 @@ def open_return_door():
 
 def close_return_door():
     """ปิดประตูช่องคืนขวด (หมุน Return Servo กลับตำแหน่งปิด และตัดไฟพักมอเตอร์)"""
-    set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_CLOSED)
+    set_angle(SERVO_RETURN_PIN, RETURN_ANGLE_CLOSED, smooth=True)
 
 def return_item():
     """เปิดเพื่อคืนขวดให้ผู้ใช้ จากนั้นปิดกลับ (สำหรับมอเตอร์ 180 องศา)"""
