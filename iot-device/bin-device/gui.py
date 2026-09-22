@@ -125,8 +125,14 @@ class SmartBinGUI:
         self.cam_photo = None
         self.cam_label = None
 
+        # Mascot animation & transition timers
+        self.zoom_timer = None
+        self.blink_timer = None
+        self._current_zoom_photo = None
+
         self._recalculate_scale()
         self._setup_scaled_canvas()
+        self._load_mascot_assets()
         self._apply_cursor()
 
         # เริ่มต้นที่หน้าจอ IDLE (Sleeping Animation)
@@ -225,13 +231,13 @@ class SmartBinGUI:
         sr = self.sr(radius)
         return self._orig_create_polygon(
             self.rounded_points(sx1, sy1, sx2, sy2, sr),
-            smooth=True, splinesteps=24, **kwargs,
+            smooth=True, splinesteps=10, **kwargs,
         )
 
     def gradient(self, top="#174A36", bottom="#0A2B22"):
         tr, tg, tb = self.root.winfo_rgb(top)
         br, bg, bb = self.root.winfo_rgb(bottom)
-        step = max(2, int(3 * self.scale))
+        step = max(8, int(10 * self.scale))
         for y in range(0, self.height, step):
             ratio = y / max(1, self.height)
             r = int((tr + (br - tr) * ratio) / 256)
@@ -240,7 +246,7 @@ class SmartBinGUI:
             self._orig_create_line(0, y, self.width, y, fill=f"#{r:02x}{g:02x}{b:02x}", width=step, tags="background")
 
     def draw_environment(self):
-        """วาดพื้นหลัง organic, คลื่นด้านล่าง, ใบไม้ และอนุภาคเคลื่อนไหว เต็มพื้นที่หน้าจอ"""
+        """วาดพื้นหลัง organic, คลื่นด้านล่าง, ใบไม้ เต็มพื้นที่หน้าจอ (Static ประหยัด CPU บน Raspberry Pi และจอสัมผัส)"""
         self._stop_animation()
         self.canvas.delete("all")
         self.particles.clear()
@@ -248,7 +254,7 @@ class SmartBinGUI:
 
         w, h = self.width, self.height
 
-        # คลื่นด้านล่างแบบ Organic เต็มความกว้างหน้าจอจริง
+        # คลื่นด้านล่างแบบ Organic
         wave1_pts = [
             -30, int(h - 95 * self.scale),
             int(w * 0.10), int(h - 135 * self.scale),
@@ -260,7 +266,7 @@ class SmartBinGUI:
             w + 30, int(h - 130 * self.scale),
             w + 30, h + 30, -30, h + 30
         ]
-        self._orig_create_polygon(wave1_pts, smooth=True, splinesteps=36, fill="#1D6046", outline="", tags="background")
+        self._orig_create_polygon(wave1_pts, smooth=True, splinesteps=16, fill="#1D6046", outline="", tags="background")
 
         wave2_pts = [
             -30, int(h - 50 * self.scale),
@@ -272,26 +278,20 @@ class SmartBinGUI:
             w + 30, int(h - 45 * self.scale),
             w + 30, h + 30, -30, h + 30
         ]
-        self._orig_create_polygon(wave2_pts, smooth=True, splinesteps=36, fill="#247C57", outline="", tags="background")
+        self._orig_create_polygon(wave2_pts, smooth=True, splinesteps=16, fill="#247C57", outline="", tags="background")
 
-        # สร้างอนุภาคแสงระยิบระยับลอยละล่อง
+        # สร้างอนุภาคแสงระยิบระยับแบบ static (ไม่เคลื่อนไหวเพื่อไม่ให้กิน CPU / Event loop)
         random.seed(12)
         palette = ["#2D6D50", "#3B805D", "#82C958", "#65F0A1", "#62B9D6"]
-        for index in range(20):
-            size = random.randint(5, 16) * max(1.0, self.scale * 0.8)
+        for index in range(16):
+            size = random.randint(5, 14) * max(1.0, self.scale * 0.8)
             x = random.randint(0, self.width)
             y = random.randint(20, max(50, self.height - 50))
-            item = self._orig_create_oval(
+            self._orig_create_oval(
                 x - size, y - size, x + size, y + size,
                 fill=random.choice(palette), outline="", stipple="gray50",
-                tags=("ambient", f"particle_{index}"),
+                tags="ambient",
             )
-            self.particles.append({
-                "id": item,
-                "dx": random.choice([-0.22, -0.16, 0.15, 0.23]),
-                "dy": random.choice([-0.14, -0.09, 0.08]),
-                "phase": random.random() * math.tau,
-            })
 
         # ใบไม้ลอยตามมุมจอ
         leaves = [
@@ -308,10 +308,15 @@ class SmartBinGUI:
                     fill="#8AD66B", outline="", tags="ambient",
                 )
 
-        self._start_animation()
-
     def bind_button(self, tag, command, normal, pressed):
+        last_click = [0.0]
+
         def _on_click(_e=None):
+            now = time.time()
+            if now - last_click[0] < 0.15:  # Debounce 150ms ป้องกัน double tap บนจอสัมผัส
+                return "break"
+            last_click[0] = now
+
             try:
                 self.canvas.itemconfigure(f"{tag}_surface", fill=pressed)
                 self.root.after(80, lambda: self._restore_surface(tag, normal))
@@ -319,11 +324,19 @@ class SmartBinGUI:
                 pass
             if command and callable(command):
                 command()
+            return "break"
 
         self.canvas.tag_bind(tag, "<Button-1>", _on_click)
-        self.canvas.tag_bind(f"{tag}_surface", "<Button-1>", _on_click)
-        self.canvas.tag_bind(tag, "<Enter>", lambda _e: self.canvas.config(cursor="hand2"))
-        self.canvas.tag_bind(tag, "<Leave>", lambda _e: self.canvas.config(cursor=""))
+        if not self.cursor_hidden:
+            self.canvas.tag_bind(tag, "<Enter>", lambda _e: self._set_cursor("hand2"))
+            self.canvas.tag_bind(tag, "<Leave>", lambda _e: self._set_cursor(""))
+
+    def _set_cursor(self, cur):
+        if not self.cursor_hidden:
+            try:
+                self.canvas.config(cursor=cur)
+            except Exception:
+                pass
 
     def _restore_surface(self, tag, normal):
         try:
@@ -356,25 +369,9 @@ class SmartBinGUI:
 
     def _start_animation(self):
         self._stop_animation()
-        self._animate_step()
 
     def _animate_step(self):
-        now = datetime.now().timestamp()
-        for p in self.particles:
-            try:
-                self.canvas.move(p["id"], p["dx"] + math.sin(now * 1.2 + p["phase"]) * 0.08, p["dy"])
-                x1, y1, x2, y2 = self.canvas.coords(p["id"])
-                if x2 < 0:
-                    self.canvas.move(p["id"], self.width + 30, 0)
-                elif x1 > self.width:
-                    self.canvas.move(p["id"], -self.width - 30, 0)
-                if y2 < 0:
-                    self.canvas.move(p["id"], 0, self.height + 30)
-                elif y1 > self.height:
-                    self.canvas.move(p["id"], 0, -self.height - 30)
-            except (tk.TclError, ValueError):
-                pass
-        self.anim_id = self.root.after(33, self._animate_step)
+        pass
 
     def _stop_animation(self):
         if self.anim_id:
@@ -384,9 +381,47 @@ class SmartBinGUI:
                 pass
             self.anim_id = None
 
+    def _load_mascot_assets(self):
+        self.assets_dir = Path(__file__).resolve().parent / "assets"
+        awake_path = self.assets_dir / "sbay_bot.png"
+        sleep_path = self.assets_dir / "sbay_bot_sleep.png"
+        half_path = self.assets_dir / "sbay_bot_blink_half.png"
+
+        self.raw_mascot_awake = Image.open(awake_path).convert("RGBA") if awake_path.exists() else None
+        self.raw_mascot_sleep = Image.open(sleep_path).convert("RGBA") if sleep_path.exists() else None
+        self.raw_mascot_half = Image.open(half_path).convert("RGBA") if half_path.exists() else None
+
+        self._update_mascot_photos()
+
+    def _update_mascot_photos(self):
+        tw = max(20, int(140 * self.scale))
+        th = max(16, int(112 * self.scale))
+        if self.raw_mascot_awake:
+            self.mascot_photo_awake = ImageTk.PhotoImage(self.raw_mascot_awake.resize((tw, th), Image.Resampling.LANCZOS))
+        else:
+            self.mascot_photo_awake = None
+
+        if self.raw_mascot_sleep:
+            self.mascot_photo_sleep = ImageTk.PhotoImage(self.raw_mascot_sleep.resize((tw, th), Image.Resampling.LANCZOS))
+        else:
+            self.mascot_photo_sleep = self.mascot_photo_awake
+
+        if self.raw_mascot_half:
+            self.mascot_photo_half = ImageTk.PhotoImage(self.raw_mascot_half.resize((tw, th), Image.Resampling.LANCZOS))
+        else:
+            self.mascot_photo_half = self.mascot_photo_awake
+
     def _clear(self):
         """ล้างหน้าจอและหยุดแอนิเมชันเดิม"""
         self._stop_animation()
+        self._stop_mascot_blinking()
+        if hasattr(self, 'zoom_timer') and self.zoom_timer:
+            try:
+                self.root.after_cancel(self.zoom_timer)
+            except Exception:
+                pass
+            self.zoom_timer = None
+
         for timer_attr in ('_welcome_timer', '_result_timer'):
             if hasattr(self, timer_attr) and getattr(self, timer_attr):
                 try:
@@ -420,7 +455,6 @@ class SmartBinGUI:
         except Exception:
             pass
 
-
     # ============================================================
     # SCREEN 1: IDLE (Sleeping & Waking Face Animation)
     # ============================================================
@@ -441,7 +475,7 @@ class SmartBinGUI:
             canvas=self.canvas,
             width=self.width,
             height=self.height,
-            on_wake_complete=self.show_phone_input  # เมื่อสะดุ้งตื่นแล้ว เปิดเข้าสู่หน้ากรอกเบอร์โทรศัพท์ทันที
+            on_wake_complete=self.transition_zoom_out_to_phone  # เมื่อสะดุ้งตื่นแล้ว เล่น Zoom Out transition ไปยังหน้ากรอกเบอร์
         )
         self.idle_face.start()
 
@@ -449,20 +483,85 @@ class SmartBinGUI:
         """เข้าสู่หน้าหลักของระบบ (เปิดหน้ากรอกเบอร์โทรศัพท์โดยตรง)"""
         self.show_phone_input()
 
+    # ============================================================
+    # TRANSITION: ZOOM OUT TO PHONE INPUT
+    # ============================================================
+    def transition_zoom_out_to_phone(self):
+        """เล่น Transition Zoom Out จาก Mascot ตื่น ไปยังตำแหน่งบนกล่องหมายเลขโทรศัพท์ตามรูปแรก"""
+        if hasattr(self, 'idle_face') and self.idle_face:
+            self.idle_face.stop()
+            self.idle_face = None
+
+        self._clear()
+        self.page = "transition"
+        self.phone = ""
+
+        # วาดโครงหน้าจอ Phone Input ทั้งหมด
+        self._draw_phone_screen_base()
+
+        # ซ่อน mascot ในตำแหน่งคงที่ไว้ชั่วคราวระหว่าง zoom
+        self.canvas.itemconfigure("phone_mascot", state="hidden")
+
+        # คำนวณพิกัดเริ่มต้น (Center หน้าจอ ขนาดใหญ่ตอนตื่น)
+        start_w = int(360 * self.scale)
+        start_h = int(288 * self.scale)
+        start_cx = self.width // 2
+        start_cy = int(self.height * 0.42)
+
+        # พิกัดปลายทาง (บนกล่องหมายเลขโทรศัพท์ตามรูปแรก)
+        end_w = max(20, int(140 * self.scale))
+        end_h = max(16, int(112 * self.scale))
+        end_x1 = self.sx(459)
+        end_y1 = self.sy(49)
+        end_cx = end_x1 + end_w // 2
+        end_cy = end_y1 + end_h // 2
+
+        total_steps = 12
+        step_interval = 22  # รวม ~260ms นุ่มนวลและไม่กระตุก
+
+        def _step(step_idx):
+            if self.page != "transition":
+                return
+
+            if step_idx > total_steps:
+                # ซูมเสร็จสิ้น เข้าสู่หน้า phone ปกติ และเริ่มกระพริบตาทันที
+                self.canvas.delete("zoom_mascot")
+                self.canvas.itemconfigure("phone_mascot", state="normal")
+                self.page = "phone"
+                self._start_mascot_blinking()
+                return
+
+            t = step_idx / float(total_steps)
+            ease = 1.0 - (1.0 - t) ** 3  # Ease-out cubic
+
+            cur_w = max(20, int(start_w + (end_w - start_w) * ease))
+            cur_h = max(16, int(start_h + (end_h - start_h) * ease))
+            cur_cx = int(start_cx + (end_cx - start_cx) * ease)
+            cur_cy = int(start_cy + (end_cy - start_cy) * ease)
+
+            if self.raw_mascot_awake:
+                img_res = self.raw_mascot_awake.resize((cur_w, cur_h), Image.Resampling.BILINEAR)
+                photo = ImageTk.PhotoImage(img_res)
+                self._current_zoom_photo = photo
+                self.canvas.delete("zoom_mascot")
+                self.canvas.create_image(cur_cx, cur_cy, image=photo, tags="zoom_mascot")
+
+            self.zoom_timer = self.root.after(step_interval, lambda: _step(step_idx + 1))
+
+        _step(0)
 
     # ============================================================
     # SCREEN 3: PHONE INPUT (Keypad & Identification)
     # ============================================================
-    def show_phone_input(self):
-        """หน้าจอกรอกเบอร์โทรศัพท์ด้วยแป้นพิมพ์สไตล์ Eco-tech"""
-        self._clear()
-        self.page = "phone"
-        self.phone = ""
+    def _draw_phone_screen_base(self):
+        """วาดองค์ประกอบหน้ากรอกเบอร์โทรศัพท์ทั้งหมด"""
         self.draw_environment()
-
         self.header("STEP 01 · IDENTIFY", "กรอกหมายเลขโทรศัพท์", "ใช้สำหรับสะสมคะแนนและตรวจสอบประวัติ")
 
-        # กล่องข้อมูลเบอร์โทรฝั่งซ้าย
+        # วาดน้อง Mascot ยืนบนขอบกล่องหมายเลขโทรศัพท์ (x=459, y=49 ตามรูปแรก)
+        self._draw_phone_mascot()
+
+        # กล่องข้อมูลเบอร์โทรฝั่งซ้าย (ปิดทับส่วนล่างของ Mascot พอดี)
         self.round_rect(55, 155, 595, 535, 32, fill=COLORS["cream"], outline="", tags="content")
         self.canvas.create_text(96, 195, anchor="w", text="หมายเลขโทรศัพท์ของคุณ", fill=COLORS["muted"], font=(FONT, 13, "bold"), tags="content")
 
@@ -484,8 +583,6 @@ class SmartBinGUI:
             "ข้ามขั้นตอน (Guest Mode) ➔", "",
             "#E2EBE5", lambda: self.confirm_phone(is_guest=True), "guest_btn"
         )
-
-
 
         # แป้นพิมพ์ตัวเลขฝั่งขวา (3x4 Grid)
         self.round_rect(636, 45, 971, 555, 34, fill="#FDFCF5", outline="", tags="content")
@@ -510,8 +607,81 @@ class SmartBinGUI:
 
             self.bind_button(tag, action, fill, "#FFFFFF")
 
-
         self.update_phone_text()
+
+    def _draw_phone_mascot(self):
+        """วาดน้อง Mascot ยืนบนขอบกล่องหมายเลขโทรศัพท์ (x=459, y=49 ตามรูปแรก)"""
+        self.canvas.delete("phone_mascot")
+        if not hasattr(self, 'mascot_photo_awake') or not self.mascot_photo_awake:
+            self._update_mascot_photos()
+
+        mx = self.sx(459)
+        my = self.sy(49)
+        tw = max(20, int(140 * self.scale))
+        th = max(16, int(112 * self.scale))
+        cx = mx + tw // 2
+        cy = my + th // 2
+
+        self.canvas.create_image(
+            cx, cy,
+            image=self.mascot_photo_awake,
+            tags="phone_mascot"
+        )
+
+    def _start_mascot_blinking(self):
+        """เริ่ม Loop ให้ Mascot ยืนกระพริบตาเป็นระยะ"""
+        self._stop_mascot_blinking()
+        if self.page != "phone":
+            return
+        delay = random.randint(2500, 4200)
+        self.blink_timer = self.root.after(delay, self._play_mascot_blink)
+
+    def _play_mascot_blink(self):
+        """เล่นจังหวะกระพริบตา: ครึ่งตา -> หลับตา -> ครึ่งตา -> ตาโต"""
+        if self.page != "phone" or not hasattr(self, 'mascot_photo_awake') or not self.mascot_photo_awake:
+            return
+
+        def _set_mascot_img(photo):
+            if self.page == "phone" and self.canvas:
+                try:
+                    self.canvas.itemconfigure("phone_mascot", image=photo)
+                except Exception:
+                    pass
+
+        is_double = (random.random() < 0.28)
+
+        _set_mascot_img(self.mascot_photo_half)
+        self.root.after(45, lambda: _set_mascot_img(self.mascot_photo_sleep))
+        self.root.after(115, lambda: _set_mascot_img(self.mascot_photo_half))
+        self.root.after(160, lambda: _set_mascot_img(self.mascot_photo_awake))
+
+        if is_double:
+            self.root.after(270, lambda: _set_mascot_img(self.mascot_photo_half))
+            self.root.after(315, lambda: _set_mascot_img(self.mascot_photo_sleep))
+            self.root.after(380, lambda: _set_mascot_img(self.mascot_photo_half))
+            self.root.after(430, lambda: _set_mascot_img(self.mascot_photo_awake))
+            next_interval = 480
+        else:
+            next_interval = 200
+
+        self.blink_timer = self.root.after(next_interval, self._start_mascot_blinking)
+
+    def _stop_mascot_blinking(self):
+        """หยุดการกระพริบตา"""
+        if hasattr(self, 'blink_timer') and self.blink_timer:
+            try:
+                self.root.after_cancel(self.blink_timer)
+            except Exception:
+                pass
+            self.blink_timer = None
+
+    def show_phone_input(self):
+        """หน้าจอกรอกเบอร์โทรศัพท์ด้วยแป้นพิมพ์สไตล์ Eco-tech"""
+        self._clear()
+        self.page = "phone"
+        self.phone = ""
+        self._draw_phone_screen_base()
+        self._start_mascot_blinking()
 
 
     def formatted_phone(self):
@@ -699,15 +869,11 @@ class SmartBinGUI:
 
         self.cam_container = tk.Frame(self.canvas, bg="#123C2D", bd=0)
         self.cam_label = tk.Label(
-            self.cam_container, text="📷 ภาพกล้องวงจรปิด\n(คลิกเพื่อทดสอบหยอดขยะ)",
-            bg="#061D17", fg=COLORS["mint"], font=(FONT, 13, "bold"), cursor="hand2"
+            self.cam_container, text="📷 ภาพกล้องวงจรปิด",
+            bg="#061D17", fg=COLORS["mint"], font=(FONT, 13, "bold")
         )
         self.cam_label.pack(fill="both", expand=True)
         self.canvas.create_window(750, 292, window=self.cam_container, width=410, height=280, tags="content")
-
-        # คลิกที่กรอบกล้องเพื่อจำลองหยอดขยะ (สะดวกในการทดสอบ)
-        self.cam_container.bind("<Button-1>", lambda e: self._test_add_sample_item())
-        self.cam_label.bind("<Button-1>", lambda e: self._test_add_sample_item())
 
         # 3. ปุ่มเสร็จสิ้น (Finish Button)
         self.button(535, 465, 965, 535, "✅  เสร็จสิ้น (FINISH)", "", COLORS["mint"], self._handle_finish, "finish_btn")

@@ -254,7 +254,7 @@ class IdleSleepingFace:
                 sw = 200
             draw.text((cx - sw // 2, int(self.height * 0.83)), sub_text, font=self.font_thai, fill=TEXT_SUB)
         elif not is_settled:
-            sub_text = "⚡ สะดุ้งตื่นแล้ว!"
+            sub_text = ""
             try:
                 bbox_sub = draw.textbbox((0, 0), sub_text, font=self.font_thai_bold)
                 sw = bbox_sub[2] - bbox_sub[0]
@@ -262,7 +262,7 @@ class IdleSleepingFace:
                 sw = 160
             draw.text((cx - sw // 2, int(self.height * 0.83)), sub_text, font=self.font_thai_bold, fill=(234, 88, 12))
         else:
-            sub_text = "✨ ยินดีต้อนรับครับ!"
+            sub_text = "ยินดีต้อนรับครับ!"
             try:
                 bbox_sub = draw.textbbox((0, 0), sub_text, font=self.font_thai_bold)
                 sw = bbox_sub[2] - bbox_sub[0]
