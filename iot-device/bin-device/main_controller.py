@@ -304,10 +304,21 @@ class SmartBinController:
         self.detecting = False  # Stop detection loop
         logger.info("User pressed finish")
 
+        # ถ้าใน session ไม่มีไอเท็ม แต่ใน GUI มี (เช่น จากการทดสอบคีย์ลัด) ให้นำเข้า session
+        if not self.session.has_items() and self.gui and getattr(self.gui, 'items_list', None):
+            logger.info("Syncing GUI items into session...")
+            for it in self.gui.items_list:
+                self.session.add_item(
+                    item_type=it.get("type", "PLASTIC_BOTTLE"),
+                    size_ml=it.get("ml", 500),
+                    weight=0.0,
+                    score=it.get("score", 1.0)
+                )
+
         if not self.session.has_items():
-            logger.info("No items in session, returning to idle")
+            logger.info("No items in session, displaying result screen (0 items) before idle")
             if self.gui:
-                self.gui.schedule(self.gui.show_idle)
+                self.gui.schedule(self.gui.show_result, 0, 0, 0.0, True)
             return
 
         # Show sending screen
@@ -319,25 +330,36 @@ class SmartBinController:
 
     def _send_session(self):
         """ส่ง session ไป Backend"""
-        summary = self.session.get_summary()
-        payload = self.session.to_payload()
-
-        logger.info(f"Sending session: {summary}")
-
-        success = self.api_client.post_session(payload)
+        summary = {"totalItems": 0, "totalMl": 0.0, "totalScore": 0.0}
+        success = False
+        try:
+            summary = self.session.get_summary()
+            payload = self.session.to_payload()
+            logger.info(f"Sending session: {summary}")
+            success = self.api_client.post_session(payload)
+        except Exception as e:
+            logger.error(f"Error sending session: {e}")
+            try:
+                summary = self.session.get_summary()
+            except Exception:
+                pass
+            success = False
 
         # Show result
         if self.gui:
             self.gui.schedule(
                 self.gui.show_result,
-                summary["totalItems"],
-                summary["totalMl"],
-                summary["totalScore"],
+                summary.get("totalItems", 0),
+                summary.get("totalMl", 0.0),
+                summary.get("totalScore", 0.0),
                 success
             )
 
         # Reset
-        self.session.reset()
+        try:
+            self.session.reset()
+        except Exception:
+            pass
 
     # ==============================
     # CLI MODE (สำหรับทดสอบ)

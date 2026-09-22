@@ -916,16 +916,17 @@ class SmartBinGUI:
         )
 
         # 2. ฝั่งขวา: กล่องแสดงภาพกล้อง (Camera Frame)
-        self.round_rect(530, 140, 969, 445, 28, fill="#061D17", outline="")
-        self.round_rect(535, 145, 964, 440, 24, fill="#123C2D", outline="")
+        self.round_rect(530, 140, 969, 445, 28, fill="#061D17", outline="", tags="content")
+        self.round_rect(535, 145, 964, 440, 24, fill="#123C2D", outline="", tags="content")
 
-        self.cam_container = tk.Frame(self.canvas, bg="#123C2D", bd=0)
-        self.cam_label = tk.Label(
-            self.cam_container, text="📷 ภาพกล้องวงจรปิด",
-            bg="#061D17", fg=COLORS["mint"], font=(FONT, 13, "bold")
+        # ภาพกล้องวงจรปิดและข้อความกำกับ (วาดบน Canvas โดยตรง ไม่ใช้ tk.Frame เพื่อไม่ให้กล้องบังน้อง Mascot)
+        self.cam_image_item = self.canvas.create_image(
+            self.sx(750), self.sy(292), image="", tags=("camera_feed", "content")
         )
-        self.cam_label.pack(fill="both", expand=True)
-        self.canvas.create_window(750, 292, window=self.cam_container, width=410, height=280, tags="content")
+        self.cam_label_text = self.canvas.create_text(
+            self.sx(750), self.sy(292), text="📷 ภาพกล้องวงจรปิด",
+            fill=COLORS["mint"], font=(FONT, 13, "bold"), tags=("camera_text", "content")
+        )
 
         # 3. ปุ่มเสร็จสิ้น (Finish Button)
         self.button(535, 465, 965, 535, "✅  เสร็จสิ้น (FINISH)", "", COLORS["mint"], self._handle_finish, "finish_btn")
@@ -953,6 +954,7 @@ class SmartBinGUI:
             image=self.detect_mascot_photo_awake,
             tags="detect_mascot"
         )
+        self.canvas.tag_raise("detect_mascot")
         self._start_detect_mascot_blinking()
 
     def show_detect_mascot_smile(self):
@@ -967,6 +969,7 @@ class SmartBinGUI:
                 pass
         try:
             self.canvas.itemconfigure("detect_mascot", image=self.detect_mascot_photo_smile)
+            self.canvas.tag_raise("detect_mascot")
         except Exception:
             pass
         # ยิ้มค้างไว้ 2.5 วินาที แล้วกลับเป็นหน้าปกติพร้อมกระพริบตา
@@ -984,6 +987,7 @@ class SmartBinGUI:
                 pass
         try:
             self.canvas.itemconfigure("detect_mascot", image=self.detect_mascot_photo_sad)
+            self.canvas.tag_raise("detect_mascot")
         except Exception:
             pass
         # ทำหน้าเศร้าค้างไว้ 3.0 วินาที แล้วกลับเป็นหน้าปกติ
@@ -994,6 +998,7 @@ class SmartBinGUI:
             return
         try:
             self.canvas.itemconfigure("detect_mascot", image=self.detect_mascot_photo_awake)
+            self.canvas.tag_raise("detect_mascot")
         except Exception:
             pass
         self._start_detect_mascot_blinking()
@@ -1013,6 +1018,7 @@ class SmartBinGUI:
             if self.page == "detecting" and self.canvas:
                 try:
                     self.canvas.itemconfigure("detect_mascot", image=photo)
+                    self.canvas.tag_raise("detect_mascot")
                 except Exception:
                     pass
 
@@ -1088,17 +1094,29 @@ class SmartBinGUI:
     def update_camera_frame(self, cv2_frame):
         """อัปเดตภาพจากกล้องบนจอ"""
         try:
-            if not hasattr(self, 'cam_label') or not self.cam_label or not self.cam_label.winfo_exists():
+            if self.page != "detecting" or not self.canvas:
                 return
 
             if cv2_frame is not None and cv2 is not None:
+                cw = max(20, int(410 * self.scale))
+                ch = max(16, int(280 * self.scale))
                 rgb = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(rgb)
-                img = img.resize((410, 280), Image.LANCZOS)
+                img = img.resize((cw, ch), Image.Resampling.BILINEAR)
                 self.cam_photo = ImageTk.PhotoImage(image=img)
-                self.cam_label.configure(image=self.cam_photo, text="")
+                if hasattr(self, 'cam_image_item') and self.cam_image_item:
+                    self.canvas.itemconfigure(self.cam_image_item, image=self.cam_photo)
+                if hasattr(self, 'cam_label_text') and self.cam_label_text:
+                    self.canvas.itemconfigure(self.cam_label_text, text="")
             else:
-                self.cam_label.configure(image="", text="📷 กล้องปิดอยู่ (Standby)")
+                if hasattr(self, 'cam_image_item') and self.cam_image_item:
+                    self.canvas.itemconfigure(self.cam_image_item, image="")
+                if hasattr(self, 'cam_label_text') and self.cam_label_text:
+                    self.canvas.itemconfigure(self.cam_label_text, text="📷 ภาพกล้องวงจรปิด")
+
+            # ตรวจสอบให้แน่ใจว่าน้อง Mascot อยู่ด้านบนสุดเสมอ ไม่ถูกกล้องบัง
+            if self.canvas:
+                self.canvas.tag_raise("detect_mascot")
         except Exception as e:
             logger.debug(f"Camera frame skipped: {e}")
 
@@ -1140,10 +1158,13 @@ class SmartBinGUI:
 
         # สถิติสรุป (Stats Card)
         self.round_rect(240, 255, 784, 435, 20, fill="white", outline="#DDE6DF", width=1)
+        safe_items = int(total_items or 0)
+        safe_ml = float(total_ml or 0)
+        safe_score = float(total_score or 0)
         stats = [
-            ("จำนวนขยะที่คัดแยก", f"{total_items} ชิ้น"),
-            ("ปริมาตรรวมโดยประมาณ", f"{total_ml:.0f} ml"),
-            ("คะแนนสะสมที่ได้รับ", f"+{total_score:.1f} pt"),
+            ("จำนวนขยะที่คัดแยก", f"{safe_items} ชิ้น"),
+            ("ปริมาตรรวมโดยประมาณ", f"{safe_ml:.0f} ml"),
+            ("คะแนนสะสมที่ได้รับ", f"+{safe_score:.1f} pt"),
         ]
         for i, (label, val) in enumerate(stats):
             y = 290 + i * 50
@@ -1160,7 +1181,7 @@ class SmartBinGUI:
         if self.phone:
             records = self.read_history()
             if records and records[0].get("phone") == self.phone:
-                records[0]["points"] = total_score
+                records[0]["points"] = safe_score
                 try:
                     self.history_path.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
                 except Exception:
@@ -1169,7 +1190,8 @@ class SmartBinGUI:
         # วาดน้อง Mascot ยิ้มกว้างที่มุมล่างขวาของการ์ดสรุปผลคะแนนตาม mockup ของผู้ใช้
         self._draw_result_mascot()
 
-        # กลับไปหน้าจอ Idle Sleeping Animation อัตโนมัติหลังจาก 5.5 วินาที พร้อม Transition Zoom In ค่อยๆ หลับ
+        # แตะหน้าจอเพื่อเล่น Transition Zoom In ค่อยๆ หลับ หรือรอ 5.5 วินาที
+        self.canvas.bind("<Button-1>", lambda e: self.transition_zoom_in_to_idle())
         self.canvas.tag_bind("content", "<Button-1>", lambda e: self.transition_zoom_in_to_idle())
         self.canvas.tag_bind("result_mascot", "<Button-1>", lambda e: self.transition_zoom_in_to_idle())
         self._result_timer = self.root.after(5500, self.transition_zoom_in_to_idle)
