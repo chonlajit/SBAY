@@ -59,12 +59,17 @@ class SmartBinController:
         self.api_client = ApiClient()
         self.session = SessionManager()
         self.detection = DetectionService()
-        self.heartbeat = HeartbeatService(self.api_client, DEVICE_ID)
+        self.heartbeat = HeartbeatService(self.api_client, DEVICE_ID, on_status_change=self._on_server_status_change)
         self.ultrasonic = UltrasonicService(self.api_client, DEVICE_ID)
 
         # GUI (optional)
         self.gui = None
         self.detecting = False
+
+    def _on_server_status_change(self, is_online):
+        """Callback เมื่อสถานะการเชื่อมต่อฐานข้อมูล/เซิร์ฟเวอร์เปลี่ยนไป"""
+        if self.gui:
+            self.gui.schedule(self.gui.set_server_status, is_online)
 
     def start(self):
         """เริ่มระบบทั้งหมด"""
@@ -129,23 +134,41 @@ class SmartBinController:
         """Callback: ผู้ใช้กรอกเบอร์เสร็จ"""
         if phone:
             logger.info(f"Phone submitted: {phone}")
-            user = self.api_client.get_user_by_phone(phone)
+            user, status = self.api_client.get_user_by_phone(phone, return_status=True, retries=2)
         else:
             logger.info("Guest mode")
             user = None
+            status = "OK"
 
         if user:
             user_id = user.get('id', '')
-            name = f"{user.get('firstName', '')} {user.get('lastName', '')}"
+            # แสดง username แทนชื่อตามที่ผู้ใช้ต้องการ
+            username = (
+                user.get('username') or
+                user.get('userName') or
+                user.get('displayName') or
+                f"{user.get('firstName', '')} {user.get('lastName', '')}".strip() or
+                "User"
+            )
+            name = username
+            alert_msg = None
+            logger.info(f"User identified: {name} (ID: {user_id})")
         else:
             user_id = ""
             name = "Guest"
+            if phone and status == "DB_ERROR":
+                alert_msg = "⚠️ ติดต่อฐานข้อมูลไม่ได้! กำลังเข้าสู่โหมด Guest (บันทึกออฟไลน์)"
+                logger.warning(f"Database/server error for phone {phone}. Auto-falling back to offline Guest mode.")
+            elif phone and status == "NOT_FOUND":
+                alert_msg = "ℹ️ ไม่พบเบอร์นี้ในระบบ (ดำเนินการในฐานะ Guest)"
+            else:
+                alert_msg = None
 
         # Start session
         self.session.start(DEVICE_ID, user_id, name)
 
         # Show welcome screen
-        self.gui.schedule(self.gui.show_welcome, name)
+        self.gui.schedule(self.gui.show_welcome, name, alert_msg)
 
         # Start detection loop in background
         self.detecting = True
@@ -378,18 +401,31 @@ class SmartBinController:
 
                 # Lookup user
                 if phone:
-                    user = self.api_client.get_user_by_phone(phone)
+                    user, status = self.api_client.get_user_by_phone(phone, return_status=True, retries=2)
                 else:
                     user = None
+                    status = "OK"
 
                 if user:
                     user_id = user.get('id', '')
-                    name = f"{user.get('firstName', '')} {user.get('lastName', '')}"
-                    print(f"👋 สวัสดี {name}!")
+                    username = (
+                        user.get('username') or
+                        user.get('userName') or
+                        user.get('displayName') or
+                        f"{user.get('firstName', '')} {user.get('lastName', '')}".strip() or
+                        "User"
+                    )
+                    name = username
+                    print(f"👋 สวัสดีคุณ {name} (Username)!")
                 else:
                     user_id = ""
                     name = "Guest"
-                    print("👋 สวัสดี Guest!")
+                    if phone and status == "DB_ERROR":
+                        print("⚠️ ติดต่อฐานข้อมูลไม่ได้! เข้าสู่โหมด Guest (บันทึกออฟไลน์)")
+                    elif phone:
+                        print("ℹ️ ไม่พบบัญชีสำหรับเบอร์นี้ ดำเนินการในฐานะ Guest")
+                    else:
+                        print("👋 สวัสดี Guest!")
 
                 # Start session
                 self.session.start(DEVICE_ID, user_id, name)

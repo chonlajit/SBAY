@@ -137,6 +137,7 @@ class SmartBinGUI:
         self.idle_face = None
         self.cam_photo = None
         self.cam_label = None
+        self.server_online = True
 
         # Mascot animation & transition timers
         self.zoom_timer = None
@@ -616,6 +617,7 @@ class SmartBinGUI:
         # กล่องข้อมูลเบอร์โทรฝั่งซ้าย (ปิดทับส่วนล่างของ Mascot พอดี)
         self.round_rect(55, 155, 595, 535, 32, fill=COLORS["cream"], outline="", tags="content")
         self.canvas.create_text(96, 195, anchor="w", text="หมายเลขโทรศัพท์ของคุณ", fill=COLORS["muted"], font=(FONT, 13, "bold"), tags="content")
+        self.update_server_status_indicator()
 
         # ช่องแสดงเบอร์โทรศัพท์
         self.round_rect(92, 222, 558, 305, 18, fill="white", outline="#D9E3DB", width=2, tags="content")
@@ -755,6 +757,34 @@ class SmartBinGUI:
             self.phone_var.set(self.phone)
             self.update_phone_text()
 
+    def set_server_status(self, is_online):
+        """อัปเดตสถานะการเชื่อมต่อฐานข้อมูลจาก Controller หรือ Heartbeat"""
+        prev = getattr(self, 'server_online', True)
+        self.server_online = is_online
+        if prev != is_online and self.page == "phone":
+            self.update_server_status_indicator()
+
+    def update_server_status_indicator(self):
+        """แสดง Badge สถานะการเชื่อมต่อฐานข้อมูลบนหน้า Phone Input"""
+        if self.page != "phone" or not self.canvas:
+            return
+        self.canvas.delete("server_status_badge")
+        is_online = getattr(self, 'server_online', True)
+        if is_online:
+            badge_bg = "#E3F2C7"
+            badge_fg = "#2A824C"
+            badge_txt = "● ฐานข้อมูลออนไลน์"
+        else:
+            badge_bg = "#FEE2E2"
+            badge_fg = "#DC2626"
+            badge_txt = "● ฐานข้อมูลออฟไลน์"
+
+        self.round_rect(420, 180, 568, 210, 12, fill=badge_bg, outline="", tags=("content", "server_status_badge"))
+        self.canvas.create_text(
+            494, 195, text=badge_txt,
+            fill=badge_fg, font=(FONT, 10, "bold"), tags=("content", "server_status_badge")
+        )
+
     def backspace(self):
         if self.phone:
             self.phone = self.phone[:-1]
@@ -845,34 +875,58 @@ class SmartBinGUI:
     # ============================================================
     # SCREEN 5: WELCOME (ต้อนรับและให้เริ่มหยอดขยะ)
     # ============================================================
-    def show_welcome(self, name):
-        """แสดงข้อความต้อนรับและชวนหยอดขยะ"""
+    def show_welcome(self, name, alert_message=None):
+        """แสดงข้อความต้อนรับและชวนหยอดขยะ พร้อมกล่องแจ้งเตือนหากเกิดปัญหาเชื่อมต่อฐานข้อมูล"""
         self._clear()
         self.page = "welcome"
         self.items_list = []
         self.draw_environment()
 
         # การ์ดต้อนรับตรงกลาง
-        self.round_rect(180, 100, 844, 500, 36, fill=COLORS["cream"], outline="", tags=("content", "welcome_card"))
-        self.canvas.create_oval(462, 135, 562, 235, fill=COLORS["mint"], outline="", tags=("content", "welcome_card"))
-        self.canvas.create_text(512, 185, text="👋", font=("Segoe UI Emoji", 48), tags=("content", "welcome_card"))
+        card_y1 = 85 if alert_message else 100
+        card_y2 = 515 if alert_message else 500
+        self.round_rect(180, card_y1, 844, card_y2, 36, fill=COLORS["cream"], outline="", tags=("content", "welcome_card"))
+        self.canvas.create_oval(462, card_y1 + 25, 562, card_y1 + 125, fill=COLORS["mint"], outline="", tags=("content", "welcome_card"))
+        self.canvas.create_text(512, card_y1 + 75, text="👋", font=("Segoe UI Emoji", 44), tags=("content", "welcome_card"))
 
         self.canvas.create_text(
-            512, 280, text=f"สวัสดีคุณ {name}",
-            fill=COLORS["forest"], font=(FONT, 30, "bold"), tags=("content", "welcome_card")
+            512, card_y1 + 155, text=f"สวัสดีครับ {name}",
+            fill=COLORS["forest"], font=(FONT, 28, "bold"), tags=("content", "welcome_card")
         )
         self.canvas.create_text(
-            512, 335, text="กรุณาหยอดขวดหรือกระป๋องลงในตู้",
-            fill=COLORS["ink"], font=(FONT, 20), tags=("content", "welcome_card")
+            512, card_y1 + 200, text="กรุณาหยอดขวดหรือกระป๋องลงในตู้",
+            fill=COLORS["ink"], font=(FONT, 18), tags=("content", "welcome_card")
         )
-        self.round_rect(330, 385, 694, 435, 20, fill="#E3F2C7", outline="", tags=("content", "welcome_card"))
-        self.canvas.create_text(512, 410, text="✨ ระบบพร้อมตรวจจับอัตโนมัติ (แตะเพื่อเริ่มทันที)", fill="#2A824C", font=(FONT, 14, "bold"), tags=("content", "welcome_card"))
+
+        # หากมีข้อความแจ้งเตือน (เช่น ฐานข้อมูลขัดข้อง)
+        if alert_message:
+            is_err = "⚠️" in alert_message or "ไม่ได้" in alert_message or "ล่ม" in alert_message
+            bg_color = "#FEE2E2" if is_err else "#FEF3C7"
+            fg_color = "#991B1B" if is_err else "#92400E"
+            self.round_rect(210, card_y1 + 235, 814, card_y1 + 295, 18, fill=bg_color, outline="", tags=("content", "welcome_card"))
+            self.canvas.create_text(
+                512, card_y1 + 265, text=alert_message,
+                fill=fg_color, font=(FONT, 12, "bold"), tags=("content", "welcome_card"),
+                width=580
+            )
+            btn_y1 = card_y1 + 315
+        else:
+            btn_y1 = card_y1 + 255
+
+        btn_y2 = btn_y1 + 55
+        self.round_rect(300, btn_y1, 724, btn_y2, 22, fill="#E3F2C7", outline="", tags=("content", "welcome_card"))
+        self.canvas.create_text(
+            512, (btn_y1 + btn_y2) // 2,
+            text="✨ ระบบพร้อมตรวจจับอัตโนมัติ (แตะเพื่อเริ่มทันที)",
+            fill="#2A824C", font=(FONT, 14, "bold"), tags=("content", "welcome_card")
+        )
 
         # แตะที่การ์ดเพื่อข้ามไปหน้าตรวจจับทันที
         self.canvas.tag_bind("welcome_card", "<Button-1>", lambda e: self.show_detecting())
 
-        # สลับไปหน้า Detecting อัตโนมัติหลังจาก 2.2 วินาที
-        self._welcome_timer = self.root.after(2200, self.show_detecting)
+        # สลับไปหน้า Detecting อัตโนมัติ (ให้เวลาอ่าน 3.2 วิ ถ้ามี alert, หรือ 2.2 วิ ปกติ)
+        delay = 3200 if alert_message else 2200
+        self._welcome_timer = self.root.after(delay, self.show_detecting)
 
     # ============================================================
     # SCREEN 6: DETECTING (กำลังตรวจจับขยะ + กล้อง)

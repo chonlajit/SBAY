@@ -21,11 +21,33 @@ class ApiClient:
     def __init__(self):
         self.api_base = API_BASE
         self.db_path = OFFLINE_DB_PATH
+        self.is_connected = True
+        self.last_status = "OK"
+        self.last_error = None
+        self._init_session()
         self._init_db()
         # Start retry thread
         self._retry_thread = threading.Thread(target=self._retry_loop, daemon=True)
         self._retry_thread.start()
-        logger.info(f"ApiClient initialized → {self.api_base}")
+        logger.info(f"ApiClient initialized with auto-reconnect session → {self.api_base}")
+
+    def _init_session(self):
+        """สร้าง requests.Session พร้อม Connection Pool และ Retry Adapter เพื่อ Auto-reconnect อัตโนมัติเมื่อฐานข้อมูลกลับมา"""
+        from urllib3.util import Retry
+        from requests.adapters import HTTPAdapter
+
+        self.session = requests.Session()
+        retries = Retry(
+            total=3,
+            connect=3,
+            read=3,
+            backoff_factor=0.3,
+            status_forcelist=[500, 502, 503, 504],
+            raise_on_status=False
+        )
+        adapter = HTTPAdapter(max_retries=retries, pool_connections=5, pool_maxsize=10)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
     # ==============================
     # SQLite Offline Queue
@@ -72,7 +94,7 @@ class ApiClient:
             record_id, payload_str = row
             try:
                 session_data = json.loads(payload_str)
-                response = requests.post(
+                response = self.session.post(
                     f"{self.api_base}/sessions",
                     json=session_data,
                     headers={"X-Device-Secret": DEVICE_SECRET},
@@ -82,11 +104,13 @@ class ApiClient:
                     c.execute("DELETE FROM failed_sessions WHERE id = ?", (record_id,))
                     conn.commit()
                     logger.info(f"Retried session {record_id} → OK")
+                    self.is_connected = True
                 else:
                     logger.warning(f"Retry session {record_id} → HTTP {response.status_code}")
                     break
             except requests.RequestException:
                 logger.warning("Retry failed → Network still down")
+                self.is_connected = False
                 break
 
         conn.close()
@@ -103,25 +127,64 @@ class ApiClient:
     # ==============================
     # Backend API Calls
     # ==============================
-    def get_user_by_phone(self, phone):
-        """ค้นหาผู้ใช้จากเบอร์โทร"""
-        try:
-            resp = requests.get(
-                f"{self.api_base}/sessions/user/{phone}",
-                headers={"X-Device-Secret": DEVICE_SECRET},
-                timeout=5
-            )
-            if resp.status_code == 200:
-                return resp.json()
-            return None
-        except requests.RequestException as e:
-            logger.error(f"get_user_by_phone error: {e}")
-            return None
+    def get_user_by_phone(self, phone, return_status=False, retries=2):
+        """
+        ค้นหาผู้ใช้จากเบอร์โทร พร้อมระบบ Auto-reconnect อัตโนมัติหากฐานข้อมูลกำลังกู้คืน
+        Returns:
+            user_data (dict or None) เมื่อ return_status=False
+            (user_data, status) เมื่อ return_status=True โดย status คือ 'OK' | 'NOT_FOUND' | 'DB_ERROR'
+        """
+        last_error = None
+        user_result = None
+        status_result = "DB_ERROR"
+
+        for attempt in range(1, retries + 1):
+            try:
+                resp = self.session.get(
+                    f"{self.api_base}/sessions/user/{phone}",
+                    headers={"X-Device-Secret": DEVICE_SECRET},
+                    timeout=4
+                )
+                if resp.status_code == 200:
+                    self.is_connected = True
+                    self.last_status = "OK"
+                    self.last_error = None
+                    user_result = resp.json()
+                    status_result = "OK"
+                    break
+                elif resp.status_code == 404:
+                    self.is_connected = True
+                    self.last_status = "NOT_FOUND"
+                    self.last_error = None
+                    logger.info(f"User not found for phone {phone} (HTTP 404)")
+                    user_result = None
+                    status_result = "NOT_FOUND"
+                    break
+                else:
+                    logger.warning(f"get_user_by_phone HTTP {resp.status_code} (attempt {attempt}/{retries})")
+                    last_error = f"HTTP {resp.status_code}"
+            except requests.RequestException as e:
+                logger.warning(f"get_user_by_phone connection error (attempt {attempt}/{retries}): {e}")
+                last_error = str(e)
+                self.is_connected = False
+
+            if attempt < retries:
+                time.sleep(0.8)
+
+        if status_result == "DB_ERROR":
+            self.last_status = "DB_ERROR"
+            self.last_error = last_error
+            self.is_connected = False
+            logger.error(f"get_user_by_phone failed after {retries} attempts: {last_error}")
+
+        if return_status:
+            return user_result, status_result
+        return user_result
 
     def post_session(self, session_data):
         """ส่ง Session ไป Backend - ถ้าส่งไม่ได้ จะเก็บลง SQLite"""
         try:
-            resp = requests.post(
+            resp = self.session.post(
                 f"{self.api_base}/sessions",
                 json=session_data,
                 headers={"X-Device-Secret": DEVICE_SECRET},
@@ -142,20 +205,22 @@ class ApiClient:
                 "name": DEVICE_NAME,
                 "location": DEVICE_LOCATION
             }
-            resp = requests.post(
+            resp = self.session.post(
                 f"{self.api_base}/devices/{device_id}/heartbeat",
                 json=payload,
                 headers={"X-Device-Secret": DEVICE_SECRET},
                 timeout=3
             )
             resp.raise_for_status()
-            
+            self.is_connected = True
+
             # Check if backend reports this bin as FULL
             data = resp.json()
             is_full = data.get("isFull", False) if isinstance(data, dict) else False
-            
+
             return True, is_full
         except requests.RequestException:
+            self.is_connected = False
             return False, False
 
     def reset_bin(self, device_id, waste_type=None):
