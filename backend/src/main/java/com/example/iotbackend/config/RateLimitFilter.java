@@ -108,6 +108,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String extractClientIp(HttpServletRequest request) {
+        String cfConnectingIp = request.getHeader("CF-Connecting-IP");
+        if (cfConnectingIp != null && !cfConnectingIp.isBlank() && !cfConnectingIp.equalsIgnoreCase("unknown")) {
+            return cfConnectingIp.trim();
+        }
+
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isBlank()) {
             // X-Forwarded-For may be a comma-separated list of IPs: "client, proxy1, proxy2"
