@@ -13,11 +13,16 @@ ENV NODE_ENV=production
 ENV HOSTNAME="0.0.0.0"
 ENV PORT=3000
 
-# ดึงเฉพาะไฟล์ที่จำเป็นสำหรับการรัน (แบบ Standalone)
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/public ./.next/standalone/public
+# สร้าง Non-root User เพื่อความปลอดภัย ป้องกัน RCE / Malware
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
+# ดึงเฉพาะไฟล์ที่จำเป็นสำหรับการรัน (แบบ Standalone)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/public ./.next/standalone/public
+
+USER nextjs
 EXPOSE 3000
 CMD ["node", "server.js"]

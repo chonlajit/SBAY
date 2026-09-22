@@ -55,6 +55,10 @@ services:
     depends_on:
       - backend
     restart: always
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
     healthcheck:
       test: [ "CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/', (r) => process.exit((r.statusCode >= 200 && r.statusCode < 400) ? 0 : 1)).on('error', () => process.exit(1))" ]
       interval: 30s
