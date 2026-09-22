@@ -24,7 +24,7 @@ services:
     environment:
       - JAVA_TOOL_OPTIONS=-Xms128m -Xmx512m # คุมแรม Java Spring Boot สูงสุด 512MB
       - MONGODB_HOST=mongodb
-      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/iotdb
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/iotdb?maxPoolSize=100&minPoolSize=10&maxIdleTimeMS=60000&waitQueueTimeoutMS=5000&connectTimeoutMS=10000&socketTimeoutMS=20000
       - DEVICE_SECRET=${DEVICE_SECRET}
       - JWT_SECRET=${JWT_SECRET}
       - SMTP_USERNAME=${SMTP_USERNAME}
@@ -54,9 +54,9 @@ services:
       - backend
     restart: always
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:3000/" ]
+      test: [ "CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/', (r) => process.exit((r.statusCode >= 200 && r.statusCode < 400) ? 0 : 1)).on('error', () => process.exit(1))" ]
       interval: 30s
-      timeout: 15s
+      timeout: 10s
       retries: 3
       start_period: 40s
     logging:
@@ -89,6 +89,7 @@ services:
     ports:
       - "127.0.0.1:8081:8081"
     environment:
+      - ME_CONFIG_MONGODB_URL=mongodb://mongodb:27017/iotdb
       - ME_CONFIG_MONGODB_SERVER=mongodb
       - ME_CONFIG_MONGODB_PORT=27017
       - ME_CONFIG_BASICAUTH_USERNAME=${ME_USERNAME}
