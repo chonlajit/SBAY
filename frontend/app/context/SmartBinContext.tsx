@@ -10,6 +10,7 @@ export interface User {
     id: string;
     phoneNumber: string;
     username?: string;
+    title?: string;
     firstName?: string;
     lastName?: string;
     email?: string;
@@ -165,16 +166,23 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
                     setToken(savedToken);
                     scheduleAutoLogout(savedToken);
                     
-                    // Fetch fresh user data from backend
-                    fetch(`${currentApiBase}/user/${parsedUser.id}`)
+                    // Fetch fresh user data from backend (non-destructive: do not auto-logout on network blips or 429)
+                    fetch(`${currentApiBase}/user/${parsedUser.id}`, {
+                        headers: {
+                            'Authorization': `Bearer ${savedToken}`
+                        }
+                    })
                         .then(res => {
-                            if (res.status === 401 || res.status === 403 || res.status === 404) {
-                                throw new Error("Invalid session");
+                            if (res.ok) {
+                                return res.json();
+                            } else if (res.status === 401) {
+                                // Explicitly unauthorized: token is invalid
+                                throw new Error("Unauthorized session");
                             }
-                            return res.ok ? res.json() : null;
+                            return null;
                         })
                         .then(freshUser => {
-                            if (freshUser && !freshUser.error) {
+                            if (freshUser && !freshUser.error && freshUser.id) {
                                 setUser(freshUser);
                                 if (isSessionStorage) {
                                     sessionStorage.setItem('sbay_user', JSON.stringify(freshUser));
@@ -184,10 +192,11 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
                             }
                         })
                         .catch(e => {
-                            console.error(e);
-                            if (e.message === "Invalid session") {
+                            console.warn("Could not refresh user session from backend:", e.message);
+                            if (e.message === "Unauthorized session") {
                                 logout();
                             }
+                            // Otherwise, retain existing parsedUser from storage without logging out
                         });
                     
                     // Keep WS connected for global user updates
