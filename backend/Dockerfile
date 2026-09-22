@@ -1,10 +1,19 @@
 FROM maven:3.9.5-eclipse-temurin-17 AS builder
 WORKDIR /app
+
+# คัดลอก pom.xml และ src
 COPY pom.xml .
-# ดาวน์โหลด Dependencies มาเก็บไว้ก่อนเพื่อความเสถียร
-# RUN mvn dependency:go-offline -B
 COPY src ./src
-RUN mvn -B -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true clean package -DskipTests
+
+# ป้องกันปัญหา SSL peer shut down / MTU packet drop ด้วย IPv4 และ Retry flags
+RUN mvn -B clean package -DskipTests \
+    -Djava.net.preferIPv4Stack=true \
+    -Dhttps.protocols=TLSv1.2,TLSv1.3 \
+    -Dhttp.keepAlive=false \
+    -Dmaven.wagon.http.pool=false \
+    -Dmaven.wagon.http.retryHandler.count=5 \
+    -Dmaven.wagon.http.ssl.insecure=true \
+    -Dmaven.wagon.http.ssl.allowall=true
 
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
