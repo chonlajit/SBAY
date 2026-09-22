@@ -48,6 +48,8 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
       - NEXT_PUBLIC_API_URL=https://sbay-platform.online/api
       - NODE_OPTIONS=--max-old-space-size=512 # ขยายแรม Node.js เป็น 512MB เพื่อความเสถียร
     depends_on:
