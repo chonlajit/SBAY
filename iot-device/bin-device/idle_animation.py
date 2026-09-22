@@ -88,27 +88,50 @@ class IdleSleepingFace:
             tags="idle_sleeping_face"
         )
 
+        # ตรวจสอบฟอนต์ภาษาไทยที่ดีที่สุดตามระบบปฏิบัติการ
+        self.font_family = self._detect_font_family()
+
         # ข้อความแบรนด์และคำแนะนำ (วาดด้วย Tkinter Canvas เพื่อให้ภาษาไทยแสดงผลถูกต้องทุกแพลตฟอร์ม)
-        import sys
-        font_name = "Segoe UI" if sys.platform.startswith("win") else "DejaVu Sans"
-        self.title_item = self.canvas.create_text(
+        create_fn = getattr(self.canvas, "_orig_create_text", self.canvas.create_text)
+        self.title_item = create_fn(
             self.width // 2, int(self.height * 0.74),
             text="SBAY Smart Bin",
             fill="#699E55",
-            font=(font_name, self.s_title, "bold"),
+            font=(self.font_family, self.s_title, "bold"),
             tags="idle_sleeping_face"
         )
-        self.sub_item = self.canvas.create_text(
+        self.sub_item = create_fn(
             self.width // 2, int(self.height * 0.83),
             text="แตะหน้าจอเพื่อเริ่มต้น",
             fill="#94A3B8",
-            font=(font_name, self.s_thai),
+            font=(self.font_family, self.s_thai),
             tags="idle_sleeping_face"
         )
+
+        try:
+            self.canvas.tag_lower(self.image_item)
+            self.canvas.tag_raise(self.title_item)
+            self.canvas.tag_raise(self.sub_item)
+        except Exception:
+            pass
 
         # ผูก Event แตะหน้าจอเพื่อสะดุ้งตื่น
         self.canvas.tag_bind("idle_sleeping_face", "<Button-1>", self.on_tap)
         self.canvas.bind("<Button-1>", self.on_tap)
+
+    def _detect_font_family(self):
+        import sys
+        if sys.platform.startswith("win"):
+            return "Segoe UI"
+        try:
+            import tkinter.font as tkfont
+            available = set(tkfont.families(self.root))
+            for f in ("Noto Sans Thai", "Loma", "Garuda", "Waree", "Piboto", "DejaVu Sans"):
+                if f in available:
+                    return f
+        except Exception:
+            pass
+        return "sans-serif"
 
 
     def _draw_tilted_z(self, img, x, y, text, font, angle, color):
@@ -296,9 +319,13 @@ class IdleSleepingFace:
         self.state = "sleeping"
         if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
             try:
-                import sys
-                font_name = "Segoe UI" if sys.platform.startswith("win") else "DejaVu Sans"
-                self.canvas.itemconfig(self.sub_item, text="แตะหน้าจอเพื่อเริ่มต้น", fill="#94A3B8", font=(font_name, self.s_thai))
+                self.canvas.itemconfig(self.sub_item, text="แตะหน้าจอเพื่อเริ่มต้น", fill="#94A3B8", font=(self.font_family, self.s_thai))
+                self.canvas.tag_raise(self.sub_item)
+            except Exception:
+                pass
+        if hasattr(self, 'title_item') and self.title_item and self.canvas:
+            try:
+                self.canvas.tag_raise(self.title_item)
             except Exception:
                 pass
         self._play_sleep_loop()
@@ -352,9 +379,13 @@ class IdleSleepingFace:
             self.state = "awake"
             if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
                 try:
-                    import sys
-                    font_name = "Segoe UI" if sys.platform.startswith("win") else "DejaVu Sans"
-                    self.canvas.itemconfig(self.sub_item, text="ยินดีต้อนรับครับ!", fill="#16A34A", font=(font_name, self.s_thai_bold, "bold"))
+                    self.canvas.itemconfig(self.sub_item, text="ยินดีต้อนรับครับ!", fill="#16A34A", font=(self.font_family, self.s_thai_bold, "bold"))
+                    self.canvas.tag_raise(self.sub_item)
+                except Exception:
+                    pass
+            if hasattr(self, 'title_item') and self.title_item and self.canvas:
+                try:
+                    self.canvas.tag_raise(self.title_item)
                 except Exception:
                     pass
             # ตื่นนิ่งยิ้มหวานค้างไว้ 400ms ก่อนเรียก Callback เปลี่ยนหน้า

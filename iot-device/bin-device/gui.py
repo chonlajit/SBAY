@@ -67,6 +67,19 @@ class SmartBinGUI:
         self.root = tk.Tk()
         self.root.title("SBAY · Eco-Tech Smart Bin")
 
+        # ตรวจหาฟอนต์ภาษาไทยที่ดีที่สุดบน Linux / Raspberry Pi
+        global FONT
+        if not sys.platform.startswith("win"):
+            try:
+                import tkinter.font as tkfont
+                available_fonts = set(tkfont.families(self.root))
+                for f in ("Noto Sans Thai", "Loma", "Garuda", "Waree", "Piboto", "DejaVu Sans"):
+                    if f in available_fonts:
+                        FONT = f
+                        break
+            except Exception:
+                pass
+
         import settings.config as config
         # ควบคุม Fullscreen (เปิดอัตโนมัติบน Linux/Pi หรือตาม config.py)
         self.is_fullscreen = getattr(config, "GUI_FULLSCREEN", sys.platform.startswith("linux"))
@@ -179,6 +192,16 @@ class SmartBinGUI:
         self._orig_create_window = self.canvas.create_window
 
         def scaled_create_text(x, y, *args, **kwargs):
+            tags = kwargs.get("tags", "")
+            is_idle = False
+            if isinstance(tags, str) and "idle_sleeping_face" in tags:
+                is_idle = True
+            elif isinstance(tags, (list, tuple)) and any("idle_sleeping_face" in str(t) for t in tags):
+                is_idle = True
+
+            if is_idle:
+                return self._orig_create_text(x, y, *args, **kwargs)
+
             sx, sy = self.sx(x), self.sy(y)
             if "font" in kwargs and kwargs["font"]:
                 f = kwargs["font"]
@@ -386,35 +409,64 @@ class SmartBinGUI:
         awake_path = self.assets_dir / "sbay_bot.png"
         sleep_path = self.assets_dir / "sbay_bot_sleep.png"
         half_path = self.assets_dir / "sbay_bot_blink_half.png"
+        smile_path = self.assets_dir / "sbay_bot_smile.png"
+        smile_wide_path = self.assets_dir / "sbay_bot_smile_wide.png"
+        sad_path = self.assets_dir / "sbay_bot_sad.png"
 
         self.raw_mascot_awake = Image.open(awake_path).convert("RGBA") if awake_path.exists() else None
         self.raw_mascot_sleep = Image.open(sleep_path).convert("RGBA") if sleep_path.exists() else None
         self.raw_mascot_half = Image.open(half_path).convert("RGBA") if half_path.exists() else None
+        self.raw_mascot_smile = Image.open(smile_path).convert("RGBA") if smile_path.exists() else None
+        self.raw_mascot_smile_wide = Image.open(smile_wide_path).convert("RGBA") if smile_wide_path.exists() else None
+        self.raw_mascot_sad = Image.open(sad_path).convert("RGBA") if sad_path.exists() else None
 
         self._update_mascot_photos()
 
     def _update_mascot_photos(self):
-        tw = max(20, int(140 * self.scale))
-        th = max(16, int(112 * self.scale))
+        # 1. Phone screen size (140 x 112)
+        pw = max(20, int(140 * self.scale))
+        ph = max(16, int(112 * self.scale))
         if self.raw_mascot_awake:
-            self.mascot_photo_awake = ImageTk.PhotoImage(self.raw_mascot_awake.resize((tw, th), Image.Resampling.LANCZOS))
+            self.mascot_photo_awake = ImageTk.PhotoImage(self.raw_mascot_awake.resize((pw, ph), Image.Resampling.LANCZOS))
         else:
             self.mascot_photo_awake = None
 
         if self.raw_mascot_sleep:
-            self.mascot_photo_sleep = ImageTk.PhotoImage(self.raw_mascot_sleep.resize((tw, th), Image.Resampling.LANCZOS))
+            self.mascot_photo_sleep = ImageTk.PhotoImage(self.raw_mascot_sleep.resize((pw, ph), Image.Resampling.LANCZOS))
         else:
             self.mascot_photo_sleep = self.mascot_photo_awake
 
         if self.raw_mascot_half:
-            self.mascot_photo_half = ImageTk.PhotoImage(self.raw_mascot_half.resize((tw, th), Image.Resampling.LANCZOS))
+            self.mascot_photo_half = ImageTk.PhotoImage(self.raw_mascot_half.resize((pw, ph), Image.Resampling.LANCZOS))
         else:
             self.mascot_photo_half = self.mascot_photo_awake
+
+        # 2. Detecting screen size (130 x 104)
+        dw = max(20, int(130 * self.scale))
+        dh = max(16, int(104 * self.scale))
+        self.detect_mascot_photo_awake = ImageTk.PhotoImage(self.raw_mascot_awake.resize((dw, dh), Image.Resampling.LANCZOS)) if self.raw_mascot_awake else None
+        self.detect_mascot_photo_sleep = ImageTk.PhotoImage(self.raw_mascot_sleep.resize((dw, dh), Image.Resampling.LANCZOS)) if self.raw_mascot_sleep else self.detect_mascot_photo_awake
+        self.detect_mascot_photo_half = ImageTk.PhotoImage(self.raw_mascot_half.resize((dw, dh), Image.Resampling.LANCZOS)) if self.raw_mascot_half else self.detect_mascot_photo_awake
+        self.detect_mascot_photo_smile = ImageTk.PhotoImage(self.raw_mascot_smile.resize((dw, dh), Image.Resampling.LANCZOS)) if self.raw_mascot_smile else self.detect_mascot_photo_awake
+        self.detect_mascot_photo_sad = ImageTk.PhotoImage(self.raw_mascot_sad.resize((dw, dh), Image.Resampling.LANCZOS)) if self.raw_mascot_sad else self.detect_mascot_photo_awake
+
+        # 3. Result screen size (170 x 136)
+        rw = max(20, int(170 * self.scale))
+        rh = max(16, int(136 * self.scale))
+        raw_res = self.raw_mascot_smile_wide or self.raw_mascot_smile or self.raw_mascot_awake
+        self.result_mascot_photo = ImageTk.PhotoImage(raw_res.resize((rw, rh), Image.Resampling.LANCZOS)) if raw_res else None
 
     def _clear(self):
         """ล้างหน้าจอและหยุดแอนิเมชันเดิม"""
         self._stop_animation()
         self._stop_mascot_blinking()
+        self._stop_detect_mascot_blinking()
+        if hasattr(self, 'detect_emotion_timer') and self.detect_emotion_timer:
+            try:
+                self.root.after_cancel(self.detect_emotion_timer)
+            except Exception:
+                pass
+            self.detect_emotion_timer = None
         if hasattr(self, 'zoom_timer') and self.zoom_timer:
             try:
                 self.root.after_cancel(self.zoom_timer)
@@ -878,9 +930,116 @@ class SmartBinGUI:
         # 3. ปุ่มเสร็จสิ้น (Finish Button)
         self.button(535, 465, 965, 535, "✅  เสร็จสิ้น (FINISH)", "", COLORS["mint"], self._handle_finish, "finish_btn")
 
+        # 4. น้อง Mascot ที่มุมล่างขวาของกล่องกล้อง เหนือปุ่มเสร็จสิ้น
+        self._draw_detect_mascot()
+
         # โหลดรายการที่อาจมีอยู่เดิมขึ้นมาแสดง
         for item in self.items_list:
             self._render_item_row(item["type"], item["ml"], item["score"])
+
+    def _draw_detect_mascot(self):
+        """วาดน้อง Mascot ยืนอยู่ที่มุมล่างขวาของกล่องกล้อง เหนือปุ่มเสร็จสิ้นตาม mockup ของผู้ใช้"""
+        self.canvas.delete("detect_mascot")
+        if not hasattr(self, 'detect_mascot_photo_awake') or not self.detect_mascot_photo_awake:
+            self._update_mascot_photos()
+
+        mw = max(20, int(130 * self.scale))
+        mh = max(16, int(104 * self.scale))
+        cx = self.sx(964) - mw // 2 + int(4 * self.scale)
+        cy = self.sy(465) - mh // 2 + int(2 * self.scale)
+
+        self.canvas.create_image(
+            cx, cy,
+            image=self.detect_mascot_photo_awake,
+            tags="detect_mascot"
+        )
+        self._start_detect_mascot_blinking()
+
+    def show_detect_mascot_smile(self):
+        """น้องยิ้มหวานทุกครั้งที่ตรวจพบ/ได้รับขวดขยะ"""
+        if self.page != "detecting" or not hasattr(self, 'detect_mascot_photo_smile'):
+            return
+        self._stop_detect_mascot_blinking()
+        if hasattr(self, 'detect_emotion_timer') and self.detect_emotion_timer:
+            try:
+                self.root.after_cancel(self.detect_emotion_timer)
+            except Exception:
+                pass
+        try:
+            self.canvas.itemconfigure("detect_mascot", image=self.detect_mascot_photo_smile)
+        except Exception:
+            pass
+        # ยิ้มค้างไว้ 2.5 วินาที แล้วกลับเป็นหน้าปกติพร้อมกระพริบตา
+        self.detect_emotion_timer = self.root.after(2500, self._restore_detect_mascot)
+
+    def show_detect_mascot_sad(self):
+        """น้องทำหน้าเศร้าเมื่อเกิด Error หรือขยะไม่ถูกต้อง / คืนขยะ / ถังเต็ม"""
+        if self.page != "detecting" or not hasattr(self, 'detect_mascot_photo_sad'):
+            return
+        self._stop_detect_mascot_blinking()
+        if hasattr(self, 'detect_emotion_timer') and self.detect_emotion_timer:
+            try:
+                self.root.after_cancel(self.detect_emotion_timer)
+            except Exception:
+                pass
+        try:
+            self.canvas.itemconfigure("detect_mascot", image=self.detect_mascot_photo_sad)
+        except Exception:
+            pass
+        # ทำหน้าเศร้าค้างไว้ 3.0 วินาที แล้วกลับเป็นหน้าปกติ
+        self.detect_emotion_timer = self.root.after(3000, self._restore_detect_mascot)
+
+    def _restore_detect_mascot(self):
+        if self.page != "detecting":
+            return
+        try:
+            self.canvas.itemconfigure("detect_mascot", image=self.detect_mascot_photo_awake)
+        except Exception:
+            pass
+        self._start_detect_mascot_blinking()
+
+    def _start_detect_mascot_blinking(self):
+        self._stop_detect_mascot_blinking()
+        if self.page != "detecting":
+            return
+        delay = random.randint(2600, 4400)
+        self.detect_blink_timer = self.root.after(delay, self._play_detect_mascot_blink)
+
+    def _play_detect_mascot_blink(self):
+        if self.page != "detecting" or not hasattr(self, 'detect_mascot_photo_awake'):
+            return
+
+        def _set_img(photo):
+            if self.page == "detecting" and self.canvas:
+                try:
+                    self.canvas.itemconfigure("detect_mascot", image=photo)
+                except Exception:
+                    pass
+
+        is_double = (random.random() < 0.25)
+        _set_img(self.detect_mascot_photo_half)
+        self.root.after(45, lambda: _set_img(self.detect_mascot_photo_sleep))
+        self.root.after(115, lambda: _set_img(self.detect_mascot_photo_half))
+        self.root.after(160, lambda: _set_img(self.detect_mascot_photo_awake))
+
+        if is_double:
+            self.root.after(270, lambda: _set_img(self.detect_mascot_photo_half))
+            self.root.after(315, lambda: _set_img(self.detect_mascot_photo_sleep))
+            self.root.after(380, lambda: _set_img(self.detect_mascot_photo_half))
+            self.root.after(430, lambda: _set_img(self.detect_mascot_photo_awake))
+            next_interval = 480
+        else:
+            next_interval = 200
+
+        self.detect_blink_timer = self.root.after(next_interval, self._start_detect_mascot_blinking)
+
+    def _stop_detect_mascot_blinking(self):
+        if hasattr(self, 'detect_blink_timer') and self.detect_blink_timer:
+            try:
+                self.root.after_cancel(self.detect_blink_timer)
+            except Exception:
+                pass
+            self.detect_blink_timer = None
 
     def add_detected_item(self, item_type, size_ml, score):
         """เพิ่มรายการขยะที่ตรวจจับได้"""
@@ -892,6 +1051,7 @@ class SmartBinGUI:
             self.canvas.itemconfigure(self.item_count_text, text=f"●  {len(self.items_list)} ชิ้น")
             label_name = WASTE_LABELS.get(item_type, item_type)
             self.update_status(f"🎉 ตรวจพบ: {label_name} ({size_ml}ml) +{score:.1f} pt", COLORS["mint"])
+            self.show_detect_mascot_smile()
 
     def _render_item_row(self, item_type, size_ml, score):
         if not hasattr(self, 'items_inner') or not self.items_inner.winfo_exists():
@@ -914,6 +1074,16 @@ class SmartBinGUI:
             self.canvas.itemconfigure(self.status_text, text=message)
             if color:
                 self.canvas.itemconfigure(self.status_text, fill=color)
+
+        # ตรวจสอบว่าเป็นข้อความ Error หรือไม่ เพื่อให้น้องทำหน้าเศร้า
+        if self.page == "detecting":
+            is_err = False
+            if color in ("#ef4444", "#EF5D5D", COLORS.get("danger")):
+                is_err = True
+            elif any(w in message.lower() for w in ("ไม่พบ", "ผิดพลาด", "เต็ม", "error", "คืนขวด", "คืนขยะ")):
+                is_err = True
+            if is_err:
+                self.show_detect_mascot_sad()
 
     def update_camera_frame(self, cv2_frame):
         """อัปเดตภาพจากกล้องบนจอ"""
@@ -996,9 +1166,119 @@ class SmartBinGUI:
                 except Exception:
                     pass
 
-        # กลับไปหน้าจอ Idle Sleeping Animation อัตโนมัติหลังจาก 5 วินาที (หรือแตะหน้าจอเพื่อกลับทันที)
-        self.canvas.tag_bind("content", "<Button-1>", lambda e: self.show_idle())
-        self._result_timer = self.root.after(5000, self.show_idle)
+        # วาดน้อง Mascot ยิ้มกว้างที่มุมล่างขวาของการ์ดสรุปผลคะแนนตาม mockup ของผู้ใช้
+        self._draw_result_mascot()
+
+        # กลับไปหน้าจอ Idle Sleeping Animation อัตโนมัติหลังจาก 5.5 วินาที พร้อม Transition Zoom In ค่อยๆ หลับ
+        self.canvas.tag_bind("content", "<Button-1>", lambda e: self.transition_zoom_in_to_idle())
+        self.canvas.tag_bind("result_mascot", "<Button-1>", lambda e: self.transition_zoom_in_to_idle())
+        self._result_timer = self.root.after(5500, self.transition_zoom_in_to_idle)
+
+    def _draw_result_mascot(self):
+        """วาดน้อง Mascot ยิ้มกว้างที่มุมล่างขวาของการ์ดสรุปผลคะแนนตาม mockup ของผู้ใช้"""
+        self.canvas.delete("result_mascot")
+        if not hasattr(self, 'result_mascot_photo') or not self.result_mascot_photo:
+            self._update_mascot_photos()
+
+        rw = max(20, int(170 * self.scale))
+        rh = max(16, int(136 * self.scale))
+        cx = self.sx(845)
+        cy = self.sy(488)
+
+        self.canvas.create_image(
+            cx, cy,
+            image=self.result_mascot_photo,
+            tags="result_mascot"
+        )
+
+    # ============================================================
+    # TRANSITION: ZOOM IN TO IDLE SLEEPING FACE
+    # ============================================================
+    def transition_zoom_in_to_idle(self):
+        """เล่น Transition Zoom In จาก Mascot ยิ้มกว้างที่มุมล่างขวา เข้าสู่กลางจอและค่อยๆ หลับตาลง"""
+        if self.page == "idle" or self.page == "transition_idle":
+            return
+
+        self._clear()
+        self.page = "transition_idle"
+
+        # ตั้งค่าพื้นหลังสีขาวสำหรับแอนิเมชันหน้าตานอนหลับ
+        self.root.configure(bg="#ffffff")
+        self.container.configure(bg="#ffffff")
+        self.canvas.configure(bg="#ffffff")
+
+        # จุดเริ่มต้น: ตำแหน่งของ Mascot บนหน้า Result (มุมล่างขวา)
+        start_w = max(20, int(170 * self.scale))
+        start_h = max(16, int(136 * self.scale))
+        start_cx = self.sx(845)
+        start_cy = self.sy(488)
+
+        # จุดปลายทาง: เต็มหน้าจอ ตรงกลาง (ตำแหน่งของ Idle Face)
+        end_w = max(40, int(420 * self.scale))
+        end_h = max(32, int(336 * self.scale))
+        end_cx = self.width // 2
+        end_cy = int(self.height * 0.40)
+
+        total_steps = 14
+        step_interval = 22  # ~300ms ซูมเข้าอย่างนุ่มนวล
+
+        def _step(step_idx):
+            if self.page != "transition_idle":
+                return
+
+            if step_idx > total_steps:
+                # ซูมเสร็จสิ้น เข้าสู่ช่วงค่อยๆ หลับตาลง (Gradual Falling Asleep Sequence)
+                self._play_gradual_sleep_sequence(end_cx, end_cy, end_w, end_h)
+                return
+
+            p = step_idx / float(total_steps)
+            smooth = 0.5 - 0.5 * math.cos(p * math.pi)
+
+            cur_w = max(20, int(start_w + (end_w - start_w) * smooth))
+            cur_h = max(16, int(start_h + (end_h - start_h) * smooth))
+            cur_cx = int(start_cx + (end_cx - start_cx) * smooth)
+            cur_cy = int(start_cy + (end_cy - start_cy) * smooth)
+
+            # ใช้ภาพยิ้มกว้างระหว่างกำลังซูมเข้ามาหาผู้ใช้
+            raw = self.raw_mascot_smile_wide or self.raw_mascot_awake
+            if raw:
+                resized = raw.resize((cur_w, cur_h), Image.Resampling.BILINEAR)
+                photo = ImageTk.PhotoImage(resized)
+                self._current_zoom_photo = photo
+                self.canvas.delete("zoom_in_mascot")
+                self.canvas.create_image(cur_cx, cur_cy, image=photo, tags="zoom_in_mascot")
+
+            self.zoom_timer = self.root.after(step_interval, lambda: _step(step_idx + 1))
+
+        _step(0)
+
+    def _play_gradual_sleep_sequence(self, cx, cy, w, h):
+        """ค่อยๆ หลับตาลงอย่างเป็นธรรมชาติ: ยิ้มกว้าง -> ตาผ่อนคลาย -> หรี่ตาลง -> หลับตาพริ้ม -> เข้าสู่ Idle Breathing Animation"""
+        if self.page != "transition_idle":
+            return
+
+        def _show_frame(raw_img):
+            if raw_img and self.page == "transition_idle":
+                resized = raw_img.resize((w, h), Image.Resampling.LANCZOS)
+                photo = ImageTk.PhotoImage(resized)
+                self._current_zoom_photo = photo
+                self.canvas.delete("zoom_in_mascot")
+                self.canvas.create_image(cx, cy, image=photo, tags="zoom_in_mascot")
+
+        # ขั้นที่ 1 (0ms): ยิ้มหวานค้างไว้ชั่วครู่
+        _show_frame(self.raw_mascot_smile_wide or self.raw_mascot_awake)
+
+        # ขั้นที่ 2 (180ms): ยิ้มบางลง ตาผ่อนคลาย (awake)
+        self.root.after(180, lambda: _show_frame(self.raw_mascot_awake))
+
+        # ขั้นที่ 3 (360ms): เปลือกตาเริ่มหรี่ลงครึ่งตา (half blink)
+        self.root.after(360, lambda: _show_frame(self.raw_mascot_half))
+
+        # ขั้นที่ 4 (540ms): หลับตาพริ้มสนิท (sleep)
+        self.root.after(540, lambda: _show_frame(self.raw_mascot_sleep))
+
+        # ขั้นที่ 5 (750ms): สลับเข้าสู่ IdleSleepingFace เต็มรูปแบบ
+        self.root.after(750, self.show_idle)
 
     # ============================================================
     # UTILITIES & EVENT HANDLERS
@@ -1071,7 +1351,7 @@ class SmartBinGUI:
                 self.show_detecting()
         elif self.page == "result":
             if event.keysym in ("Return", "KP_Enter", "space"):
-                self.show_idle()
+                self.transition_zoom_in_to_idle()
 
     def _toggle_cursor(self, _event=None):
         self.cursor_hidden = not self.cursor_hidden
@@ -1115,7 +1395,9 @@ class SmartBinGUI:
             self.show_idle()
         elif self.page == "history":
             self.show_phone_input()
-        elif self.page in ("welcome", "detecting", "result"):
+        elif self.page == "result":
+            self.transition_zoom_in_to_idle()
+        elif self.page in ("welcome", "detecting"):
             self.show_idle()
         else:
             self._toggle_fullscreen()
