@@ -120,7 +120,8 @@ class SmartBinController:
 
         self.gui = SmartBinGUI(
             on_phone_submit=self._on_phone_submit,
-            on_finish=self._on_finish
+            on_finish=self._on_finish,
+            get_waste_levels=self.ultrasonic.get_waste_levels
         )
         try:
             self.gui.run()

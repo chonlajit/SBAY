@@ -26,9 +26,19 @@ from PIL import Image, ImageTk
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from settings.config import WASTE_LABELS, USE_IR
 try:
-    from settings.config import GUI_FULLSCREEN
+    from settings.config import (
+        GUI_FULLSCREEN,
+        GUI_IDLE_TIMEOUT_PHONE,
+        GUI_IDLE_TIMEOUT_DETECTING,
+        GUI_IDLE_TIMEOUT_HISTORY,
+        GUI_IDLE_TIMEOUT_RESULT,
+    )
 except ImportError:
     GUI_FULLSCREEN = sys.platform.startswith("linux")
+    GUI_IDLE_TIMEOUT_PHONE = 30
+    GUI_IDLE_TIMEOUT_DETECTING = 45
+    GUI_IDLE_TIMEOUT_HISTORY = 30
+    GUI_IDLE_TIMEOUT_RESULT = 6
 
 logger = logging.getLogger("gui")
 
@@ -54,18 +64,26 @@ COLORS = {
 
 
 class SmartBinGUI:
-    """
-    SBAY Smart Bin - Eco-tech Canvas GUI
-    รวมดีไซน์ Eco-tech Organic เข้ากับระบบถังขยะอัจฉริยะ และ Idle Sleeping Face Animation
-    รองรับการปรับขยายขนาดเต็มหน้าจอทุกความละเอียด (Responsive Scaling / Fullscreen)
-    """
 
-    def __init__(self, on_phone_submit=None, on_finish=None):
+    def __init__(self, on_phone_submit=None, on_finish=None, get_waste_levels=None):
         self.on_phone_submit = on_phone_submit
         self.on_finish = on_finish
+        self.get_waste_levels = get_waste_levels
+        self.waste_levels = {
+            "PLASTIC_BOTTLE": 0.0,
+            "ALUMINUM_CAN": 0.0,
+            "BEVERAGE_CARTON": 0.0,
+        }
+        if self.get_waste_levels and callable(self.get_waste_levels):
+            try:
+                live = self.get_waste_levels()
+                if live:
+                    self.waste_levels.update(live)
+            except Exception:
+                pass
 
         self.root = tk.Tk()
-        self.root.title("SBAY · Eco-Tech Smart Bin")
+        self.root.title("SBAY · Eco-Tech")
 
         # ตรวจหาฟอนต์ภาษาไทยที่ดีที่สุดบน Linux / Raspberry Pi
         global FONT
@@ -144,6 +162,12 @@ class SmartBinGUI:
         self.blink_timer = None
         self._current_zoom_photo = None
 
+        # ระบบ Inactivity Timeout (กลับหน้าหลับอัตโนมัติเมื่อไม่มีการใช้งาน)
+        self._inactivity_timer = None
+        self._inactivity_timeout_sec = GUI_IDLE_TIMEOUT_PHONE
+        self.root.bind_all("<Button-1>", self._on_global_user_activity, add="+")
+        self.root.bind_all("<Key>", self._on_global_user_activity, add="+")
+
         self._recalculate_scale()
         self._setup_scaled_canvas()
         self._load_mascot_assets()
@@ -151,6 +175,57 @@ class SmartBinGUI:
 
         # เริ่มต้นที่หน้าจอ IDLE (Sleeping Animation)
         self.show_idle()
+
+    # ============================================================
+    # INACTIVITY TIMEOUT & WASTE LEVEL MANAGEMENT
+    # ============================================================
+    def _reset_inactivity_timer(self, timeout_sec=None):
+        """รีเซ็ตหรือเริ่มนับเวลา Inactivity Timeout ใหม่สำหรับหน้าปัจจุบัน"""
+        self._cancel_inactivity_timer()
+        if self.page == "idle" or self.page.startswith("transition"):
+            return
+
+        sec = timeout_sec if timeout_sec is not None else self._inactivity_timeout_sec
+        if sec and sec > 0:
+            self._inactivity_timeout_sec = sec
+            self._inactivity_timer = self.root.after(int(sec * 1000), self._on_inactivity_timeout)
+
+    def _cancel_inactivity_timer(self):
+        """ยกเลิก Inactivity Timeout ที่กำลังนับอยู่"""
+        if hasattr(self, '_inactivity_timer') and self._inactivity_timer:
+            try:
+                self.root.after_cancel(self._inactivity_timer)
+            except Exception:
+                pass
+            self._inactivity_timer = None
+
+    def _on_global_user_activity(self, _event=None):
+        """เมื่อมีการแตะหน้าจอ คลิกเมาส์ หรือกดคีย์ ให้รีเซ็ตเวลานับถอยหลังของหน้าปัจจุบัน"""
+        if self.page not in ("idle", "transition", "transition_idle"):
+            self._reset_inactivity_timer()
+
+    def _on_inactivity_timeout(self):
+        """จัดการเมื่อหน้าจอถูกเปิดทิ้งไว้โดยไม่มีการใช้งานจนหมดเวลา ให้กลับหน้าหลับ"""
+        logger.info(f"[TIMEOUT] Inactivity timeout ({self._inactivity_timeout_sec}s) reached on page '{self.page}'. Returning to Idle...")
+        self._cancel_inactivity_timer()
+
+        if self.page == "phone":
+            # หน้ากรอกเบอร์ถ้า timeout ให้กลับไปหน้ารอ (กล้องซูมเข้าหาน้อง)
+            self.phone = ""
+            self.transition_zoom_in_to_idle()
+        elif self.page == "detecting":
+            # หน้า detect ถ้า timeout ให้ไปหน้าสรุปผลและบันทึกข้อมูล
+            logger.info("[TIMEOUT] Detecting timeout reached -> Auto-finishing session, saving data, and showing result...")
+            self._handle_finish()
+        elif self.page in ("welcome", "result", "sending"):
+            self.show_idle()
+
+    def set_waste_levels(self, levels: dict):
+        """อัปเดตระดับความจุขยะไปยังหน้าจอ Idle (ถ้ากำลังแสดงอยู่)"""
+        if levels:
+            self.waste_levels.update(levels)
+            if self.page == "idle" and hasattr(self, 'idle_face') and self.idle_face:
+                self.idle_face.set_waste_levels(levels)
 
     # ============================================================
     # RESPONSIVE SCALING & CANVAS ADAPTER
@@ -459,6 +534,7 @@ class SmartBinGUI:
 
     def _clear(self):
         """ล้างหน้าจอและหยุดแอนิเมชันเดิม"""
+        self._cancel_inactivity_timer()
         self._stop_animation()
         self._stop_mascot_blinking()
         self._stop_detect_mascot_blinking()
@@ -515,6 +591,7 @@ class SmartBinGUI:
         """หน้าจอตอนไม่มีคนใช้งาน: แสดง Animation หน้าตานอนหลับ และสะดุ้งตื่นเมื่อแตะจอ"""
         self._clear()
         self.page = "idle"
+        self._cancel_inactivity_timer()
 
         # ตั้งค่าพื้นหลังสีขาวสำหรับ Animation ตามที่ดีไซน์ไว้
         self.root.configure(bg="#ffffff")
@@ -528,7 +605,8 @@ class SmartBinGUI:
             canvas=self.canvas,
             width=self.width,
             height=self.height,
-            on_wake_complete=self.transition_zoom_out_to_phone  # เมื่อสะดุ้งตื่นแล้ว เล่น Zoom Out transition ไปยังหน้ากรอกเบอร์
+            on_wake_complete=self.transition_zoom_out_to_phone,  # เมื่อสะดุ้งตื่นแล้ว เล่น Zoom Out transition ไปยังหน้ากรอกเบอร์
+            get_waste_levels=self.get_waste_levels
         )
         self.idle_face.start()
 
@@ -537,7 +615,7 @@ class SmartBinGUI:
         self.show_phone_input()
 
     # ============================================================
-    # TRANSITION: ZOOM OUT TO PHONE INPUT
+    # TRANSITION: ZOOM OUT TO PHONE INPUT / ZOOM IN TO IDLE
     # ============================================================
     def transition_zoom_out_to_phone(self):
         """เล่น Transition Zoom Out จาก Mascot ตื่น ไปยังตำแหน่งบนกล่องหมายเลขโทรศัพท์ตามรูปแรก"""
@@ -555,11 +633,12 @@ class SmartBinGUI:
         # ซ่อน mascot ในตำแหน่งคงที่ไว้ชั่วคราวระหว่าง zoom
         self.canvas.itemconfigure("phone_mascot", state="hidden")
 
-        # คำนวณพิกัดเริ่มต้น (Center หน้าจอ ขนาดใหญ่ตอนตื่น)
-        start_w = int(360 * self.scale)
-        start_h = int(288 * self.scale)
-        start_cx = self.width // 2
-        start_cy = int(self.height * 0.42)
+        # คำนวณพิกัดเริ่มต้น (Center หน้าจอ ขนาดใหญ่ Close-up ตอนตื่น)
+        start_w = int(550 * self.scale)
+        start_h = int(440 * self.scale)
+        gauge_right_x = int(34 * self.scale) + 3 * max(16, int(24 * self.scale)) + 2 * max(10, int(18 * self.scale)) + int(25 * self.scale)
+        start_cx = int((gauge_right_x + self.width) / 2.0) + int(8 * self.scale)
+        start_cy = int(self.height * 0.40)
 
         # พิกัดปลายทาง (บนกล่องหมายเลขโทรศัพท์ตามรูปแรก)
         end_w = max(20, int(140 * self.scale))
@@ -594,6 +673,61 @@ class SmartBinGUI:
 
             if self.raw_mascot_awake:
                 img_res = self.raw_mascot_awake.resize((cur_w, cur_h), Image.Resampling.BILINEAR)
+                photo = ImageTk.PhotoImage(img_res)
+                self._current_zoom_photo = photo
+                self.canvas.delete("zoom_mascot")
+                self.canvas.create_image(cur_cx, cur_cy, image=photo, tags="zoom_mascot")
+
+            self.zoom_timer = self.root.after(step_interval, lambda: _step(step_idx + 1))
+
+        _step(0)
+
+    def transition_zoom_in_to_idle(self):
+        """เล่น Transition Zoom In จาก Mascot บนการ์ดหน้ากรอกเบอร์ ขยายใหญ่กลายเป็นหน้ารอ (หน้าหลับ)"""
+        self.page = "transition_idle"
+        self._cancel_inactivity_timer()
+        self._stop_mascot_blinking()
+
+        # พิกัดเริ่มต้น (บนกล่องหมายเลขโทรศัพท์)
+        start_w = max(20, int(140 * self.scale))
+        start_h = max(16, int(112 * self.scale))
+        start_x1 = self.sx(459)
+        start_y1 = self.sy(49)
+        start_cx = start_x1 + start_w // 2
+        start_cy = start_y1 + start_h // 2
+
+        # พิกัดปลายทาง (Center จอ ซูมใกล้ Close-up)
+        gauge_right_x = int(34 * self.scale) + 3 * max(16, int(24 * self.scale)) + 2 * max(10, int(18 * self.scale)) + int(25 * self.scale)
+        end_cx = int((gauge_right_x + self.width) / 2.0) + int(8 * self.scale)
+        end_cy = int(self.height * 0.40)
+        end_w = int(550 * self.scale)
+        end_h = int(440 * self.scale)
+
+        self.canvas.itemconfigure("phone_mascot", state="hidden")
+
+        total_steps = 10
+        step_interval = 20
+
+        def _step(step_idx):
+            if self.page != "transition_idle":
+                return
+
+            if step_idx > total_steps:
+                self.canvas.delete("zoom_mascot")
+                self.show_idle()
+                return
+
+            t = step_idx / float(total_steps)
+            ease = t * t * (3.0 - 2.0 * t)  # Smoothstep
+
+            cur_w = max(20, int(start_w + (end_w - start_w) * ease))
+            cur_h = max(16, int(start_h + (end_h - start_h) * ease))
+            cur_cx = int(start_cx + (end_cx - start_cx) * ease)
+            cur_cy = int(start_cy + (end_cy - start_cy) * ease)
+
+            mascot_img = self.raw_mascot_sleep if self.raw_mascot_sleep else self.raw_mascot_awake
+            if mascot_img:
+                img_res = mascot_img.resize((cur_w, cur_h), Image.Resampling.BILINEAR)
                 photo = ImageTk.PhotoImage(img_res)
                 self._current_zoom_photo = photo
                 self.canvas.delete("zoom_mascot")
@@ -736,7 +870,7 @@ class SmartBinGUI:
         self.phone = ""
         self._draw_phone_screen_base()
         self._start_mascot_blinking()
-
+        self._reset_inactivity_timer(GUI_IDLE_TIMEOUT_PHONE)
 
     def formatted_phone(self):
         if not self.phone:
@@ -752,6 +886,7 @@ class SmartBinGUI:
         )
 
     def add_digit(self, digit):
+        self._reset_inactivity_timer()
         if len(self.phone) < 10:
             self.phone += digit
             self.phone_var.set(self.phone)
@@ -786,6 +921,7 @@ class SmartBinGUI:
         )
 
     def backspace(self):
+        self._reset_inactivity_timer()
         if self.phone:
             self.phone = self.phone[:-1]
             self.phone_var.set(self.phone)
@@ -842,34 +978,6 @@ class SmartBinGUI:
         except (OSError, json.JSONDecodeError):
             return []
 
-    def show_history(self):
-        """แสดงประวัติการใช้งาน"""
-        self._clear()
-        self.page = "history"
-        self.draw_environment()
-        self.header("ACTIVITY LOG", "ประวัติการใช้งาน", "รายการล่าสุดจากเครื่อง SBAY")
-
-        self.round_rect(55, 145, 969, 535, 34, fill=COLORS["cream"], outline="", tags="content")
-        records = self.read_history()
-        if not records:
-            self.canvas.create_oval(448, 210, 576, 338, fill="#E3F2C7", outline="")
-            self.canvas.create_text(512, 274, text="↻", fill="#4D8B59", font=(FONT, 42, "bold"))
-            self.canvas.create_text(512, 375, text="ยังไม่มีประวัติการใช้งาน", fill=COLORS["ink"], font=(FONT, 20, "bold"))
-            self.canvas.create_text(512, 407, text="เมื่อเริ่มใช้งาน รายการจะแสดงที่นี่", fill=COLORS["muted"], font=(FONT, 12))
-        else:
-            for i, record in enumerate(records[:4]):
-                y = 175 + i * 72
-                self.round_rect(88, y, 936, y + 56, 16, fill="#FFFFFF", outline="#DDE6DF", width=1)
-                phone = record.get("phone", "-")
-                masked = f"{phone[:3]}-XXX-{phone[-4:]}" if len(phone) == 10 else phone
-                points = record.get("points", 0)
-
-                self.canvas.create_oval(105, y + 13, 135, y + 43, fill=COLORS["mint"], outline="")
-                self.canvas.create_text(150, y + 28, anchor="w", text=masked, fill=COLORS["ink"], font=(FONT, 15, "bold"))
-                self.canvas.create_text(480, y + 28, anchor="w", text=f"+{points:.1f} pt", fill=COLORS["forest"], font=(FONT, 14, "bold"))
-                self.canvas.create_text(710, y + 28, anchor="w", text=record.get("used_at", "").replace("T", "  "), fill=COLORS["muted"], font=(FONT, 12))
-
-        self.button(760, 465, 930, 515, "ย้อนกลับ", "", COLORS["lime"], self.show_phone_input, "back")
 
 
     # ============================================================
@@ -894,7 +1002,7 @@ class SmartBinGUI:
             fill=COLORS["forest"], font=(FONT, 28, "bold"), tags=("content", "welcome_card")
         )
         self.canvas.create_text(
-            512, card_y1 + 200, text="กรุณาหยอดขวดหรือกระป๋องลงในตู้",
+            512, card_y1 + 200, text="กรุณาหยอดขยะลงในตู้",
             fill=COLORS["ink"], font=(FONT, 18), tags=("content", "welcome_card")
         )
 
@@ -991,6 +1099,8 @@ class SmartBinGUI:
         # โหลดรายการที่อาจมีอยู่เดิมขึ้นมาแสดง
         for item in self.items_list:
             self._render_item_row(item["type"], item["ml"], item["score"])
+
+        self._reset_inactivity_timer(GUI_IDLE_TIMEOUT_DETECTING)
 
     def _draw_detect_mascot(self):
         """วาดน้อง Mascot ยืนอยู่ที่มุมล่างขวาของกล่องกล้อง เหนือปุ่มเสร็จสิ้นตาม mockup ของผู้ใช้"""
@@ -1103,6 +1213,7 @@ class SmartBinGUI:
 
     def add_detected_item(self, item_type, size_ml, score):
         """เพิ่มรายการขยะที่ตรวจจับได้"""
+        self._reset_inactivity_timer()
         item_data = {"type": item_type, "ml": size_ml, "score": score}
         self.items_list.append(item_data)
 
@@ -1229,7 +1340,7 @@ class SmartBinGUI:
                 font=(FONT, 16 if i < 2 else 20, "bold")
             )
 
-        self.canvas.create_text(512, 470, text="ขอบคุณที่ร่วมเป็นส่วนหนึ่งในการรักษ์โลก 🌱", fill=COLORS["forest"], font=(FONT, 14, "bold"))
+        self.canvas.create_text(512, 470, text="ขอบคุณที่ร่วมเป็นส่วนหนึ่งในการรักษาโลก", fill=COLORS["forest"], font=(FONT, 14, "bold"))
 
         # บันทึกคะแนนลงประวัติรายการล่าสุด (ถ้ามีเบอร์โทรศัพท์)
         if self.phone:
@@ -1247,8 +1358,8 @@ class SmartBinGUI:
         # แตะหน้าจอเพื่อเล่น Transition Zoom In ค่อยๆ หลับ หรือรอ 5.5 วินาที
         self.canvas.bind("<Button-1>", lambda e: self.transition_zoom_in_to_idle())
         self.canvas.tag_bind("content", "<Button-1>", lambda e: self.transition_zoom_in_to_idle())
-        self.canvas.tag_bind("result_mascot", "<Button-1>", lambda e: self.transition_zoom_in_to_idle())
-        self._result_timer = self.root.after(5500, self.transition_zoom_in_to_idle)
+        result_delay = int(GUI_IDLE_TIMEOUT_RESULT * 1000)
+        self._result_timer = self.root.after(result_delay, self.transition_zoom_in_to_idle)
 
     def _draw_result_mascot(self):
         """วาดน้อง Mascot ยิ้มกว้างที่มุมล่างขวาของการ์ดสรุปผลคะแนนตาม mockup ของผู้ใช้"""
@@ -1397,17 +1508,6 @@ class SmartBinGUI:
         total_score = sum(x["score"] for x in self.items_list) if self.items_list else 4.0
         self.show_result(total_items, total_ml, total_score, True)
 
-    def _test_add_sample_item(self):
-        """จำลองการหยอดขยะสำหรับทดสอบ GUI"""
-        samples = [
-            ("PLASTIC_BOTTLE", 500, 2.0),
-            ("ALUMINUM_CAN", 330, 1.5),
-            ("PLASTIC_BOTTLE", 600, 2.5),
-            ("BEVERAGE_CARTON", 250, 1.0)
-        ]
-        item_type, ml, score = random.choice(samples)
-        self.add_detected_item(item_type, ml, score)
-
     def _on_key_press(self, event):
         """จัดการการกดปุ่มคีย์บอร์ดตามหน้าปัจจุบัน"""
         if self.page == "phone":
@@ -1418,9 +1518,7 @@ class SmartBinGUI:
             elif event.keysym in ("Return", "KP_Enter"):
                 self.confirm_phone(is_guest=False)
         elif self.page == "detecting":
-            if event.keysym == "space" or event.char == "a":
-                self._test_add_sample_item()
-            elif event.keysym in ("Return", "KP_Enter"):
+            if event.keysym in ("Return", "KP_Enter"):
                 self._handle_finish()
         elif self.page == "welcome":
             if event.keysym in ("Return", "KP_Enter", "space"):
@@ -1463,14 +1561,10 @@ class SmartBinGUI:
                 sum(x["score"] for x in self.items_list) if self.items_list else 4.0,
                 True
             )
-        elif self.page == "history":
-            self.show_history()
 
     def _on_escape(self, _event=None):
         if self.page == "phone":
             self.show_idle()
-        elif self.page == "history":
-            self.show_phone_input()
         elif self.page == "result":
             self.transition_zoom_in_to_idle()
         elif self.page in ("welcome", "detecting"):
