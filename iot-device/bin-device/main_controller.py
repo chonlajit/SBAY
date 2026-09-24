@@ -176,10 +176,10 @@ class SmartBinController:
             user_id = ""
             name = "Guest"
             if phone and status == "DB_ERROR":
-                alert_msg = "⚠️ ติดต่อฐานข้อมูลไม่ได้! กำลังเข้าสู่โหมด Guest (บันทึกออฟไลน์)"
+                alert_msg = "ติดต่อฐานข้อมูลไม่ได้! กำลังเข้าสู่โหมด Guest (บันทึกออฟไลน์)"
                 logger.warning(f"Database/server error for phone {phone}. Auto-falling back to offline Guest mode.")
             elif phone and status == "NOT_FOUND":
-                alert_msg = "ℹ️ ไม่พบเบอร์นี้ในระบบ (ดำเนินการในฐานะ Guest)"
+                alert_msg = "ไม่พบเบอร์นี้ในระบบ (ดำเนินการในฐานะ Guest)"
             else:
                 alert_msg = None
 
@@ -270,7 +270,7 @@ class SmartBinController:
                             self.detection.stop_camera()
 
                         if self.gui:
-                            self.gui.schedule(self.gui.update_status, f"⚠️ ช่อง {type_th} เต็มแล้ว! (คืนขยะเรียบร้อย)", "#ef4444")
+                            self.gui.schedule(self.gui.update_status, f"ช่อง {type_th} เต็มแล้ว! (คืนขยะเรียบร้อย)", "#ef4444")
                             time.sleep(3.0)
                             status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
                             self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
@@ -504,7 +504,7 @@ class SmartBinController:
         try:
             while True:
                 print("\n" + "=" * 40)
-                phone = input("📱 กรอกเบอร์โทร (หรือ Enter เพื่อเป็น Guest, q เพื่อออก): ").strip()
+                phone = input("กรอกเบอร์โทร (หรือ Enter เพื่อเป็น Guest, q เพื่อออก): ").strip()
 
                 if phone.lower() == 'q':
                     break
@@ -526,22 +526,22 @@ class SmartBinController:
                         "User"
                     )
                     name = username
-                    print(f"👋 สวัสดีคุณ {name} (Username)!")
+                    print(f"สวัสดีคุณ {name} (Username)!")
                 else:
                     user_id = ""
                     name = "Guest"
                     if phone and status == "DB_ERROR":
-                        print("⚠️ ติดต่อฐานข้อมูลไม่ได้! เข้าสู่โหมด Guest (บันทึกออฟไลน์)")
+                        print("ติดต่อฐานข้อมูลไม่ได้! เข้าสู่โหมด Guest (บันทึกออฟไลน์)")
                     elif phone:
-                        print("ℹ️ ไม่พบบัญชีสำหรับเบอร์นี้ ดำเนินการในฐานะ Guest")
+                        print("ไม่พบบัญชีสำหรับเบอร์นี้ ดำเนินการในฐานะ Guest")
                     else:
-                        print("👋 สวัสดี Guest!")
+                        print("สวัสดี Guest!")
 
                 # Start session
                 self.session.start(DEVICE_ID, user_id, name)
 
                 # Detection loop (CLI simulated)
-                print("\n🔍 กำลังรอการหยอดขยะ...")
+                print("\nกำลังรอการหยอดขยะ...")
                 print("   พิมพ์ชนิดขยะ: bottle, can, carton")
                 print("   พิมพ์ 'done' เพื่อเสร็จสิ้น\n")
 
@@ -564,7 +564,7 @@ class SmartBinController:
 
                     item_type = type_map.get(cmd)
                     if not item_type:
-                        print(f"    ❌ ไม่รู้จักประเภท '{cmd}'")
+                        print(f"    [X] ไม่รู้จักประเภท '{cmd}'")
                         continue
 
                     # Simulate detection
@@ -575,36 +575,36 @@ class SmartBinController:
                     result = ScoreCalculator().calculate(item_type, size_ml)
 
                     item = self.session.add_item(item_type, size_ml, result["weight"], result["score"])
-                    print(f"    ✅ {item_type} → {size_ml}ml | +{result['score']:.1f} pt")
+                    print(f"    ✓ {item_type} → {size_ml}ml | +{result['score']:.1f} pt")
 
                 # Finish
                 if not self.session.has_items():
-                    print("\n📭 ไม่มีรายการ กลับหน้าหลัก")
+                    print("\nไม่มีรายการ กลับหน้าหลัก")
                     self.session.reset()
                     continue
 
                 summary = self.session.get_summary()
-                print(f"\n📊 สรุป: {summary['totalItems']} ชิ้น | {summary['totalMl']}ml | +{summary['totalScore']} pt")
+                print(f"\nสรุป: {summary['totalItems']} ชิ้น | {summary['totalMl']}ml | +{summary['totalScore']} pt")
 
                 # Send
-                print("📡 กำลังส่งข้อมูล...")
+                print("กำลังส่งข้อมูล...")
                 payload = self.session.to_payload()
                 success = self.api_client.post_session(payload)
 
                 if success:
-                    print("✅ ส่งสำเร็จ!")
+                    print("ส่งสำเร็จ!")
                 else:
-                    print("⚠️ ส่งไม่สำเร็จ - เก็บไว้ใน offline queue แล้ว")
+                    print("ส่งไม่สำเร็จ - เก็บไว้ใน offline queue แล้ว")
 
                 self.session.reset()
 
         except KeyboardInterrupt:
-            print("\n\n🛑 กำลังปิดระบบ...")
+            print("\n\nกำลังปิดระบบ...")
         finally:
             self.heartbeat.stop()
             self.ultrasonic.stop()
             self.detection.stop_camera()
-            print("👋 ปิดระบบเรียบร้อย")
+            print("ปิดระบบเรียบร้อย")
 
 
 # ============================

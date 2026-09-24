@@ -265,6 +265,7 @@ class SmartBinGUI:
         """เชื่อมต่อ Canvas methods เพื่อให้พิกัดและขนาดฟอนต์สเกลตามหน้าจอโดยอัตโนมัติ"""
         self._orig_create_text = self.canvas.create_text
         self._orig_create_oval = self.canvas.create_oval
+        self._orig_create_arc = self.canvas.create_arc
         self._orig_create_polygon = self.canvas.create_polygon
         self._orig_create_line = self.canvas.create_line
         self._orig_create_window = self.canvas.create_window
@@ -294,6 +295,12 @@ class SmartBinGUI:
                 return self._orig_create_oval(x1, y1, x2, y2, *args, **kwargs)
             return self._orig_create_oval(self.sx(x1), self.sy(y1), self.sx(x2), self.sy(y2), *args, **kwargs)
 
+        def scaled_create_arc(x1, y1, x2, y2, *args, **kwargs):
+            w = kwargs.get("width", 1)
+            if w > 1:
+                kwargs["width"] = max(1, int(w * self.scale))
+            return self._orig_create_arc(self.sx(x1), self.sy(y1), self.sx(x2), self.sy(y2), *args, **kwargs)
+
         def scaled_create_line(x1, y1, x2, y2, *args, **kwargs):
             if "background" in kwargs.get("tags", "") or "ambient" in kwargs.get("tags", ""):
                 return self._orig_create_line(x1, y1, x2, y2, *args, **kwargs)
@@ -312,6 +319,7 @@ class SmartBinGUI:
 
         self.canvas.create_text = scaled_create_text
         self.canvas.create_oval = scaled_create_oval
+        self.canvas.create_arc = scaled_create_arc
         self.canvas.create_line = scaled_create_line
         self.canvas.create_window = scaled_create_window
 
@@ -533,6 +541,12 @@ class SmartBinGUI:
         rh = max(16, int(136 * self.scale))
         raw_res = self.raw_mascot_smile_wide or self.raw_mascot_smile or self.raw_mascot_awake
         self.result_mascot_photo = ImageTk.PhotoImage(raw_res.resize((rw, rh), Image.Resampling.LANCZOS)) if raw_res else None
+
+        # 4. Welcome screen size (80 x 64)
+        ww = max(20, int(80 * self.scale))
+        wh = max(16, int(64 * self.scale))
+        raw_wel = self.raw_mascot_smile or self.raw_mascot_awake
+        self.welcome_mascot_photo = ImageTk.PhotoImage(raw_wel.resize((ww, wh), Image.Resampling.LANCZOS)) if raw_wel else None
 
     def _clear(self):
         """ล้างหน้าจอและหยุดแอนิเมชันเดิม"""
@@ -997,7 +1011,18 @@ class SmartBinGUI:
         card_y2 = 515 if alert_message else 500
         self.round_rect(180, card_y1, 844, card_y2, 36, fill=COLORS["cream"], outline="", tags=("content", "welcome_card"))
         self.canvas.create_oval(462, card_y1 + 25, 562, card_y1 + 125, fill=COLORS["mint"], outline="", tags=("content", "welcome_card"))
-        self.canvas.create_text(512, card_y1 + 75, text="👋", font=("Segoe UI Emoji", 44), tags=("content", "welcome_card"))
+
+        if getattr(self, "welcome_mascot_photo", None):
+            self.canvas.create_image(
+                self.sx(512), self.sy(card_y1 + 75),
+                image=self.welcome_mascot_photo,
+                tags=("content", "welcome_card")
+            )
+        else:
+            self.canvas.create_text(
+                512, card_y1 + 75, text="✓",
+                font=(FONT, 36, "bold"), fill=COLORS["forest"], tags=("content", "welcome_card")
+            )
 
         self.canvas.create_text(
             512, card_y1 + 155, text=f"สวัสดีครับ {name}",
@@ -1010,7 +1035,7 @@ class SmartBinGUI:
 
         # หากมีข้อความแจ้งเตือน (เช่น ฐานข้อมูลขัดข้อง)
         if alert_message:
-            is_err = "⚠️" in alert_message or "ไม่ได้" in alert_message or "ล่ม" in alert_message
+            is_err = any(k in alert_message for k in ("ไม่", "ล่ม", "เต็ม", "ขัดข้อง", "error", "fail", "⚠️"))
             bg_color = "#FEE2E2" if is_err else "#FEF3C7"
             fg_color = "#991B1B" if is_err else "#92400E"
             self.round_rect(210, card_y1 + 235, 814, card_y1 + 295, 18, fill=bg_color, outline="", tags=("content", "welcome_card"))
@@ -1027,7 +1052,7 @@ class SmartBinGUI:
         self.round_rect(300, btn_y1, 724, btn_y2, 22, fill="#E3F2C7", outline="", tags=("content", "welcome_card"))
         self.canvas.create_text(
             512, (btn_y1 + btn_y2) // 2,
-            text="✨ ระบบพร้อมตรวจจับอัตโนมัติ (แตะเพื่อเริ่มทันที)",
+            text="ระบบพร้อมตรวจจับอัตโนมัติ (แตะเพื่อเริ่มทันที)",
             fill="#2A824C", font=(FONT, 14, "bold"), tags=("content", "welcome_card")
         )
 
@@ -1088,12 +1113,12 @@ class SmartBinGUI:
             self.sx(750), self.sy(292), image="", tags=("camera_feed", "content")
         )
         self.cam_label_text = self.canvas.create_text(
-            self.sx(750), self.sy(292), text="📷 ภาพกล้องวงจรปิด",
+            self.sx(750), self.sy(292), text="[ กล้องตรวจจับขยะ ]",
             fill=COLORS["mint"], font=(FONT, 13, "bold"), tags=("camera_text", "content")
         )
 
         # 3. ปุ่มเสร็จสิ้น (Finish Button)
-        self.button(535, 465, 965, 535, "✅  เสร็จสิ้น (FINISH)", "", COLORS["mint"], self._handle_finish, "finish_btn")
+        self.button(535, 465, 965, 535, "✓  เสร็จสิ้น (FINISH)", "", COLORS["mint"], self._handle_finish, "finish_btn")
 
         # 4. น้อง Mascot ที่มุมล่างขวาของกล่องกล้อง เหนือปุ่มเสร็จสิ้น
         self._draw_detect_mascot()
@@ -1223,7 +1248,7 @@ class SmartBinGUI:
             self._render_item_row(item_type, size_ml, score)
             self.canvas.itemconfigure(self.item_count_text, text=f"●  {len(self.items_list)} ชิ้น")
             label_name = WASTE_LABELS.get(item_type, item_type)
-            self.update_status(f"🎉 ตรวจพบ: {label_name} ({size_ml}ml) +{score:.1f} pt", COLORS["mint"])
+            self.update_status(f"✓ ตรวจพบ: {label_name} ({size_ml}ml) +{score:.1f} pt", COLORS["mint"])
             self.show_detect_mascot_smile()
 
     def _render_item_row(self, item_type, size_ml, score):
@@ -1234,7 +1259,7 @@ class SmartBinGUI:
         row = tk.Frame(self.items_inner, bg="white", padx=12, pady=6, bd=0)
         row.pack(fill="x", pady=4, padx=5)
 
-        tk.Label(row, text=f"♻️ {label_name}", font=(FONT, 11, "bold"), fg=COLORS["forest"], bg="white").pack(side="left")
+        tk.Label(row, text=f"●  {label_name}", font=(FONT, 11, "bold"), fg=COLORS["forest"], bg="white").pack(side="left")
 
         # ขนาด ml และคะแนน
         lower_bound = size_ml - (size_ml % 10)
@@ -1253,7 +1278,7 @@ class SmartBinGUI:
             is_err = False
             if color in ("#ef4444", "#EF5D5D", COLORS.get("danger")):
                 is_err = True
-            elif any(w in message.lower() for w in ("ไม่พบ", "ผิดพลาด", "เต็ม", "error", "คืนขวด", "คืนขยะ")):
+            elif any(w in message.lower() for w in ("ไม่พบ", "ผิดพลาด", "เต็ม", "error", "คืนขวด", "คืนขยะ", "ไม่ได้")):
                 is_err = True
             if is_err:
                 self.show_detect_mascot_sad()
@@ -1292,7 +1317,7 @@ class SmartBinGUI:
                 if hasattr(self, 'cam_image_item') and self.cam_image_item:
                     self.canvas.itemconfigure(self.cam_image_item, image="")
                 if hasattr(self, 'cam_label_text') and self.cam_label_text:
-                    self.canvas.itemconfigure(self.cam_label_text, text="📷 ภาพกล้องวงจรปิด")
+                    self.canvas.itemconfigure(self.cam_label_text, text="[ กล้องตรวจจับขยะ ]")
 
             # ตรวจสอบให้แน่ใจว่าน้อง Mascot อยู่ด้านบนสุดเสมอ ไม่ถูกกล้องบัง
             if self.canvas:
@@ -1310,11 +1335,18 @@ class SmartBinGUI:
         self.draw_environment()
 
         self.round_rect(240, 140, 784, 460, 36, fill=COLORS["cream"], outline="", tags="content")
-        self.canvas.create_oval(462, 180, 562, 280, fill=COLORS["sky"], outline="")
-        self.canvas.create_text(512, 230, text="📡", font=("Segoe UI Emoji", 48))
+        self.canvas.create_oval(462, 180, 562, 280, fill=COLORS["sky"], outline="", tags="content")
 
-        self.canvas.create_text(512, 330, text="กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...", fill=COLORS["forest"], font=(FONT, 24, "bold"))
-        self.canvas.create_text(512, 380, text="กรุณารอสักครู่ ระบบกำลังประมวลผลคะแนน", fill=COLORS["muted"], font=(FONT, 14))
+        # วาดสัญลักษณ์คลื่นสัญญาณการส่งข้อมูล (Vector Signal Waves)
+        cx, cy = 512, 238
+        self.canvas.create_oval(cx - 5, cy - 5, cx + 5, cy + 5, fill="#0369A1", outline="", tags="content")
+        self.canvas.create_line(cx, cy, cx, cy + 18, fill="#0369A1", width=3, tags="content")
+        self.canvas.create_arc(cx - 16, cy - 16, cx + 16, cy + 16, start=45, extent=90, style="arc", outline="#0284C7", width=3, tags="content")
+        self.canvas.create_arc(cx - 28, cy - 28, cx + 28, cy + 28, start=45, extent=90, style="arc", outline="#0284C7", width=3, tags="content")
+        self.canvas.create_arc(cx - 40, cy - 40, cx + 40, cy + 40, start=45, extent=90, style="arc", outline="#0369A1", width=3, tags="content")
+
+        self.canvas.create_text(512, 330, text="กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...", fill=COLORS["forest"], font=(FONT, 24, "bold"), tags="content")
+        self.canvas.create_text(512, 380, text="กรุณารอสักครู่ ระบบกำลังประมวลผลคะแนน", fill=COLORS["muted"], font=(FONT, 14), tags="content")
 
     # ============================================================
     # SCREEN 8: RESULT (สรุปผลคะแนน & ขอบคุณ)
@@ -1328,13 +1360,13 @@ class SmartBinGUI:
         self.round_rect(180, 60, 844, 540, 36, fill=COLORS["cream"], outline="", tags="content")
 
         if success:
-            self.canvas.create_oval(462, 90, 562, 190, fill=COLORS["mint"], outline="")
-            self.canvas.create_text(512, 140, text="✓", fill=COLORS["forest"], font=(FONT, 56, "bold"))
-            self.canvas.create_text(512, 220, text="บันทึกข้อมูลสำเร็จ!", fill=COLORS["forest"], font=(FONT, 28, "bold"))
+            self.canvas.create_oval(462, 90, 562, 190, fill=COLORS["mint"], outline="", tags="content")
+            self.canvas.create_text(512, 140, text="✓", fill=COLORS["forest"], font=(FONT, 56, "bold"), tags="content")
+            self.canvas.create_text(512, 220, text="บันทึกข้อมูลสำเร็จ!", fill=COLORS["forest"], font=(FONT, 28, "bold"), tags="content")
         else:
-            self.canvas.create_oval(462, 90, 562, 190, fill=COLORS["lime"], outline="")
-            self.canvas.create_text(512, 140, text="💾", font=("Segoe UI Emoji", 48))
-            self.canvas.create_text(512, 220, text="บันทึกข้อมูลออฟไลน์แล้ว", fill=COLORS["forest"], font=(FONT, 28, "bold"))
+            self.canvas.create_oval(462, 90, 562, 190, fill=COLORS["lime"], outline="", tags="content")
+            self.canvas.create_text(512, 140, text="✓", fill=COLORS["forest"], font=(FONT, 56, "bold"), tags="content")
+            self.canvas.create_text(512, 220, text="บันทึกข้อมูลออฟไลน์แล้ว", fill=COLORS["forest"], font=(FONT, 28, "bold"), tags="content")
 
         # สถิติสรุป (Stats Card)
         self.round_rect(240, 255, 784, 435, 20, fill="white", outline="#DDE6DF", width=1)
