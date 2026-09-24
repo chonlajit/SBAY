@@ -83,8 +83,8 @@ DEFAULT_RELEASE_ANGLE = 82
 DROP_ANGLE_CLOSED = 90
 DROP_ANGLE_OPEN = 180
 
-RETURN_ANGLE_CLOSED = 90
-RETURN_ANGLE_OPEN = 180
+RETURN_ANGLE_CLOSED = int(os.getenv("RETURN_ANGLE_CLOSED", "80"))
+RETURN_ANGLE_OPEN = int(os.getenv("RETURN_ANGLE_OPEN", "140"))
 
 # ควบคุมการสั่งรีเซ็ต Servo 180 องศา (Drop / Return) ตอนเปิดระบบ
 # ค่าเริ่มต้นเป็น False เพื่อป้องกันไม่ให้มอเตอร์สะบัด/หมุนจนสุดตอนรัน main_controller
