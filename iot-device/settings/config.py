@@ -64,9 +64,9 @@ USE_SERVO = os.getenv("USE_SERVO", "true").lower() == "true"
 HIDE_CURSOR = os.getenv("HIDE_CURSOR", "true").lower() == "true"
 
 # --- GUI Engine Type ---
-# 'web' = Web Kiosk (Chromium + FastAPI, GPU accelerated 60fps, Zero Lag - Recommended)
-# 'tkinter' = Classic Desktop GUI (Tkinter Canvas)
-GUI_TYPE = os.getenv("GUI_TYPE", "web").lower()
+# 'tkinter' = Classic Desktop GUI (Original Design + Performance & Memory Fixes Applied)
+# 'web' = Web Kiosk (Chromium + FastAPI)
+GUI_TYPE = os.getenv("GUI_TYPE", "tkinter").lower()
 WEB_KIOSK_PORT = int(os.getenv("WEB_KIOSK_PORT", "8000"))
 
 # --- Hardware Pins (Raspberry Pi BCM) ---
