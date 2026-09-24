@@ -63,8 +63,8 @@ USE_HARDWARE = True if sys.platform.startswith("linux") else False
 USE_CAMERA = True
 USE_GUI = True
 GUI_FULLSCREEN = True if sys.platform.startswith("linux") else False
-USE_IR = False    # ตั้งค่าเซ็นเซอร์ IR ตรงนี้ (True = เปิด, False = ปิด)
-USE_SERVO = False # ตั้งค่าเซอร์โวมอเตอร์ตรงนี้ (True = เปิด, False = ปิด)
+USE_IR = True    # ตั้งค่าเซ็นเซอร์ IR ตรงนี้ (True = เปิด, False = ปิด)
+USE_SERVO = True # ตั้งค่าเซอร์โวมอเตอร์ตรงนี้ (True = เปิด, False = ปิด)
 HIDE_CURSOR = True
 
 # --- GUI Engine Type ---
