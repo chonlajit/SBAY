@@ -39,35 +39,38 @@ except ImportError:
                 pass
 
 
-# --- Device Identity ---
-DEVICE_ID = os.getenv("DEVICE_ID", "BIN")
-DEVICE_NAME = os.getenv("DEVICE_NAME", "SBAY Bin")
-DEVICE_LOCATION = os.getenv("DEVICE_LOCATION", "")
+# ============================================================
+# การตั้งค่าระบบทั้งหมด (แก้ไขที่ไฟล์นี้เป็นหลัก ไม่ต้องตั้งใน .env)
+# ============================================================
 
-# --- Backend Server ---
-BACKEND_URL = os.getenv("BACKEND_URL", "https://sbay-platform.online")
+# --- Device Identity & Backend Server ---
+DEVICE_ID = "BIN-001"
+DEVICE_NAME = "SBAY Bin"
+DEVICE_LOCATION = ""
+
+BACKEND_URL = "https://sbay-platform.online"
 API_BASE = f"{BACKEND_URL}/api"
-DEVICE_SECRET = os.getenv("DEVICE_SECRET")
+
+# กำหนดคีย์ความลับของตู้ (ใส่ตรงนี้ได้เลย หรือปล่อยว่างไว้ถ้ามีใน .env)
+_CONFIG_SECRET = ""
+DEVICE_SECRET = _CONFIG_SECRET or os.getenv("DEVICE_SECRET", "")
 if not DEVICE_SECRET:
-    raise ValueError("CRITICAL ERROR: DEVICE_SECRET environment variable is not set!")
+    raise ValueError("CRITICAL ERROR: กรุณากำหนด DEVICE_SECRET ใน config.py หรือ .env !")
 
-# --- Mode ---
-_default_use_hardware = "true" if sys.platform.startswith("linux") else "false"
-USE_HARDWARE = os.getenv("USE_HARDWARE", _default_use_hardware).lower() == "true"
-
-USE_CAMERA = os.getenv("USE_CAMERA", "true").lower() == "true"
-USE_GUI = os.getenv("USE_GUI", "true").lower() == "true"
-_default_fullscreen = "true" if sys.platform.startswith("linux") else "false"
-GUI_FULLSCREEN = os.getenv("GUI_FULLSCREEN", _default_fullscreen).lower() == "true"
-USE_IR = os.getenv("USE_IR", "true").lower() == "true"
-USE_SERVO = os.getenv("USE_SERVO", "true").lower() == "true"
-HIDE_CURSOR = os.getenv("HIDE_CURSOR", "true").lower() == "true"
+# --- Mode & Hardware Control (เปิด/ปิดระบบตรงนี้ได้ทันที) ---
+USE_HARDWARE = True if sys.platform.startswith("linux") else False
+USE_CAMERA = True
+USE_GUI = True
+GUI_FULLSCREEN = True if sys.platform.startswith("linux") else False
+USE_IR = False    # ตั้งค่าเซ็นเซอร์ IR ตรงนี้ (True = เปิด, False = ปิด)
+USE_SERVO = False # ตั้งค่าเซอร์โวมอเตอร์ตรงนี้ (True = เปิด, False = ปิด)
+HIDE_CURSOR = True
 
 # --- GUI Engine Type ---
-# 'tkinter' = Classic Desktop GUI (Original Design + Performance & Memory Fixes Applied)
+# 'tkinter' = Classic Desktop GUI (หน้าจอหลักเดิม ปรับแต่งแก้ค้างแล้ว)
 # 'web' = Web Kiosk (Chromium + FastAPI)
-GUI_TYPE = os.getenv("GUI_TYPE", "tkinter").lower()
-WEB_KIOSK_PORT = int(os.getenv("WEB_KIOSK_PORT", "8000"))
+GUI_TYPE = "tkinter"
+WEB_KIOSK_PORT = 8000
 
 # --- Hardware Pins (Raspberry Pi BCM) ---
 IR_PIN = 17
@@ -77,18 +80,17 @@ SERVO_DROP_PIN = 12
 SERVO_RETURN_PIN = 13
 
 # --- Servo Angles Configuration ---
-# สามารถปรับแก้ตัวเลขเหล่านี้ได้ที่เดียวเพื่อให้มีผลกับระบบทั้งหมด
 DEFAULT_SORT_ANGLE = 265
 DEFAULT_RELEASE_ANGLE = 82
 DROP_ANGLE_CLOSED = 90
 DROP_ANGLE_OPEN = 180
 
-RETURN_ANGLE_CLOSED = int(os.getenv("RETURN_ANGLE_CLOSED", "80"))
-RETURN_ANGLE_OPEN = int(os.getenv("RETURN_ANGLE_OPEN", "140"))
+RETURN_ANGLE_CLOSED = 80
+RETURN_ANGLE_OPEN = 140
 
 # ควบคุมการสั่งรีเซ็ต Servo 180 องศา (Drop / Return) ตอนเปิดระบบ
 # ค่าเริ่มต้นเป็น False เพื่อป้องกันไม่ให้มอเตอร์สะบัด/หมุนจนสุดตอนรัน main_controller
-RESET_180_SERVOS_ON_STARTUP = os.getenv("RESET_180_SERVOS_ON_STARTUP", "false").lower() == "true"
+RESET_180_SERVOS_ON_STARTUP = False
 
 SORT_ANGLE_PLASTIC = 265
 SORT_ANGLE_CAN = 200
@@ -242,7 +244,7 @@ WASTE_LABELS = {
 
 # --- GUI Inactivity Timeouts (Seconds) ---
 # หากเปิดหน้าจอทิ้งไว้แล้วไม่มีการใช้งาน จะกลับสู่หน้าหลับ (Sleep Screen) อัตโนมัติ
-GUI_IDLE_TIMEOUT_PHONE = int(os.getenv("GUI_IDLE_TIMEOUT_PHONE", "30"))       # หน้ากรอกเบอร์โทร (30 วินาที)
-GUI_IDLE_TIMEOUT_DETECTING = int(os.getenv("GUI_IDLE_TIMEOUT_DETECTING", "45")) # หน้าหยอดขยะ (45 วินาที)
-GUI_IDLE_TIMEOUT_HISTORY = int(os.getenv("GUI_IDLE_TIMEOUT_HISTORY", "30"))   # หน้าประวัติ (30 วินาที)
-GUI_IDLE_TIMEOUT_RESULT = int(os.getenv("GUI_IDLE_TIMEOUT_RESULT", "6"))      # หน้าสรุปผลคะแนน (6 วินาที)
+GUI_IDLE_TIMEOUT_PHONE = 30       # หน้ากรอกเบอร์โทร (30 วินาที)
+GUI_IDLE_TIMEOUT_DETECTING = 45   # หน้าหยอดขยะ (45 วินาที)
+GUI_IDLE_TIMEOUT_HISTORY = 30     # หน้าประวัติ (30 วินาที)
+GUI_IDLE_TIMEOUT_RESULT = 6       # หน้าสรุปผลคะแนน (6 วินาที)
