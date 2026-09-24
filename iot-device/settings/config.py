@@ -40,22 +40,23 @@ except ImportError:
 
 
 # ============================================================
-# การตั้งค่าระบบทั้งหมด (แก้ไขที่ไฟล์นี้เป็นหลัก ไม่ต้องตั้งใน .env)
+# 1. ข้อมูลสำคัญ & ความปลอดภัย (ดึงจากไฟล์ .env เป็นหลัก เพื่อความปลอดภัย)
 # ============================================================
+DEVICE_SECRET = os.getenv("DEVICE_SECRET")
+if not DEVICE_SECRET:
+    raise ValueError("CRITICAL ERROR: กรุณาระบุ DEVICE_SECRET ในไฟล์ .env !")
 
-# --- Device Identity & Backend Server ---
-DEVICE_ID = "BIN-001"
-DEVICE_NAME = "SBAY Bin"
-DEVICE_LOCATION = ""
+DEVICE_ID = os.getenv("DEVICE_ID", "BIN-001")
+DEVICE_NAME = os.getenv("DEVICE_NAME", "SBAY Bin")
+DEVICE_LOCATION = os.getenv("DEVICE_LOCATION", "")
 
-BACKEND_URL = "https://sbay-platform.online"
+BACKEND_URL = os.getenv("BACKEND_URL", "https://sbay-platform.online")
 API_BASE = f"{BACKEND_URL}/api"
 
-# กำหนดคีย์ความลับของตู้ (ใส่ตรงนี้ได้เลย หรือปล่อยว่างไว้ถ้ามีใน .env)
-_CONFIG_SECRET = ""
-DEVICE_SECRET = _CONFIG_SECRET or os.getenv("DEVICE_SECRET", "")
-if not DEVICE_SECRET:
-    raise ValueError("CRITICAL ERROR: กรุณากำหนด DEVICE_SECRET ใน config.py หรือ .env !")
+
+# ============================================================
+# 2. การตั้งค่าเครื่อง & ฮาร์ดแวร์ (ปรับแก้ที่ไฟล์นี้โดยตรง ไม่ต้องใส่ใน .env)
+# ============================================================
 
 # --- Mode & Hardware Control (เปิด/ปิดระบบตรงนี้ได้ทันที) ---
 USE_HARDWARE = True if sys.platform.startswith("linux") else False
