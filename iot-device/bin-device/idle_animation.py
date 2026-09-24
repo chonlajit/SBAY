@@ -35,6 +35,8 @@ class IdleSleepingFace:
     - คำสั่งแตะ: "แตะเพื่อเริ่ม"
     """
 
+    _FRAME_CACHE = {}
+
     def __init__(self, root, container, width=960, height=540, on_wake_complete=None, canvas=None, get_waste_levels=None):
         self.root = root
         self.container = container
@@ -47,6 +49,7 @@ class IdleSleepingFace:
         self.sleep_frame_idx = 0
         self.timer_id = None
         self.poll_timer = None
+        self._last_rendered_pct = {}
 
         # สเกลขนาดตามความกว้างและความสูงจริงของหน้าจอ
         self.scale = max(0.5, min(self.width / 960.0, self.height / 540.0))
@@ -109,10 +112,15 @@ class IdleSleepingFace:
                 self.font_z_md = ImageFont.load_default()
                 self.font_z_lg = ImageFont.load_default()
 
-        # สร้างเฟรมภาพใบหน้าล่วงหน้า (Pre-render) เพื่อประสิทธิภาพสูงสุด 0% CPU
-        self.sleep_photo_frames = []
-        self.waking_choreography = []
-        self._pre_render_frames()
+        # นำเฟรมภาพใบหน้าที่ Cache ไว้มาใช้ซ้ำ (ไม่สร้างใหม่ซ้ำซ้อน ลด Memory Leak และ CPU)
+        cache_key = (self.width, self.height)
+        if cache_key in IdleSleepingFace._FRAME_CACHE:
+            self.sleep_photo_frames, self.waking_choreography = IdleSleepingFace._FRAME_CACHE[cache_key]
+        else:
+            self.sleep_photo_frames = []
+            self.waking_choreography = []
+            self._pre_render_frames()
+            IdleSleepingFace._FRAME_CACHE[cache_key] = (self.sleep_photo_frames, self.waking_choreography)
 
         # Canvas จัดการ
         if canvas is not None:
@@ -333,6 +341,13 @@ class IdleSleepingFace:
         for cat_key, info in self.gauge_items.items():
             pct = display_values.get(cat_key, 0.0)
             clamped_pct = max(0.0, min(100.0, pct))
+            rounded_val = int(round(clamped_pct))
+
+            # ข้ามการอัปเดต Canvas ถ้าค่าเดิมยังไม่เปลี่ยน เพื่อประหยัด CPU
+            if self._last_rendered_pct.get(cat_key) == rounded_val:
+                continue
+            self._last_rendered_pct[cat_key] = rounded_val
+
             fill_h = int(self.bar_h * (clamped_pct / 100.0))
             fill_y1 = self.bar_bottom_y - fill_h
 
@@ -348,18 +363,18 @@ class IdleSleepingFace:
                 self.canvas.coords(fill_item, bx1, fill_y1, bx2, self.bar_bottom_y)
 
             # อัปเดตตัวเลขเปอร์เซ็นต์
-            self.canvas.itemconfigure(pct_item, text=f"{int(round(clamped_pct))}%")
+            self.canvas.itemconfigure(pct_item, text=f"{rounded_val}%")
 
     def set_waste_levels(self, levels: dict):
         """ฟังก์ชันสำหรับภายนอก (Controller) เรียกอัปเดตระดับขยะทันที"""
         self.update_waste_display(levels)
 
     def _poll_waste_levels(self):
-        """วนรอบอ่านค่าจากเซนเซอร์ทุก 2.5 วินาทีขณะหน้าหลับทำงาน"""
+        """วนรอบอ่านค่าจากเซนเซอร์ทุก 3.5 วินาทีขณะหน้าหลับทำงาน"""
         if self.state != "sleeping":
             return
         self.update_waste_display()
-        self.poll_timer = self.root.after(2500, self._poll_waste_levels)
+        self.poll_timer = self.root.after(3500, self._poll_waste_levels)
 
     # ============================================================
     # MASCOT SLEEPING & WAKING ANIMATION
@@ -567,7 +582,8 @@ class IdleSleepingFace:
 
         self.canvas.itemconfig(self.image_item, image=self.sleep_photo_frames[self.sleep_frame_idx])
         self.sleep_frame_idx = (self.sleep_frame_idx + 1) % len(self.sleep_photo_frames)
-        self.timer_id = self.root.after(70, self._play_sleep_loop)
+        # ปรับความเร็วจาก 70ms เป็น 130ms (~7.7 fps) ลื่นไหลเป็นธรรมชาติ และลดโหลด CPU ลงกว่า 50%
+        self.timer_id = self.root.after(130, self._play_sleep_loop)
 
     def on_tap(self, event=None):
         """เมื่อมีคนแตะหน้าจอ -> สะดุ้งตื่น"""

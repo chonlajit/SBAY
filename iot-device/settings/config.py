@@ -63,6 +63,12 @@ USE_IR = os.getenv("USE_IR", "true").lower() == "true"
 USE_SERVO = os.getenv("USE_SERVO", "true").lower() == "true"
 HIDE_CURSOR = os.getenv("HIDE_CURSOR", "true").lower() == "true"
 
+# --- GUI Engine Type ---
+# 'web' = Web Kiosk (Chromium + FastAPI, GPU accelerated 60fps, Zero Lag - Recommended)
+# 'tkinter' = Classic Desktop GUI (Tkinter Canvas)
+GUI_TYPE = os.getenv("GUI_TYPE", "web").lower()
+WEB_KIOSK_PORT = int(os.getenv("WEB_KIOSK_PORT", "8000"))
+
 # --- Hardware Pins (Raspberry Pi BCM) ---
 IR_PIN = 17
 SERVO_SORT_PIN = 18
@@ -233,3 +239,10 @@ WASTE_LABELS = {
     "BEVERAGE_CARTON": "กล่องเครื่องดื่ม",
     "RETURN": "คืนขวด"
 }
+
+# --- GUI Inactivity Timeouts (Seconds) ---
+# หากเปิดหน้าจอทิ้งไว้แล้วไม่มีการใช้งาน จะกลับสู่หน้าหลับ (Sleep Screen) อัตโนมัติ
+GUI_IDLE_TIMEOUT_PHONE = int(os.getenv("GUI_IDLE_TIMEOUT_PHONE", "30"))       # หน้ากรอกเบอร์โทร (30 วินาที)
+GUI_IDLE_TIMEOUT_DETECTING = int(os.getenv("GUI_IDLE_TIMEOUT_DETECTING", "45")) # หน้าหยอดขยะ (45 วินาที)
+GUI_IDLE_TIMEOUT_HISTORY = int(os.getenv("GUI_IDLE_TIMEOUT_HISTORY", "30"))   # หน้าประวัติ (30 วินาที)
+GUI_IDLE_TIMEOUT_RESULT = int(os.getenv("GUI_IDLE_TIMEOUT_RESULT", "6"))      # หน้าสรุปผลคะแนน (6 วินาที)

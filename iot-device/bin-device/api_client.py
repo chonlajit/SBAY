@@ -232,7 +232,7 @@ class ApiClient:
             else:
                 payload["type"] = "ALL"
                 
-            resp = requests.post(
+            resp = self.session.post(
                 f"{self.api_base}/devices/{device_id}/reset",
                 json=payload,
                 headers={"X-Device-Secret": DEVICE_SECRET},
@@ -254,7 +254,7 @@ class ApiClient:
                 "fillLevel": clamped_level,
                 "timestamp": timestamp or datetime.now().isoformat()
             }
-            resp = requests.post(
+            resp = self.session.post(
                 f"{self.api_base}/devices/fill-level",
                 json=payload,
                 headers={"X-Device-Secret": DEVICE_SECRET},
@@ -288,7 +288,7 @@ class ApiClient:
                 "fullWasteType": full_waste_type
             }
 
-            resp = requests.post(
+            resp = self.session.post(
                 f"{self.api_base}/devices/{device_id}/level",
                 json=payload,
                 headers={"X-Device-Secret": DEVICE_SECRET},

@@ -156,6 +156,8 @@ class SmartBinGUI:
         self.cam_photo = None
         self.cam_label = None
         self.server_online = True
+        self._pending_cam_frame = None
+        self._cam_render_scheduled = False
 
         # Mascot animation & transition timers
         self.zoom_timer = None
@@ -1255,6 +1257,19 @@ class SmartBinGUI:
                 is_err = True
             if is_err:
                 self.show_detect_mascot_sad()
+
+    def schedule_camera_frame(self, cv2_frame):
+        """อัปเดตเฟรมกล้องแบบ Drop-frame อัตโนมัติ ป้องกัน Event Queue สะสมจนกระตุก"""
+        self._pending_cam_frame = cv2_frame
+        if not getattr(self, '_cam_render_scheduled', False):
+            self._cam_render_scheduled = True
+            self.root.after(0, self._render_pending_camera_frame)
+
+    def _render_pending_camera_frame(self):
+        self._cam_render_scheduled = False
+        frame = self._pending_cam_frame
+        self._pending_cam_frame = None
+        self.update_camera_frame(frame)
 
     def update_camera_frame(self, cv2_frame):
         """อัปเดตภาพจากกล้องบนจอ"""

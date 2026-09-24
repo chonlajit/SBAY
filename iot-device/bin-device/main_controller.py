@@ -110,19 +110,37 @@ class SmartBinController:
         if USE_GUI:
             self._start_with_gui()
         else:
-            self._start_cli()
+            # ถ้าไม่มีหน้าจอ (หรือรันเป็น background service / daemon บน Pi) ให้เข้าโหมดอัตโนมัติ 100%
+            is_daemon = os.getenv("HEADLESS_DAEMON", "true").lower() == "true" or not sys.stdin.isatty()
+            if is_daemon:
+                self._start_headless_daemon()
+            else:
+                self._start_cli()
 
     # ==============================
-    # GUI MODE
+    # GUI MODE (Web Kiosk / Tkinter)
     # ==============================
     def _start_with_gui(self):
-        from gui import SmartBinGUI
+        from settings.config import GUI_TYPE, WEB_KIOSK_PORT
 
-        self.gui = SmartBinGUI(
-            on_phone_submit=self._on_phone_submit,
-            on_finish=self._on_finish,
-            get_waste_levels=self.ultrasonic.get_waste_levels
-        )
+        if GUI_TYPE == "web":
+            from web_kiosk.web_gui import SmartBinWebGUI
+            logger.info("Initializing Modern Web Kiosk GUI...")
+            self.gui = SmartBinWebGUI(
+                on_phone_submit=self._on_phone_submit,
+                on_finish=self._on_finish,
+                get_waste_levels=self.ultrasonic.get_waste_levels,
+                port=WEB_KIOSK_PORT
+            )
+        else:
+            from gui import SmartBinGUI
+            logger.info("Initializing Classic Tkinter GUI...")
+            self.gui = SmartBinGUI(
+                on_phone_submit=self._on_phone_submit,
+                on_finish=self._on_finish,
+                get_waste_levels=self.ultrasonic.get_waste_levels
+            )
+
         try:
             self.gui.run()
         finally:
@@ -232,7 +250,10 @@ class SmartBinController:
 
                 if self.gui and self.detection.latest_frame is not None:
                     frame_to_show = self.detection.latest_frame.copy()
-                    self.gui.schedule(self.gui.update_camera_frame, frame_to_show)
+                    if hasattr(self.gui, 'schedule_camera_frame'):
+                        self.gui.schedule_camera_frame(frame_to_show)
+                    else:
+                        self.gui.schedule(self.gui.update_camera_frame, frame_to_show)
 
                 if result:
                     if result.get("returned"):
@@ -384,6 +405,94 @@ class SmartBinController:
             self.session.reset()
         except Exception:
             pass
+
+    # ==============================
+    # HEADLESS DAEMON MODE (สำหรับ Raspberry Pi Background Service)
+    # ==============================
+    def _start_headless_daemon(self):
+        """โหมด Headless Daemon: ทำงานอัตโนมัติเต็มรูปแบบ 100% ไร้หน้าจอ ประหยัด CPU และ RAM สูงสุด"""
+        logger.info("=" * 50)
+        logger.info("  SBAY Smart Bin - Headless Daemon Mode")
+        logger.info("  (Fully Automated: IR -> Camera AI -> Servo Sort -> Auto-send Backend)")
+        logger.info("=" * 50)
+
+        self.detecting = True
+        session_active = False
+        last_item_time = 0
+
+        try:
+            while self.detecting:
+                # 1. ตรวจจับว่ามีวัตถุมาจ่อที่ช่องรับหรือไม่ (IR Sensor)
+                if self.detection.is_item_present():
+                    logger.info("Intake triggered by IR sensor")
+                    if not session_active:
+                        self.session.start(DEVICE_ID, user_id="", user_name="Guest")
+                        session_active = True
+
+                    # เกร็งเซอร์โวรองรับขวดตก
+                    if SERVO_HOLD_ON_DROP:
+                        try:
+                            from hardware.servo import hold_torque, SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE
+                            hold_torque(SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE)
+                        except Exception:
+                            pass
+
+                    self.detection.drop_item()
+                    self.detection.start_camera()
+                    time.sleep(1.0)  # รอ Warmup กล้อง
+
+                    # 2. ทำการวิเคราะห์ภาพด้วย AI
+                    proc_start = time.time()
+                    timeout_limit = float(DETECT_TIMEOUT) if DETECT_TIMEOUT else 10.0
+                    detected = False
+
+                    while time.time() - proc_start < timeout_limit:
+                        result = self.detection.detect_once(check_full_callback=self.ultrasonic.is_compartment_full)
+                        if result:
+                            detected = True
+                            if not result.get("returned"):
+                                self.session.add_item(
+                                    item_type=result["type"],
+                                    size_ml=result["size_ml"],
+                                    weight=result["weight"],
+                                    score=result["score"]
+                                )
+                                logger.info(f"✅ Item sorted: {result['type']} ({result['size_ml']}ml)")
+                            else:
+                                logger.warning("⚠️ Compartment full! Item returned.")
+                            break
+                        time.sleep(0.08)
+
+                    if not detected:
+                        logger.warning("Detection timeout - returning item...")
+                        try:
+                            from hardware.servo import return_bottle
+                            return_bottle()
+                        except Exception as e:
+                            logger.error(f"Failed to return item: {e}")
+
+                    self.detection.stop_camera()
+                    last_item_time = time.time()
+
+                # 3. ถ้าไม่มีการหยอดใหม่เกิน 15 วินาที ให้จบ session และส่งขึ้น Backend
+                if session_active and (time.time() - last_item_time > 15.0):
+                    if self.session.has_items():
+                        logger.info("Session complete. Sending session payload...")
+                        self._send_session()
+                    else:
+                        self.session.reset()
+                    session_active = False
+
+                time.sleep(0.2)  # ประหยัด CPU สูงสุด (CPU < 1%)
+
+        except KeyboardInterrupt:
+            logger.info("Stopping headless daemon...")
+        finally:
+            self.detecting = False
+            self.heartbeat.stop()
+            self.ultrasonic.stop()
+            self.detection.stop_camera()
+            logger.info("Headless daemon stopped cleanly")
 
     # ==============================
     # CLI MODE (สำหรับทดสอบ)

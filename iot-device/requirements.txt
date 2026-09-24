@@ -8,3 +8,6 @@ Pillow
 rpi-lgpio
 gpiozero
 rpi-hardware-pwm
+fastapi
+uvicorn
+websockets

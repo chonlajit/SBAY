@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SBAY · Eco-Tech Smart Bin</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app" class="app-container">
+    
+    <!-- BACKGROUND WAVES & AMBIENT (Visible on dark screens) -->
+    <div id="ambient-layer" class="ambient-layer">
+      <div class="wave wave1"></div>
+      <div class="wave wave2"></div>
+      <div class="leaf leaf1"></div>
+      <div class="leaf leaf2"></div>
+      <div class="leaf leaf3"></div>
+      <div class="particle p1"></div>
+      <div class="particle p2"></div>
+      <div class="particle p3"></div>
+      <div class="particle p4"></div>
+      <div class="particle p5"></div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 1: IDLE (Sleeping Face & Waste Gauges)                -->
+    <!-- ============================================================ -->
+    <section id="screen-idle" class="screen active">
+      <div class="idle-layout">
+        
+        <!-- Left: Waste Gauges (ปริมาณขยะ 3 ช่อง) -->
+        <div class="gauges-sidebar">
+          <h2 class="gauges-title">ปริมาณขยะ</h2>
+          <div class="gauges-container">
+            
+            <!-- Gauge 1: Plastic Bottle -->
+            <div class="gauge-item" id="gauge-plastic">
+              <div class="gauge-icon-wrap">
+                <img src="/assets/gauge_bottle.png" alt="ขวดพลาสติก" class="gauge-icon" onerror="this.src='/assets/sbay_bot.png'">
+              </div>
+              <div class="gauge-tube">
+                <div class="gauge-fill fill-plastic" id="gauge-fill-plastic" style="height: 0%;"></div>
+              </div>
+              <span class="gauge-pct" id="gauge-pct-plastic">0%</span>
+            </div>
+
+            <!-- Gauge 2: Aluminum Can -->
+            <div class="gauge-item" id="gauge-can">
+              <div class="gauge-icon-wrap">
+                <img src="/assets/gauge_can.png" alt="กระป๋อง" class="gauge-icon" onerror="this.src='/assets/sbay_bot.png'">
+              </div>
+              <div class="gauge-tube">
+                <div class="gauge-fill fill-can" id="gauge-fill-can" style="height: 0%;"></div>
+              </div>
+              <span class="gauge-pct" id="gauge-pct-can">0%</span>
+            </div>
+
+            <!-- Gauge 3: Beverage Carton -->
+            <div class="gauge-item" id="gauge-carton">
+              <div class="gauge-icon-wrap">
+                <img src="/assets/gauge_carton.png" alt="กล่องเครื่องดื่ม" class="gauge-icon" onerror="this.src='/assets/sbay_bot.png'">
+              </div>
+              <div class="gauge-tube">
+                <div class="gauge-fill fill-carton" id="gauge-fill-carton" style="height: 0%;"></div>
+              </div>
+              <span class="gauge-pct" id="gauge-pct-carton">0%</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right: Animated Sleeping Face -->
+        <div class="idle-face-area" id="idle-tap-target">
+          
+          <!-- Floating Z z z -->
+          <div class="floating-z-container" id="floating-z">
+            <span class="z-item z1">Z</span>
+            <span class="z-item z2">Z</span>
+            <span class="z-item z3">Z</span>
+          </div>
+
+          <!-- Mascot Big Face -->
+          <div class="mascot-face" id="mascot-face">
+            <div class="eyes-container">
+              <!-- Left Eye -->
+              <div class="eye left-eye">
+                <div class="eye-base">
+                  <div class="eye-pupil">
+                    <div class="eye-highlight h1"></div>
+                    <div class="eye-highlight h2"></div>
+                  </div>
+                </div>
+                <div class="eye-lid" id="lid-left"></div>
+              </div>
+              <!-- Right Eye -->
+              <div class="eye right-eye">
+                <div class="eye-base">
+                  <div class="eye-pupil">
+                    <div class="eye-highlight h1"></div>
+                    <div class="eye-highlight h2"></div>
+                  </div>
+                </div>
+                <div class="eye-lid" id="lid-right"></div>
+              </div>
+            </div>
+
+            <!-- Mouth -->
+            <div class="mouth-wrap">
+              <div class="mascot-mouth mouth-sleep" id="mascot-mouth"></div>
+            </div>
+          </div>
+
+          <!-- Prompt: แตะเพื่อเริ่ม -->
+          <div class="idle-prompt-wrap">
+            <span class="idle-prompt-text" id="idle-prompt-text">แตะเพื่อเริ่ม</span>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 2: PHONE INPUT (Numpad & Identification)              -->
+    <!-- ============================================================ -->
+    <section id="screen-phone" class="screen">
+      <div class="screen-header">
+        <span class="eyebrow">STEP 01 · IDENTIFY</span>
+        <h1 class="screen-title">กรอกหมายเลขโทรศัพท์</h1>
+        <p class="screen-subtitle">ใช้สำหรับสะสมคะแนนและตรวจสอบประวัติ</p>
+      </div>
+
+      <div class="phone-content-grid">
+        
+        <!-- Left: Phone Card -->
+        <div class="phone-card">
+          <!-- Mascot standing on top of card -->
+          <div class="card-mascot-anchor">
+            <img src="/assets/sbay_bot.png" alt="Mascot" class="card-mascot-img" id="phone-mascot-img">
+          </div>
+
+          <div class="phone-card-inner">
+            <div class="phone-card-top-row">
+              <span class="field-label">หมายเลขโทรศัพท์ของคุณ</span>
+              <span class="server-status" id="server-status-badge">
+                <span class="status-dot online"></span> ออนไลน์
+              </span>
+            </div>
+
+            <!-- Phone Display Box -->
+            <div class="phone-display-box" id="phone-display-box">
+              <span class="phone-number-text" id="phone-display-text">0XX-XXX-XXXX</span>
+            </div>
+
+            <!-- Hint Condition Box -->
+            <div class="phone-hint-pill">
+              <span class="hint-check">✓</span>
+              <span class="hint-msg">กรอกให้ครบ 10 หลัก และขึ้นต้นด้วย 0</span>
+            </div>
+
+            <!-- Guest Mode Button -->
+            <button type="button" class="btn btn-guest" id="btn-guest">
+              <span>ข้ามขั้นตอน (Guest Mode) ➔</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Touch Numpad (3x4 Grid) -->
+        <div class="numpad-container">
+          <div class="numpad-grid">
+            <button type="button" class="num-key" data-key="7">7</button>
+            <button type="button" class="num-key" data-key="8">8</button>
+            <button type="button" class="num-key" data-key="9">9</button>
+            <button type="button" class="num-key" data-key="4">4</button>
+            <button type="button" class="num-key" data-key="5">5</button>
+            <button type="button" class="num-key" data-key="6">6</button>
+            <button type="button" class="num-key" data-key="1">1</button>
+            <button type="button" class="num-key" data-key="2">2</button>
+            <button type="button" class="num-key" data-key="3">3</button>
+            <button type="button" class="num-key key-confirm" id="btn-phone-confirm">✓</button>
+            <button type="button" class="num-key" data-key="0">0</button>
+            <button type="button" class="num-key key-delete" id="btn-phone-delete">⌫</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 3: WELCOME (ต้อนรับและชวนหยอด)                         -->
+    <!-- ============================================================ -->
+    <section id="screen-welcome" class="screen">
+      <div class="center-card welcome-card" id="welcome-card-tap">
+        <div class="welcome-avatar">👋</div>
+        <h2 class="welcome-user-name" id="welcome-name-text">สวัสดีครับ คุณ User</h2>
+        <p class="welcome-prompt-text">กรุณาหยอดขยะลงในตู้</p>
+
+        <!-- Optional Database / Offline Alert Banner -->
+        <div class="alert-banner hidden" id="welcome-alert-banner">
+          <span id="welcome-alert-text">⚠️ ข้อความแจ้งเตือน</span>
+        </div>
+
+        <div class="ready-badge-pill">
+          <span>✨ ระบบพร้อมตรวจจับอัตโนมัติ (แตะเพื่อเริ่มทันที)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 4: DETECTING (กำลังคัดแยก + กล้อง AI)                  -->
+    <!-- ============================================================ -->
+    <section id="screen-detecting" class="screen">
+      <div class="screen-header detecting-header">
+        <div>
+          <span class="eyebrow">STEP 02 · RECYCLING</span>
+          <h1 class="screen-title">กำลังตรวจจับขยะ...</h1>
+          <p class="screen-subtitle">ระบบจะคัดแยกและคำนวณคะแนนอัตโนมัติ</p>
+        </div>
+        <!-- Item count badge -->
+        <div class="item-count-badge">
+          <span class="count-dot">●</span>
+          <span id="detect-item-count">0 ชิ้น</span>
+        </div>
+      </div>
+
+      <div class="detecting-content-grid">
+        
+        <!-- Left: Sorted Items List -->
+        <div class="items-list-card">
+          <h3 class="items-card-title">รายการที่คัดแยกได้</h3>
+          <div class="items-scroll-area" id="items-scroll-area">
+            <div class="items-empty-state" id="items-empty-state">
+              <span>ยังไม่มีรายการหยอด</span>
+            </div>
+            <!-- Dynamic item rows injected here -->
+          </div>
+          <!-- Status Line at bottom of list -->
+          <div class="detect-status-bar">
+            <span id="detect-status-text">สแตนด์บาย: รอการหยอดขยะ...</span>
+          </div>
+        </div>
+
+        <!-- Right: Camera Live Feed & Finish Button -->
+        <div class="camera-and-action-card">
+          
+          <!-- Camera Feed Viewfinder -->
+          <div class="camera-viewfinder">
+            <img id="camera-feed-img" class="camera-feed-img hidden" alt="Live Camera Feed">
+            <div class="camera-placeholder" id="camera-placeholder">
+              <span class="cam-icon">📷</span>
+              <span class="cam-text">ภาพกล้องวงจรปิด</span>
+            </div>
+
+            <!-- Cute Mascot at bottom-right of camera -->
+            <div class="detect-mascot-wrap">
+              <img src="/assets/sbay_bot.png" alt="Mascot" id="detect-mascot-img" class="detect-mascot-img">
+            </div>
+          </div>
+
+          <!-- Big Finish Button -->
+          <button type="button" class="btn btn-finish" id="btn-finish">
+            <span>✅ เสร็จสิ้น (FINISH)</span>
+          </button>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 5: SENDING (กำลังส่งข้อมูล)                           -->
+    <!-- ============================================================ -->
+    <section id="screen-sending" class="screen">
+      <div class="center-card sending-card">
+        <div class="radar-circle">
+          <span class="radar-icon">📡</span>
+          <div class="radar-wave"></div>
+        </div>
+        <h2 class="sending-title">กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...</h2>
+        <p class="sending-subtitle">กรุณารอสักครู่ ระบบกำลังประมวลผลคะแนน</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SCREEN 6: RESULT (สรุปคะแนน & ขอบคุณ)                        -->
+    <!-- ============================================================ -->
+    <section id="screen-result" class="screen">
+      <div class="center-card result-card" id="result-tap-target">
+        
+        <div class="result-badge-icon" id="result-badge-icon">✓</div>
+        <h2 class="result-title" id="result-title-text">บันทึกข้อมูลสำเร็จ!</h2>
+
+        <!-- Stats Breakdown Box -->
+        <div class="stats-box">
+          <div class="stat-row">
+            <span class="stat-label">จำนวนขยะที่คัดแยก</span>
+            <span class="stat-val" id="res-total-items">0 ชิ้น</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">ปริมาตรรวมโดยประมาณ</span>
+            <span class="stat-val" id="res-total-ml">0 ml</span>
+          </div>
+          <div class="stat-row stat-row-highlight">
+            <span class="stat-label">คะแนนสะสมที่ได้รับ</span>
+            <span class="stat-val stat-score" id="res-total-score">+0.0 pt</span>
+          </div>
+        </div>
+
+        <p class="result-thankyou">ขอบคุณที่ร่วมเป็นส่วนหนึ่งในการรักษาโลก</p>
+
+        <!-- Result mascot smiling on bottom-right -->
+        <div class="result-mascot-wrap">
+          <img src="/assets/sbay_bot_smile_wide.png" alt="Mascot Smile" class="result-mascot-img" onerror="this.src='/assets/sbay_bot_smile.png'">
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

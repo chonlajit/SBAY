@@ -199,11 +199,6 @@ class UltrasonicService:
             f"{c.split('_')[0].capitalize()}: {current_levels[c]}% ({statuses[c]})"
             for c in self.COMPARTMENTS
         )
-        logger.info(f"[ULTRASONIC] {log_msg}")
-
-        if current_is_full:
-            for ft in full_types:
-                logger.warning(f"[FULL] {ft} compartment is full")
 
         should_send = False
         now = time.time()
@@ -216,8 +211,18 @@ class UltrasonicService:
         if current_is_full != self._last_sent_is_full:
             should_send = True
 
-        if now - self._last_sent_time > 15.0:
+        # Sync เป็นระยะทุก 60 วินาทีถ้าไม่มีการเปลี่ยนแปลง เพื่อประหยัด CPU/Network
+        if now - self._last_sent_time > 60.0:
             should_send = True
+
+        if should_send:
+            logger.info(f"[ULTRASONIC] {log_msg}")
+        else:
+            logger.debug(f"[ULTRASONIC] {log_msg}")
+
+        if current_is_full:
+            for ft in full_types:
+                logger.warning(f"[FULL] {ft} compartment is full")
 
         if should_send and self.api_client:
             self._send_to_backend(current_levels, current_is_full, current_full_type)
