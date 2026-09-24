@@ -83,11 +83,11 @@ SERVO_RETURN_PIN = 13
 # --- Servo Angles Configuration ---
 DEFAULT_SORT_ANGLE = 265
 DEFAULT_RELEASE_ANGLE = 82
-DROP_ANGLE_CLOSED = 90
-DROP_ANGLE_OPEN = 180
+DROP_ANGLE_CLOSED = 180
+DROP_ANGLE_OPEN = 80
 
-RETURN_ANGLE_CLOSED = 80
-RETURN_ANGLE_OPEN = 140
+RETURN_ANGLE_CLOSED = 180
+RETURN_ANGLE_OPEN = 9
 
 # ควบคุมการสั่งรีเซ็ต Servo 180 องศา (Drop / Return) ตอนเปิดระบบ
 # ค่าเริ่มต้นเป็น False เพื่อป้องกันไม่ให้มอเตอร์สะบัด/หมุนจนสุดตอนรัน main_controller
@@ -101,7 +101,7 @@ SORT_ANGLE_RETURN = 135
 RELEASE_ANGLE_PLASTIC = 145
 RELEASE_ANGLE_CAN = 55
 RELEASE_ANGLE_CARTON = 55
-RELEASE_ANGLE_RETURN = 55
+RELEASE_ANGLE_RETURN = 60
 
 # --- Ultrasonic Sensors (GPIO BCM) ---
 # Compartments: Plastic, Can, Carton
@@ -248,4 +248,4 @@ WASTE_LABELS = {
 GUI_IDLE_TIMEOUT_PHONE = 30       # หน้ากรอกเบอร์โทร (30 วินาที)
 GUI_IDLE_TIMEOUT_DETECTING = 45   # หน้าหยอดขยะ (45 วินาที)
 GUI_IDLE_TIMEOUT_HISTORY = 30     # หน้าประวัติ (30 วินาที)
-GUI_IDLE_TIMEOUT_RESULT = 6       # หน้าสรุปผลคะแนน (6 วินาที)
+GUI_IDLE_TIMEOUT_RESULT = 6       # หน้าสรุปผลคะแนน (6 วินาที)
