@@ -889,7 +889,7 @@ class SmartBinGUI:
             494, 195, text=badge_txt,
             fill=badge_fg, font=(FONT, 10, "bold"), tags=("content", "server_status_badge")
         )
-        self.canvas.tag_bind("server_status_badge", "<Double-Button-1>", lambda e: self._on_reload())
+        self.canvas.tag_bind("server_status_badge", "<Button-1>", self._on_secret_reload_tap)
 
     def backspace(self):
         self._reset_inactivity_timer()
@@ -1595,6 +1595,26 @@ class SmartBinGUI:
         python = sys.executable
         logger.info(f"Re-executing: {python} {' '.join(sys.argv)}")
         os.execv(python, [python] + sys.argv)
+        return "break"
+
+    def _on_secret_reload_tap(self, _event=None):
+        """แตะ 5 ครั้งติดกัน (Secret Admin Reload) เพื่อป้องกันคนทั่วไปแตะโดน"""
+        current_time = time.time()
+        if not hasattr(self, '_secret_tap_times') or self._secret_tap_times is None:
+            self._secret_tap_times = []
+
+        # เก็บ timestamp ของการแตะ และตัดแตะที่เก่าเกิน 3.5 วินาทีออก
+        self._secret_tap_times = [t for t in self._secret_tap_times if current_time - t <= 3.5]
+        self._secret_tap_times.append(current_time)
+
+        count = len(self._secret_tap_times)
+        logger.info(f"[ADMIN TAP] Secret reload tap: {count}/5")
+
+        if count >= 5:
+            logger.info(">>> Secret Admin Reload triggered (5 rapid taps detected) <<<")
+            self._secret_tap_times = []
+            self._on_reload()
+
         return "break"
 
 
