@@ -138,16 +138,36 @@ class SmartBinController:
             self.gui = SmartBinGUI(
                 on_phone_submit=self._on_phone_submit,
                 on_finish=self._on_finish,
-                get_waste_levels=self.ultrasonic.get_waste_levels
+                get_waste_levels=self.ultrasonic.get_waste_levels,
+                on_exit_cleanup=self._cleanup_all
             )
 
         try:
             self.gui.run()
         finally:
-            self.detecting = False
+            self._cleanup_all()
+
+    def _cleanup_all(self):
+        """ทำความสะอาด Hardware และหยุด Thread บริการทั้งหมดก่อนปิดหรือรีโหลด"""
+        logger.info("Stopping all background services and hardware for reload/exit...")
+        self.detecting = False
+        try:
             self.heartbeat.stop()
+        except Exception as e:
+            logger.debug(f"Error stopping heartbeat: {e}")
+        try:
             self.ultrasonic.stop()
+        except Exception as e:
+            logger.debug(f"Error stopping ultrasonic: {e}")
+        try:
             self.detection.stop_camera()
+        except Exception as e:
+            logger.debug(f"Error stopping camera: {e}")
+        if hasattr(self, 'cleanup_leds') and callable(self.cleanup_leds):
+            try:
+                self.cleanup_leds()
+            except Exception as e:
+                logger.debug(f"Error cleaning up leds: {e}")
 
     def _on_phone_submit(self, phone):
         """Callback: ผู้ใช้กรอกเบอร์เสร็จ"""

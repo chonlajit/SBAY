@@ -65,10 +65,11 @@ COLORS = {
 
 class SmartBinGUI:
 
-    def __init__(self, on_phone_submit=None, on_finish=None, get_waste_levels=None):
+    def __init__(self, on_phone_submit=None, on_finish=None, get_waste_levels=None, on_exit_cleanup=None):
         self.on_phone_submit = on_phone_submit
         self.on_finish = on_finish
         self.get_waste_levels = get_waste_levels
+        self.on_exit_cleanup = on_exit_cleanup
         self.waste_levels = {
             "PLASTIC_BOTTLE": 0.0,
             "ALUMINUM_CAN": 0.0,
@@ -125,6 +126,10 @@ class SmartBinGUI:
         self.root.bind("<F11>", self._toggle_fullscreen)
         self.root.bind("<c>", self._toggle_cursor)
         self.root.bind("<C>", self._toggle_cursor)
+        self.root.bind("<F5>", self._on_reload)
+        self.root.bind("<Control-r>", self._on_reload)
+        self.root.bind("<Control-R>", self._on_reload)
+        self.root.bind("<Control-F5>", self._on_reload)
         self.root.bind("<Key>", self._on_key_press)
         self.root.bind("<Configure>", self._on_window_configure)
 
@@ -884,6 +889,7 @@ class SmartBinGUI:
             494, 195, text=badge_txt,
             fill=badge_fg, font=(FONT, 10, "bold"), tags=("content", "server_status_badge")
         )
+        self.canvas.tag_bind("server_status_badge", "<Double-Button-1>", lambda e: self._on_reload())
 
     def backspace(self):
         self._reset_inactivity_timer()
@@ -1560,6 +1566,37 @@ class SmartBinGUI:
         else:
             self._toggle_fullscreen()
 
+    def _on_reload(self, _event=None):
+        """รีสตาร์ทโปรแกรมใหม่ทั้งหมด (In-place Reload) เมื่อกด F5 หรือ Ctrl+R"""
+        logger.info(">>> Reloading application via F5 / Ctrl+R requested <<<")
+        try:
+            # หยุด Timer และ Animation ทั้งหมดใน GUI
+            self._clear()
+            self._cancel_inactivity_timer()
+            if hasattr(self, '_sleep_timers'):
+                self._cancel_sleep_timers()
+        except Exception as e:
+            logger.debug(f"Error clearing GUI on reload: {e}")
+
+        try:
+            # ปล่อยทรัพยากร Hardware / Threads ผ่าน callback
+            if hasattr(self, 'on_exit_cleanup') and callable(self.on_exit_cleanup):
+                self.on_exit_cleanup()
+        except Exception as e:
+            logger.warning(f"Error during on_exit_cleanup: {e}")
+
+        try:
+            # ทำลายหน้าต่าง Tkinter ก่อน Re-exec
+            self.root.destroy()
+        except Exception:
+            pass
+
+        # รีสตาร์ท Process ปัจจุบันด้วยคำสั่งและ arguments เดิมทั้งหมด
+        python = sys.executable
+        logger.info(f"Re-executing: {python} {' '.join(sys.argv)}")
+        os.execv(python, [python] + sys.argv)
+        return "break"
+
 
 
 # ============================================================
@@ -1570,6 +1607,7 @@ if __name__ == "__main__":
     print(" Starting SBAY Eco-Tech SmartBinGUI...")
     print(" - Press ESC to go back or toggle fullscreen")
     print(" - Press F11 to toggle fullscreen")
+    print(" - Press F5 or Ctrl+R to reload application")
     print(" - Press 'c' to toggle mouse cursor visibility")
     print(" - Tap screen to wake up sleeping animation")
     print(" - Tap Guest Mode or Enter Phone to start session")
