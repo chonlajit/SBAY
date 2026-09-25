@@ -611,7 +611,7 @@ class SmartBinGUI:
     # ============================================================
     # SCREEN 1: IDLE (Sleeping & Waking Face Animation)
     # ============================================================
-    def show_idle(self):
+    def show_idle(self, start_falling_asleep=False):
         """หน้าจอตอนไม่มีคนใช้งาน: แสดง Animation หน้าตานอนหลับ และสะดุ้งตื่นเมื่อแตะจอ"""
         self._clear()
         self.page = "idle"
@@ -632,7 +632,10 @@ class SmartBinGUI:
             on_wake_complete=self.transition_zoom_out_to_phone,  # เมื่อสะดุ้งตื่นแล้ว เล่น Zoom Out transition ไปยังหน้ากรอกเบอร์
             get_waste_levels=self.get_waste_levels
         )
-        self.idle_face.start()
+        if start_falling_asleep:
+            self.idle_face.start_fall_asleep()
+        else:
+            self.idle_face.start()
 
     def show_home(self):
         """เข้าสู่หน้าหลักของระบบ (เปิดหน้ากรอกเบอร์โทรศัพท์โดยตรง)"""
@@ -1383,80 +1386,13 @@ class SmartBinGUI:
     # ============================================================
     # TRANSITION: ZOOM IN TO IDLE SLEEPING FACE
     # ============================================================
-    # ============================================================
-    # TRANSITION: GRADUAL SLEEP TO IDLE (ค่อยๆ หลับตาลงเข้าสู่หน้ารอ)
+    # TRANSITION: GRADUAL SLEEP TO IDLE (เข้าสู่หน้ารอแบบ Close-up แล้วค่อยๆ หลับตาลง)
     # ============================================================
     def transition_to_idle(self):
-        """ค่อยๆ หลับตาลงอย่างเป็นธรรมชาติโดยไม่ซูม: ยิ้มกว้าง -> ตาผ่อนคลาย -> หรี่ตาลง -> หลับตาพริ้ม -> เข้าสู่หน้ารอ"""
-        if self.page == "idle" or self.page == "transition_idle":
+        """เมื่อจบการทำงาน ให้น้องมาแบบ Close-up ตามหน้ารอทันที แล้วค่อยๆ หลับตาลง"""
+        if self.page == "idle":
             return
-
-        self._clear()
-        self.page = "transition_idle"
-        self._cancel_inactivity_timer()
-
-        # ตั้งค่าพื้นหลังสีขาวสำหรับแอนิเมชันหน้าตานอนหลับ
-        self.root.configure(bg="#ffffff")
-        self.container.configure(bg="#ffffff")
-        self.canvas.configure(bg="#ffffff")
-
-        # พิกัดตรงกลางหน้าจอ แสดงน้องแบบ Close-up ทันทีโดยไม่ต้อง Zoom In
-        gauge_right_x = int(30 * self.scale) + 3 * max(16, int(24 * self.scale)) + 2 * max(10, int(18 * self.scale)) + int(25 * self.scale)
-        cx = int((gauge_right_x + self.width) / 2.0) + int(8 * self.scale)
-        cy = int(self.height * 0.40)
-        w = max(40, int(460 * self.scale))
-        h = max(32, int(368 * self.scale))
-
-        if not hasattr(self, '_sleep_timers'):
-            self._sleep_timers = []
-        self._cancel_sleep_timers()
-
-        def _show_frame(raw_img):
-            if raw_img and self.page == "transition_idle" and self.canvas:
-                try:
-                    resized = raw_img.resize((w, h), Image.Resampling.LANCZOS)
-                    photo = ImageTk.PhotoImage(resized)
-                    self._current_zoom_photo = photo
-                    self.canvas.delete("sleep_mascot")
-                    self.canvas.create_image(cx, cy, image=photo, tags="sleep_mascot")
-                except Exception as e:
-                    logger.debug(f"Error rendering sleep frame: {e}")
-
-        # ขั้นที่ 1 (0ms): ยิ้มหวาน/ตาโตค้างไว้ชั่วครู่
-        _show_frame(self.raw_mascot_smile_wide or self.raw_mascot_awake)
-
-        # ขั้นที่ 2 (280ms): รอยยิ้มผ่อนคลายลง ลืมตาตามปกติ
-        t1 = self.root.after(280, lambda: _show_frame(self.raw_mascot_awake))
-        self._sleep_timers.append(t1)
-
-        # ขั้นที่ 3 (560ms): เปลือกตาค่อยๆ หรี่ลงครึ่งตา (Half-blink / ตาปรือ)
-        t2 = self.root.after(560, lambda: _show_frame(self.raw_mascot_half))
-        self._sleep_timers.append(t2)
-
-        # ขั้นที่ 4 (840ms): หลับตาพริ้มสนิท
-        t3 = self.root.after(840, lambda: _show_frame(self.raw_mascot_sleep))
-        self._sleep_timers.append(t3)
-
-        # ขั้นที่ 5 (1150ms): เข้าสู่หน้า IdleSleepingFace เต็มรูปแบบ (เริ่มแอนิเมชันหายใจ และแสดงเกจวัดขยะ)
-        t4 = self.root.after(1150, self.show_idle)
-        self._sleep_timers.append(t4)
-
-        # แตะหน้าจอขณะกำลังหลับ เพื่อข้ามเข้าสู่หน้ารอทันที
-        self.canvas.bind("<Button-1>", lambda e: self._skip_sleep_to_idle())
-
-    def _cancel_sleep_timers(self):
-        if hasattr(self, '_sleep_timers') and self._sleep_timers:
-            for tid in self._sleep_timers:
-                try:
-                    self.root.after_cancel(tid)
-                except Exception:
-                    pass
-            self._sleep_timers = []
-
-    def _skip_sleep_to_idle(self):
-        if self.page == "transition_idle":
-            self._cancel_sleep_timers()
-            self.show_idle()
+        self.show_idle(start_falling_asleep=True)
 
     # Alias เพื่อรองรับการเรียกชื่อเดิม
     transition_zoom_in_to_idle = transition_to_idle

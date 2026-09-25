@@ -115,12 +115,13 @@ class IdleSleepingFace:
         # นำเฟรมภาพใบหน้าที่ Cache ไว้มาใช้ซ้ำ (ไม่สร้างใหม่ซ้ำซ้อน ลด Memory Leak และ CPU)
         cache_key = (self.width, self.height)
         if cache_key in IdleSleepingFace._FRAME_CACHE:
-            self.sleep_photo_frames, self.waking_choreography = IdleSleepingFace._FRAME_CACHE[cache_key]
+            self.sleep_photo_frames, self.waking_choreography, self.falling_asleep_choreography = IdleSleepingFace._FRAME_CACHE[cache_key]
         else:
             self.sleep_photo_frames = []
             self.waking_choreography = []
+            self.falling_asleep_choreography = []
             self._pre_render_frames()
-            IdleSleepingFace._FRAME_CACHE[cache_key] = (self.sleep_photo_frames, self.waking_choreography)
+            IdleSleepingFace._FRAME_CACHE[cache_key] = (self.sleep_photo_frames, self.waking_choreography, self.falling_asleep_choreography)
 
         # Canvas จัดการ
         if canvas is not None:
@@ -564,6 +565,19 @@ class IdleSleepingFace:
             photo = self._render_frame(t=0.0, open_ratio=op, dy=dy, scale_x=sx, scale_y=sy, startle_ratio=sr, is_settled=st)
             self.waking_choreography.append((photo, dur))
 
+        # 3. เฟรมช่วงค่อยๆ หลับตาลง (Falling asleep sequence)
+        falling_steps = [
+            (1.00,  0, 1.00, 1.00, 0.00, True,  350),  # ตาสว่าง ยิ้มหวาน
+            (0.85,  0, 1.00, 0.99, 0.00, True,  200),  # ผ่อนคลาย
+            (0.60, +2, 1.00, 0.98, 0.00, True,  250),  # เปลือกตาหย่อนลงมาครึ่งตา
+            (0.35, +3, 1.00, 0.97, 0.00, True,  250),  # ตาปรือลงมา
+            (0.12, +2, 1.00, 0.98, 0.00, False, 250),  # เปลือกตาแตะล่าง ปากเปลี่ยนเป็นทรงหลับ
+            (0.00,  0, 1.00, 1.00, 0.00, False, 300),  # หลับตาสนิท
+        ]
+        for op, dy, sx, sy, sr, st, dur in falling_steps:
+            photo = self._render_frame(t=0.0, open_ratio=op, dy=dy, scale_x=sx, scale_y=sy, startle_ratio=sr, is_settled=st)
+            self.falling_asleep_choreography.append((photo, dur))
+
     def start(self):
         """เริ่มเล่น Animation นอนหลับ และเริ่ม Loop อัปเดตเซนเซอร์"""
         self.state = "sleeping"
@@ -576,6 +590,31 @@ class IdleSleepingFace:
         self._play_sleep_loop()
         self._poll_waste_levels()
 
+    def start_fall_asleep(self):
+        """เริ่มแสดงหน้าโคลสอัปแบบตื่นยิ้มหวาน แล้วค่อยๆ หลับตาลงเข้าสู่โหมดหลับ"""
+        self.state = "falling_asleep"
+        if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
+            try:
+                self.canvas.itemconfig(self.sub_item, text="")
+            except Exception:
+                pass
+        if self.falling_asleep_choreography:
+            self.canvas.itemconfig(self.image_item, image=self.falling_asleep_choreography[0][0])
+        self._poll_waste_levels()
+        self._play_falling_asleep_sequence(0)
+
+    def _play_falling_asleep_sequence(self, step_idx):
+        if self.state != "falling_asleep":
+            return
+
+        if step_idx < len(self.falling_asleep_choreography):
+            photo, duration = self.falling_asleep_choreography[step_idx]
+            self.canvas.itemconfig(self.image_item, image=photo)
+            self.timer_id = self.root.after(duration, lambda: self._play_falling_asleep_sequence(step_idx + 1))
+        else:
+            # หลับสนิทแล้ว เริ่มเข้าสู่โหมด Sleeping Loop ปกติ
+            self.start()
+
     def _play_sleep_loop(self):
         if self.state != "sleeping":
             return
@@ -587,7 +626,7 @@ class IdleSleepingFace:
 
     def on_tap(self, event=None):
         """เมื่อมีคนแตะหน้าจอ -> สะดุ้งตื่น"""
-        if self.state == "sleeping":
+        if self.state in ("sleeping", "falling_asleep"):
             self.wake_up()
 
     def wake_up(self, on_complete=None):
