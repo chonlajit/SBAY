@@ -567,6 +567,9 @@ class SmartBinGUI:
                 pass
             self.zoom_timer = None
 
+        if hasattr(self, '_cancel_sleep_timers'):
+            self._cancel_sleep_timers()
+
         for timer_attr in ('_welcome_timer', '_result_timer'):
             if hasattr(self, timer_attr) and getattr(self, timer_attr):
                 try:
@@ -698,60 +701,6 @@ class SmartBinGUI:
 
         _step(0)
 
-    def transition_zoom_in_to_idle(self):
-        """เล่น Transition Zoom In จาก Mascot บนการ์ดหน้ากรอกเบอร์ ขยายใหญ่กลายเป็นหน้ารอ (หน้าหลับ)"""
-        self.page = "transition_idle"
-        self._cancel_inactivity_timer()
-        self._stop_mascot_blinking()
-
-        # พิกัดเริ่มต้น (บนกล่องหมายเลขโทรศัพท์)
-        start_w = max(20, int(140 * self.scale))
-        start_h = max(16, int(112 * self.scale))
-        start_x1 = self.sx(459)
-        start_y1 = self.sy(49)
-        start_cx = start_x1 + start_w // 2
-        start_cy = start_y1 + start_h // 2
-
-        # พิกัดปลายทาง (Center จอ ซูมใกล้ Close-up)
-        gauge_right_x = int(34 * self.scale) + 3 * max(16, int(24 * self.scale)) + 2 * max(10, int(18 * self.scale)) + int(25 * self.scale)
-        end_cx = int((gauge_right_x + self.width) / 2.0) + int(8 * self.scale)
-        end_cy = int(self.height * 0.40)
-        end_w = int(550 * self.scale)
-        end_h = int(440 * self.scale)
-
-        self.canvas.itemconfigure("phone_mascot", state="hidden")
-
-        total_steps = 10
-        step_interval = 20
-
-        def _step(step_idx):
-            if self.page != "transition_idle":
-                return
-
-            if step_idx > total_steps:
-                self.canvas.delete("zoom_mascot")
-                self.show_idle()
-                return
-
-            t = step_idx / float(total_steps)
-            ease = t * t * (3.0 - 2.0 * t)  # Smoothstep
-
-            cur_w = max(20, int(start_w + (end_w - start_w) * ease))
-            cur_h = max(16, int(start_h + (end_h - start_h) * ease))
-            cur_cx = int(start_cx + (end_cx - start_cx) * ease)
-            cur_cy = int(start_cy + (end_cy - start_cy) * ease)
-
-            mascot_img = self.raw_mascot_sleep if self.raw_mascot_sleep else self.raw_mascot_awake
-            if mascot_img:
-                img_res = mascot_img.resize((cur_w, cur_h), Image.Resampling.BILINEAR)
-                photo = ImageTk.PhotoImage(img_res)
-                self._current_zoom_photo = photo
-                self.canvas.delete("zoom_mascot")
-                self.canvas.create_image(cur_cx, cur_cy, image=photo, tags="zoom_mascot")
-
-            self.zoom_timer = self.root.after(step_interval, lambda: _step(step_idx + 1))
-
-        _step(0)
 
     # ============================================================
     # SCREEN 3: PHONE INPUT (Keypad & Identification)
@@ -1428,91 +1377,83 @@ class SmartBinGUI:
     # ============================================================
     # TRANSITION: ZOOM IN TO IDLE SLEEPING FACE
     # ============================================================
-    def transition_zoom_in_to_idle(self):
-        """เล่น Transition Zoom In จาก Mascot ยิ้มกว้างที่มุมล่างขวา เข้าสู่กลางจอและค่อยๆ หลับตาลง"""
+    # ============================================================
+    # TRANSITION: GRADUAL SLEEP TO IDLE (ค่อยๆ หลับตาลงเข้าสู่หน้ารอ)
+    # ============================================================
+    def transition_to_idle(self):
+        """ค่อยๆ หลับตาลงอย่างเป็นธรรมชาติโดยไม่ซูม: ยิ้มกว้าง -> ตาผ่อนคลาย -> หรี่ตาลง -> หลับตาพริ้ม -> เข้าสู่หน้ารอ"""
         if self.page == "idle" or self.page == "transition_idle":
             return
 
         self._clear()
         self.page = "transition_idle"
+        self._cancel_inactivity_timer()
 
         # ตั้งค่าพื้นหลังสีขาวสำหรับแอนิเมชันหน้าตานอนหลับ
         self.root.configure(bg="#ffffff")
         self.container.configure(bg="#ffffff")
         self.canvas.configure(bg="#ffffff")
 
-        # จุดเริ่มต้น: ตำแหน่งของ Mascot บนหน้า Result (มุมล่างขวา)
-        start_w = max(20, int(170 * self.scale))
-        start_h = max(16, int(136 * self.scale))
-        start_cx = self.sx(845)
-        start_cy = self.sy(488)
+        # พิกัดตรงกลางหน้าจอ แสดงน้องแบบ Close-up ทันทีโดยไม่ต้อง Zoom In
+        gauge_right_x = int(30 * self.scale) + 3 * max(16, int(24 * self.scale)) + 2 * max(10, int(18 * self.scale)) + int(25 * self.scale)
+        cx = int((gauge_right_x + self.width) / 2.0) + int(8 * self.scale)
+        cy = int(self.height * 0.40)
+        w = max(40, int(460 * self.scale))
+        h = max(32, int(368 * self.scale))
 
-        # จุดปลายทาง: เต็มหน้าจอ ตรงกลาง (ตำแหน่งของ Idle Face)
-        end_w = max(40, int(420 * self.scale))
-        end_h = max(32, int(336 * self.scale))
-        end_cx = self.width // 2
-        end_cy = int(self.height * 0.40)
-
-        total_steps = 14
-        step_interval = 22  # ~300ms ซูมเข้าอย่างนุ่มนวล
-
-        def _step(step_idx):
-            if self.page != "transition_idle":
-                return
-
-            if step_idx > total_steps:
-                # ซูมเสร็จสิ้น เข้าสู่ช่วงค่อยๆ หลับตาลง (Gradual Falling Asleep Sequence)
-                self._play_gradual_sleep_sequence(end_cx, end_cy, end_w, end_h)
-                return
-
-            p = step_idx / float(total_steps)
-            smooth = 0.5 - 0.5 * math.cos(p * math.pi)
-
-            cur_w = max(20, int(start_w + (end_w - start_w) * smooth))
-            cur_h = max(16, int(start_h + (end_h - start_h) * smooth))
-            cur_cx = int(start_cx + (end_cx - start_cx) * smooth)
-            cur_cy = int(start_cy + (end_cy - start_cy) * smooth)
-
-            # ใช้ภาพยิ้มกว้างระหว่างกำลังซูมเข้ามาหาผู้ใช้
-            raw = self.raw_mascot_smile_wide or self.raw_mascot_awake
-            if raw:
-                resized = raw.resize((cur_w, cur_h), Image.Resampling.BILINEAR)
-                photo = ImageTk.PhotoImage(resized)
-                self._current_zoom_photo = photo
-                self.canvas.delete("zoom_in_mascot")
-                self.canvas.create_image(cur_cx, cur_cy, image=photo, tags="zoom_in_mascot")
-
-            self.zoom_timer = self.root.after(step_interval, lambda: _step(step_idx + 1))
-
-        _step(0)
-
-    def _play_gradual_sleep_sequence(self, cx, cy, w, h):
-        """ค่อยๆ หลับตาลงอย่างเป็นธรรมชาติ: ยิ้มกว้าง -> ตาผ่อนคลาย -> หรี่ตาลง -> หลับตาพริ้ม -> เข้าสู่ Idle Breathing Animation"""
-        if self.page != "transition_idle":
-            return
+        if not hasattr(self, '_sleep_timers'):
+            self._sleep_timers = []
+        self._cancel_sleep_timers()
 
         def _show_frame(raw_img):
-            if raw_img and self.page == "transition_idle":
-                resized = raw_img.resize((w, h), Image.Resampling.LANCZOS)
-                photo = ImageTk.PhotoImage(resized)
-                self._current_zoom_photo = photo
-                self.canvas.delete("zoom_in_mascot")
-                self.canvas.create_image(cx, cy, image=photo, tags="zoom_in_mascot")
+            if raw_img and self.page == "transition_idle" and self.canvas:
+                try:
+                    resized = raw_img.resize((w, h), Image.Resampling.LANCZOS)
+                    photo = ImageTk.PhotoImage(resized)
+                    self._current_zoom_photo = photo
+                    self.canvas.delete("sleep_mascot")
+                    self.canvas.create_image(cx, cy, image=photo, tags="sleep_mascot")
+                except Exception as e:
+                    logger.debug(f"Error rendering sleep frame: {e}")
 
-        # ขั้นที่ 1 (0ms): ยิ้มหวานค้างไว้ชั่วครู่
+        # ขั้นที่ 1 (0ms): ยิ้มหวาน/ตาโตค้างไว้ชั่วครู่
         _show_frame(self.raw_mascot_smile_wide or self.raw_mascot_awake)
 
-        # ขั้นที่ 2 (180ms): ยิ้มบางลง ตาผ่อนคลาย (awake)
-        self.root.after(180, lambda: _show_frame(self.raw_mascot_awake))
+        # ขั้นที่ 2 (280ms): รอยยิ้มผ่อนคลายลง ลืมตาตามปกติ
+        t1 = self.root.after(280, lambda: _show_frame(self.raw_mascot_awake))
+        self._sleep_timers.append(t1)
 
-        # ขั้นที่ 3 (360ms): เปลือกตาเริ่มหรี่ลงครึ่งตา (half blink)
-        self.root.after(360, lambda: _show_frame(self.raw_mascot_half))
+        # ขั้นที่ 3 (560ms): เปลือกตาค่อยๆ หรี่ลงครึ่งตา (Half-blink / ตาปรือ)
+        t2 = self.root.after(560, lambda: _show_frame(self.raw_mascot_half))
+        self._sleep_timers.append(t2)
 
-        # ขั้นที่ 4 (540ms): หลับตาพริ้มสนิท (sleep)
-        self.root.after(540, lambda: _show_frame(self.raw_mascot_sleep))
+        # ขั้นที่ 4 (840ms): หลับตาพริ้มสนิท
+        t3 = self.root.after(840, lambda: _show_frame(self.raw_mascot_sleep))
+        self._sleep_timers.append(t3)
 
-        # ขั้นที่ 5 (750ms): สลับเข้าสู่ IdleSleepingFace เต็มรูปแบบ
-        self.root.after(750, self.show_idle)
+        # ขั้นที่ 5 (1150ms): เข้าสู่หน้า IdleSleepingFace เต็มรูปแบบ (เริ่มแอนิเมชันหายใจ และแสดงเกจวัดขยะ)
+        t4 = self.root.after(1150, self.show_idle)
+        self._sleep_timers.append(t4)
+
+        # แตะหน้าจอขณะกำลังหลับ เพื่อข้ามเข้าสู่หน้ารอทันที
+        self.canvas.bind("<Button-1>", lambda e: self._skip_sleep_to_idle())
+
+    def _cancel_sleep_timers(self):
+        if hasattr(self, '_sleep_timers') and self._sleep_timers:
+            for tid in self._sleep_timers:
+                try:
+                    self.root.after_cancel(tid)
+                except Exception:
+                    pass
+            self._sleep_timers = []
+
+    def _skip_sleep_to_idle(self):
+        if self.page == "transition_idle":
+            self._cancel_sleep_timers()
+            self.show_idle()
+
+    # Alias เพื่อรองรับการเรียกชื่อเดิม
+    transition_zoom_in_to_idle = transition_to_idle
 
     # ============================================================
     # UTILITIES & EVENT HANDLERS
