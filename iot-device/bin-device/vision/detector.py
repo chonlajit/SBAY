@@ -38,20 +38,23 @@ class Detector:
         # กรองสัญญาณรบกวน
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
-        # ตรวจจับขอบ Canny + Otsu Threshold
-        edges = cv2.Canny(blur, 25, 90)
+        # 1. ตรวจจับเฉพาะขอบที่คมชัด (ตัดขอบเงาจางๆ บนถาดดำออก)
+        edges = cv2.Canny(blur, 50, 150)
         _, otsu = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        combined = cv2.bitwise_or(edges, otsu)
 
-        # Morphological Closing เพื่อเชื่อมเส้นรอบรูปขวดให้เป็นผืนเดียว
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-        closed = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel, iterations=2)
-        dilated = cv2.dilate(closed, kernel, iterations=1)
+        # 2. ป้องกันขอบเงามืดลามเข้ามารวมกับตัวขวด
+        kernel_sm = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        otsu_expanded = cv2.dilate(otsu, kernel_sm, iterations=1)
+        valid_edges = cv2.bitwise_and(edges, otsu_expanded)
+        combined = cv2.bitwise_or(valid_edges, otsu)
 
-        contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # 3. Morphological Closing เพื่อเชื่อมเส้นรอบรูป โดยไม่ขยายขอบ (ไม่ Dilate) ให้กรอบบวม
+        closed = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel_sm, iterations=2)
+
+        contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         roi_area = roi_w * roi_h
-        valid_cnts = [c for c in contours if cv2.contourArea(c) > 0.08 * roi_area]
+        valid_cnts = [c for c in contours if cv2.contourArea(c) > 0.05 * roi_area]
 
         if valid_cnts:
             all_pts = np.vstack(valid_cnts)
@@ -60,8 +63,8 @@ class Detector:
             (cx, cy), (dim1, dim2), angle = rect
 
             box_area = dim1 * dim2
-            # ต้องมีพื้นที่ครอบคลุมอย่างน้อย 20% ของ ROI
-            if box_area > 0.20 * roi_area:
+            # ต้องมีพื้นที่ครอบคลุมอย่างน้อย 15% ของ ROI (รองรับขวดใสที่แสงสะท้อนน้อย)
+            if box_area > 0.15 * roi_area:
                 pts = cv2.boxPoints(rect)
                 pts[:, 0] += x1
                 pts[:, 1] += y1

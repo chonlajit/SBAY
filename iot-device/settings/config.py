@@ -182,20 +182,35 @@ K = 80  # ค่าคงที่คำนวณ Score
 
 # --- Camera & Size Estimation Calibration ---
 USE_FOCAL = False
-REF_WIDTH_CM = 5.6
-REF_WIDTH_PX = 171
-REF_HEIGHT_CM = 14.5
-REF_HEIGHT_PX = 360
-DISTANCE_CM = 34.0  # ระยะห่างจากกล้องถึงพื้นวางขวด (เดิม 40.0cm)
-FOCAL_LENGTH_PX = int((REF_WIDTH_PX * DISTANCE_CM) / REF_WIDTH_CM)  # คำนวณจากระยะ 34cm (~1038)
-CORRECTION_FACTOR = 0.98  # ปรับเป็น 1.00 เพื่อดึง 350ml ลงมาที่ 324ml
+
+# 1. 2-Point Calibration (เล็กสุด กับ ใหญ่สุด)
+# กระป๋องกาแฟ (ชิ้นเล็ก 170ml)
+REF_SMALL_W_CM = 5.25
+REF_SMALL_W_PX = 103
+REF_SMALL_H_CM = 10.0
+REF_SMALL_H_PX = 210
+
+# ขวดพลาสติก 1.5L (ชิ้นใหญ่)
+REF_LARGE_W_CM = 8.5
+REF_LARGE_W_PX = 195
+REF_LARGE_H_CM = 33.0
+REF_LARGE_H_PX = 600
+
+# ค่าคงที่สำหรับ Fallback / 1-Point Mode เดิม
+REF_WIDTH_CM = REF_SMALL_W_CM
+REF_WIDTH_PX = REF_SMALL_W_PX
+REF_HEIGHT_CM = REF_SMALL_H_CM
+REF_HEIGHT_PX = REF_SMALL_H_PX
+
+DISTANCE_CM = 34.0  # ระยะห่างจากกล้องถึงพื้นวางขวด
+FOCAL_LENGTH_PX = int((REF_WIDTH_PX * DISTANCE_CM) / REF_WIDTH_CM) if REF_WIDTH_CM else 1038
+CORRECTION_FACTOR = 0.98
 MIN_HEIGHT_PX = 100
 SERVO_HOLD_ON_DROP = True  # เกร็งสู้แรงกระแทกเมื่อมีขวดตกใส่แผ่นรอง
 
 ML_RANGES = [
     # (min_ml, max_ml, label_ml)
-    (0, 190, 180),
-    (190, 225, 200),
+    (0, 225, 170),      # ครอบคลุมกระป๋องกาแฟ 170ml
     (225, 275, 250),
     (275, 312, 300),
     (312, 360, 325),
