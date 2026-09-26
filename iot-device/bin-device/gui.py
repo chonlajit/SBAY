@@ -169,6 +169,12 @@ class SmartBinGUI:
         self.blink_timer = None
         self._current_zoom_photo = None
 
+        # Alert Modal สถานะและการควบคุม
+        self.alert_active = False
+        self._alert_overlay_img = None
+        self._alert_on_close = None
+        self.is_verifying_phone = False
+
         # ระบบ Inactivity Timeout (กลับหน้าหลับอัตโนมัติเมื่อไม่มีการใช้งาน)
         self._inactivity_timer = None
         self._inactivity_timeout_sec = GUI_IDLE_TIMEOUT_PHONE
@@ -555,6 +561,8 @@ class SmartBinGUI:
 
     def _clear(self):
         """ล้างหน้าจอและหยุดแอนิเมชันเดิม"""
+        self.close_alert()
+        self.is_verifying_phone = False
         self._cancel_inactivity_timer()
         self._stop_animation()
         self._stop_mascot_blinking()
@@ -859,6 +867,8 @@ class SmartBinGUI:
         )
 
     def add_digit(self, digit):
+        if getattr(self, 'alert_active', False) or getattr(self, 'is_verifying_phone', False):
+            return
         self._reset_inactivity_timer()
         if len(self.phone) < 10:
             self.phone += digit
@@ -894,7 +904,36 @@ class SmartBinGUI:
         )
         self.canvas.tag_bind("server_status_badge", "<Button-1>", self._on_secret_reload_tap)
 
+    def set_phone_checking(self, is_checking=True):
+        """แสดงสถานะกำลังตรวจสอบเบอร์โทรศัพท์ และล็อกปุ่มกดชั่วคราว"""
+        self.is_verifying_phone = is_checking
+        if self.page != "phone" or not self.canvas:
+            return
+        self.canvas.delete("server_status_badge")
+        if is_checking:
+            badge_bg = "#FEF3C7"
+            badge_fg = "#B45309"
+            badge_txt = "⏳ กำลังตรวจสอบข้อมูล..."
+        else:
+            is_online = getattr(self, 'server_online', True)
+            if is_online:
+                badge_bg = "#E3F2C7"
+                badge_fg = "#2A824C"
+                badge_txt = "● ฐานข้อมูลออนไลน์"
+            else:
+                badge_bg = "#FEE2E2"
+                badge_fg = "#DC2626"
+                badge_txt = "● ฐานข้อมูลออฟไลน์"
+
+        self.round_rect(400, 180, 588, 210, 12, fill=badge_bg, outline="", tags=("content", "server_status_badge"))
+        self.canvas.create_text(
+            494, 195, text=badge_txt,
+            fill=badge_fg, font=(FONT, 10, "bold"), tags=("content", "server_status_badge")
+        )
+
     def backspace(self):
+        if getattr(self, 'alert_active', False) or getattr(self, 'is_verifying_phone', False):
+            return
         self._reset_inactivity_timer()
         if self.phone:
             self.phone = self.phone[:-1]
@@ -903,45 +942,158 @@ class SmartBinGUI:
         else:
             self.show_idle()
 
+    def show_alert(self, title, message, button_text="ตกลง", on_close=None, alert_type="warning"):
+        """
+        แสดงหน้าต่าง Alert Modal ขนาดใหญ่ สไตล์ Eco-Tech คมชัด สัมผัสง่ายบนจอสัมผัส
+        (ทดแทน tk.messagebox ขนาดเล็กเดิม)
+        """
+        self.close_alert()
+        self.alert_active = True
+        self._alert_on_close = on_close
+
+        # 1. วาดม่าน Dimmed Overlay เต็มพื้นที่หน้าจอ
+        try:
+            overlay_w = max(100, self.width)
+            overlay_h = max(100, self.height)
+            overlay_img = Image.new("RGBA", (overlay_w, overlay_h), (6, 29, 23, 215))
+            self._alert_overlay_img = ImageTk.PhotoImage(overlay_img)
+            self.canvas.create_image(
+                0, 0, anchor="nw", image=self._alert_overlay_img,
+                tags=("alert_modal", "alert_overlay")
+            )
+        except Exception:
+            self.canvas.create_rectangle(
+                0, 0, self.width, self.height,
+                fill="#0A2B22", stipple="gray50",
+                tags=("alert_modal", "alert_overlay")
+            )
+
+        # บล็อกการกดทะลุ และแตะนอกการ์ดเพื่อปิดได้
+        self.canvas.tag_bind("alert_overlay", "<Button-1>", lambda e: self.close_alert())
+
+        # 2. การ์ดแจ้งเตือนตรงกลางจอ (ขนาดใหญ่พิเศษ 620 x 360 px)
+        cx, cy = 512, 300
+        card_w, card_h = 620, 360
+        x1, y1 = cx - card_w // 2, cy - card_h // 2
+        x2, y2 = cx + card_w // 2, cy + card_h // 2
+
+        # เงาด้านหลังการ์ด
+        self.round_rect(x1 + 6, y1 + 8, x2 + 6, y2 + 8, 32, fill="#04120E", outline="", tags="alert_modal")
+
+        # ตัวการ์ดสีขาวขอบเนียนตา
+        self.round_rect(x1, y1, x2, y2, 32, fill="#FFFFFF", outline="#CBD5E1", width=2, tags=("alert_modal", "alert_card"))
+        self.canvas.tag_bind("alert_card", "<Button-1>", lambda e: "break")
+
+        # 3. ไอคอนหัวเรื่อง (Badge ทรงกลมขนาดใหญ่)
+        icon_cy = y1 + 68
+        is_warn = alert_type in ("warning", "error")
+        badge_bg = "#FEE2E2" if is_warn else "#E3F2C7"
+        badge_border = "#FCA5A5" if is_warn else "#86EFAC"
+        icon_color = "#DC2626" if is_warn else "#15803D"
+        icon_symbol = "⚠️" if is_warn else "✓"
+
+        self.canvas.create_oval(
+            cx - 36, icon_cy - 36, cx + 36, icon_cy + 36,
+            fill=badge_bg, outline=badge_border, width=2, tags="alert_modal"
+        )
+        self.canvas.create_text(
+            cx, icon_cy, text=icon_symbol,
+            fill=icon_color, font=(FONT, 28, "bold"), tags="alert_modal"
+        )
+
+        # 4. ข้อความหัวเรื่อง (Title) ตัวใหญ่ชัดเจน
+        self.canvas.create_text(
+            cx, y1 + 140, text=title,
+            fill=COLORS["ink"], font=(FONT, 22, "bold"), tags="alert_modal"
+        )
+
+        # 5. ข้อความรายละเอียด (Message) อ่านง่าย ไม่ติดขอบ
+        self.canvas.create_text(
+            cx, y1 + 205, text=message,
+            fill="#475569", font=(FONT, 15, "bold"), justify="center",
+            width=540, tags="alert_modal"
+        )
+
+        # 6. ปุ่มกดด้านล่าง (ขนาด 260 x 58 px สัมผัสง่ายด้วยนิ้วมือ)
+        bx1, bx2 = cx - 130, cx + 130
+        by1, by2 = y2 - 82, y2 - 24
+        btn_tag = "alert_close_btn"
+        btn_fill = COLORS["forest"] if not is_warn else "#1E293B"
+
+        self.round_rect(bx1 + 3, by1 + 4, bx2 + 3, by2 + 4, 20, fill="#0A2B22", outline="", tags="alert_modal")
+        self.round_rect(bx1, by1, bx2, by2, 20, fill=btn_fill, outline="", tags=("alert_modal", f"{btn_tag}_surface"))
+        self.canvas.create_text(
+            cx, (by1 + by2) // 2, text=button_text,
+            fill="#FFFFFF", font=(FONT, 17, "bold"), tags=("alert_modal", btn_tag)
+        )
+
+        self.bind_button(btn_tag, self.close_alert, btn_fill, "#0A2B22")
+
+    def close_alert(self):
+        """ปิดหน้าต่าง Alert Modal และเรียก Callback (ถ้ามี)"""
+        if not getattr(self, "alert_active", False):
+            return
+        self.alert_active = False
+        self.canvas.delete("alert_modal")
+        self._alert_overlay_img = None
+        cb = getattr(self, "_alert_on_close", None)
+        self._alert_on_close = None
+        if cb and callable(cb):
+            cb()
 
     def confirm_phone(self, is_guest=False):
         """ยืนยันเบอร์โทรศัพท์และส่งข้อมูลเข้า Session"""
+        if getattr(self, 'alert_active', False) or getattr(self, 'is_verifying_phone', False):
+            return
+
         if is_guest:
             target_phone = None
             display_name = "Guest"
         else:
             if len(self.phone) != 10 or not self.phone.startswith("0"):
-                messagebox.showwarning(
-                    "ตรวจสอบหมายเลข",
-                    "กรุณากรอกหมายเลขโทรศัพท์ 10 หลัก และขึ้นต้นด้วย 0",
-                    parent=self.root
+                self.show_alert(
+                    title="ตรวจสอบหมายเลขโทรศัพท์",
+                    message="กรุณากรอกหมายเลขโทรศัพท์ให้ครบ 10 หลัก\nและขึ้นต้นด้วยเลข 0 (เช่น 08X-XXX-XXXX)",
+                    button_text="ตกลง",
+                    alert_type="warning"
                 )
                 return
             target_phone = self.phone
             display_name = self.formatted_phone()
 
-            # บันทึกลงประวัติ
-            records = self.read_history()
-            records.insert(0, {
-                "phone": self.phone,
-                "used_at": datetime.now().isoformat(timespec="seconds"),
-                "points": 0
-            })
-            try:
-                self.history_path.write_text(json.dumps(records[:20], ensure_ascii=False, indent=2), encoding="utf-8")
-            except Exception as e:
-                logger.error(f"Failed to write history: {e}")
-
         # ส่ง Callback ให้ Controller (เช่น main_controller.py)
         if self.on_phone_submit and callable(self.on_phone_submit):
+            if not is_guest:
+                self.set_phone_checking(True)
             try:
                 self.on_phone_submit(target_phone)
             except Exception as e:
                 logger.error(f"Error executing on_phone_submit: {e}")
+                self.set_phone_checking(False)
                 self.show_welcome(display_name)
         else:
-            # Standalone / Default mode: ไปหน้า Welcome ทันที
+            # Standalone / Default mode: บันทึกประวัติและไปหน้า Welcome ทันที
+            if target_phone:
+                self.save_phone_history(target_phone)
             self.show_welcome(display_name)
+
+    def save_phone_history(self, phone):
+        """บันทึกเบอร์โทรศัพท์ลงในประวัติการใช้งานเมื่อยืนยันสำเร็จ"""
+        if not phone:
+            return
+        records = self.read_history()
+        if records and records[0].get("phone") == phone:
+            records[0]["used_at"] = datetime.now().isoformat(timespec="seconds")
+        else:
+            records.insert(0, {
+                "phone": phone,
+                "used_at": datetime.now().isoformat(timespec="seconds"),
+                "points": 0
+            })
+        try:
+            self.history_path.write_text(json.dumps(records[:20], ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception as e:
+            logger.error(f"Failed to write history: {e}")
 
     # ============================================================
     # SCREEN 4: HISTORY (ประวัติการใช้งาน)
@@ -965,8 +1117,8 @@ class SmartBinGUI:
         self.draw_environment()
 
         # การ์ดต้อนรับตรงกลาง
-        card_y1 = 85 if alert_message else 100
-        card_y2 = 515 if alert_message else 500
+        card_y1 = 80 if alert_message else 100
+        card_y2 = 525 if alert_message else 500
         self.round_rect(180, card_y1, 844, card_y2, 36, fill=COLORS["cream"], outline="", tags=("content", "welcome_card"))
         self.canvas.create_oval(462, card_y1 + 25, 562, card_y1 + 125, fill=COLORS["mint"], outline="", tags=("content", "welcome_card"))
 
@@ -996,13 +1148,15 @@ class SmartBinGUI:
             is_err = any(k in alert_message for k in ("ไม่", "ล่ม", "เต็ม", "ขัดข้อง", "error", "fail", "⚠️"))
             bg_color = "#FEE2E2" if is_err else "#FEF3C7"
             fg_color = "#991B1B" if is_err else "#92400E"
-            self.round_rect(210, card_y1 + 235, 814, card_y1 + 295, 18, fill=bg_color, outline="", tags=("content", "welcome_card"))
+            border_color = "#FCA5A5" if is_err else "#FCD34D"
+            self.round_rect(180, card_y1 + 230, 844, card_y1 + 300, 20, fill=bg_color, outline=border_color, width=2, tags=("content", "welcome_card"))
+            clean_msg = alert_message if alert_message.startswith("⚠️") else f"⚠️ {alert_message}"
             self.canvas.create_text(
-                512, card_y1 + 265, text=alert_message,
-                fill=fg_color, font=(FONT, 12, "bold"), tags=("content", "welcome_card"),
-                width=580
+                512, card_y1 + 265, text=clean_msg,
+                fill=fg_color, font=(FONT, 15, "bold"), tags=("content", "welcome_card"),
+                width=640
             )
-            btn_y1 = card_y1 + 315
+            btn_y1 = card_y1 + 322
         else:
             btn_y1 = card_y1 + 255
 
@@ -1440,6 +1594,11 @@ class SmartBinGUI:
 
     def _on_key_press(self, event):
         """จัดการการกดปุ่มคีย์บอร์ดตามหน้าปัจจุบัน"""
+        if getattr(self, "alert_active", False):
+            if event.keysym in ("Return", "KP_Enter", "space", "Escape"):
+                self.close_alert()
+            return
+
         if self.page == "phone":
             if event.char and event.char in "0123456789":
                 self.add_digit(event.char)
@@ -1493,6 +1652,9 @@ class SmartBinGUI:
             )
 
     def _on_escape(self, _event=None):
+        if getattr(self, "alert_active", False):
+            self.close_alert()
+            return
         if self.page == "phone":
             self.show_idle()
         elif self.page == "result":

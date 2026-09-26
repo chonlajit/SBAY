@@ -60,6 +60,11 @@ class SmartBinWebGUI:
         elif action == "finish":
             if self.on_finish:
                 self.on_finish()
+        elif action == "close_alert":
+            if hasattr(self, '_alert_on_close') and callable(self._alert_on_close):
+                cb = self._alert_on_close
+                self._alert_on_close = None
+                cb()
         elif action == "tap_to_wake":
             logger.info("Client tapped screen to wake")
         elif action == "get_status":
@@ -85,6 +90,28 @@ class SmartBinWebGUI:
 
     def show_idle(self):
         self._broadcast_event({"event": "show_idle"})
+
+    def show_phone_input(self):
+        self._broadcast_event({"event": "show_phone"})
+
+    def show_alert(self, title: str, message: str, button_text: str = "ตกลง", on_close=None, alert_type: str = "warning"):
+        self._alert_on_close = on_close
+        self._broadcast_event({
+            "event": "show_alert",
+            "title": title,
+            "message": message,
+            "button_text": button_text,
+            "type": alert_type
+        })
+
+    def set_phone_checking(self, is_checking: bool = True):
+        self._broadcast_event({
+            "event": "phone_checking",
+            "checking": is_checking
+        })
+
+    def save_phone_history(self, phone: str):
+        pass
 
     def show_welcome(self, name: str, alert_message: Optional[str] = None):
         self._broadcast_event({

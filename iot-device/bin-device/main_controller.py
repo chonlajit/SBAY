@@ -171,6 +171,10 @@ class SmartBinController:
 
     def _on_phone_submit(self, phone):
         """Callback: ผู้ใช้กรอกเบอร์เสร็จ"""
+        threading.Thread(target=self._process_phone_submit, args=(phone,), daemon=True).start()
+
+    def _process_phone_submit(self, phone):
+        """ประมวลผลการตรวจสอบเบอร์โทรศัพท์ใน Background Thread ป้องกัน UI ค้าง"""
         if phone:
             logger.info(f"Phone submitted: {phone}")
             user, status = self.api_client.get_user_by_phone(phone, return_status=True, retries=2)
@@ -178,6 +182,9 @@ class SmartBinController:
             logger.info("Guest mode")
             user = None
             status = "OK"
+
+        if hasattr(self.gui, 'set_phone_checking'):
+            self.gui.schedule(self.gui.set_phone_checking, False)
 
         if user:
             user_id = user.get('id', '')
@@ -192,26 +199,54 @@ class SmartBinController:
             name = username
             alert_msg = None
             logger.info(f"User identified: {name} (ID: {user_id})")
+
+            # บันทึกลงประวัติเมื่อยืนยันผู้ใช้สำเร็จ
+            if hasattr(self.gui, 'save_phone_history'):
+                self.gui.schedule(self.gui.save_phone_history, phone)
+
+            # Start session
+            self.session.start(DEVICE_ID, user_id, name)
+
+            # Show welcome screen
+            self.gui.schedule(self.gui.show_welcome, name, alert_msg)
+
+            # Start detection loop in background
+            self.detecting = True
+            threading.Thread(target=self._detection_loop, daemon=True).start()
+
+        elif phone and (status == "NOT_FOUND" or (not user and status != "DB_ERROR")):
+            # ผู้ใช้กรอกเบอร์แล้วไม่เจอ -> แสดง Alert แจ้งเตือนขนาดใหญ่ และพากลับมาหน้ากรอกเบอร์อีกรอบ
+            formatted = f"{phone[:3]}-{phone[3:6]}-{phone[6:]}" if len(phone) == 10 else phone
+            logger.warning(f"User not found for phone {phone} (status={status}). Returning to phone screen.")
+
+            self.gui.schedule(
+                self.gui.show_alert,
+                "ไม่พบหมายเลขโทรศัพท์",
+                f"ไม่พบหมายเลข {formatted} ในระบบ SBAY\nกรุณาตรวจสอบหมายเลขและลองใหม่อีกครั้ง",
+                "ลองใหม่อีกครั้ง",
+                self.gui.show_phone_input,
+                "warning"
+            )
+
         else:
+            # เข้าสู่โหมด Guest (กดข้ามขั้นตอน หรือฐานข้อมูลขัดข้อง)
             user_id = ""
             name = "Guest"
             if phone and status == "DB_ERROR":
                 alert_msg = "ติดต่อฐานข้อมูลไม่ได้! กำลังเข้าสู่โหมด Guest (บันทึกออฟไลน์)"
                 logger.warning(f"Database/server error for phone {phone}. Auto-falling back to offline Guest mode.")
-            elif phone and status == "NOT_FOUND":
-                alert_msg = "ไม่พบเบอร์นี้ในระบบ (ดำเนินการในฐานะ Guest)"
             else:
                 alert_msg = None
 
-        # Start session
-        self.session.start(DEVICE_ID, user_id, name)
+            # Start session
+            self.session.start(DEVICE_ID, user_id, name)
 
-        # Show welcome screen
-        self.gui.schedule(self.gui.show_welcome, name, alert_msg)
+            # Show welcome screen
+            self.gui.schedule(self.gui.show_welcome, name, alert_msg)
 
-        # Start detection loop in background
-        self.detecting = True
-        threading.Thread(target=self._detection_loop, daemon=True).start()
+            # Start detection loop in background
+            self.detecting = True
+            threading.Thread(target=self._detection_loop, daemon=True).start()
 
     def _detection_loop(self):
         """Background thread: วนตรวจจับขยะจากกล้องและ IR Sensor"""

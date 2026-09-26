@@ -161,6 +161,14 @@
       case 'show_phone':
         showPhoneScreen();
         break;
+
+      case 'show_alert':
+        showAlertModal(msg.title, msg.message, msg.button_text, msg.type);
+        break;
+
+      case 'phone_checking':
+        updatePhoneCheckingState(msg.checking);
+        break;
     }
   }
 
@@ -346,12 +354,18 @@
   const btnConfirm = document.getElementById('btn-phone-confirm');
   if (btnConfirm) {
     btnConfirm.addEventListener('click', () => {
-      if (state.phoneNumber.length >= 9 && state.phoneNumber.startsWith('0')) {
+      if (state.phoneNumber.length === 10 && state.phoneNumber.startsWith('0')) {
         playSuccessChime();
         sendMessage({ action: 'submit_phone', phone: state.phoneNumber });
       } else {
         playTone(300, 'sawtooth', 0.15, 0.2); // Error tone
         alertHintAnimation();
+        showAlertModal(
+          'ตรวจสอบหมายเลขโทรศัพท์',
+          'กรุณากรอกหมายเลขโทรศัพท์ให้ครบ 10 หลัก\nและขึ้นต้นด้วยเลข 0 (เช่น 08X-XXX-XXXX)',
+          'ตกลง',
+          'warning'
+        );
       }
     });
   }
@@ -362,6 +376,61 @@
       state.phoneNumber = '';
       sendMessage({ action: 'guest_mode' });
     });
+  }
+
+  // ============================================================
+  // ALERT MODAL LOGIC (แจ้งเตือนขนาดใหญ่)
+  // ============================================================
+  const alertModal = document.getElementById('alert-modal');
+  const modalIcon = document.getElementById('modal-icon');
+  const modalTitle = document.getElementById('modal-title');
+  const modalMessage = document.getElementById('modal-message');
+  const btnModalClose = document.getElementById('btn-modal-close');
+
+  function showAlertModal(title, message, buttonText, type) {
+    if (!alertModal) return;
+    if (modalTitle) modalTitle.textContent = title || 'ข้อความแจ้งเตือน';
+    if (modalMessage) modalMessage.textContent = message || '';
+    if (btnModalClose) btnModalClose.textContent = buttonText || 'ตกลง';
+    if (modalIcon) {
+      if (type === 'success') {
+        modalIcon.className = 'modal-icon-badge success';
+        modalIcon.textContent = '✓';
+      } else {
+        modalIcon.className = 'modal-icon-badge';
+        modalIcon.textContent = '⚠️';
+      }
+    }
+    alertModal.classList.remove('hidden');
+  }
+
+  function hideAlertModal() {
+    if (!alertModal) return;
+    alertModal.classList.add('hidden');
+    sendMessage({ action: 'close_alert' });
+  }
+
+  if (btnModalClose) {
+    btnModalClose.addEventListener('click', hideAlertModal);
+  }
+  if (alertModal) {
+    alertModal.addEventListener('click', (e) => {
+      if (e.target === alertModal) {
+        hideAlertModal();
+      }
+    });
+  }
+
+  function updatePhoneCheckingState(isChecking) {
+    if (serverStatusBadge) {
+      if (isChecking) {
+        serverStatusBadge.innerHTML = '<span class="status-dot" style="background:#B45309"></span> ⏳ กำลังตรวจสอบข้อมูล...';
+        serverStatusBadge.style.color = '#B45309';
+        serverStatusBadge.style.background = '#FEF3C7';
+      } else {
+        updateServerStatus(state.serverOnline);
+      }
+    }
   }
 
   function alertHintAnimation() {
