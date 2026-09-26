@@ -23,6 +23,8 @@ export interface User {
     profileImageUrl?: string;
     points: number;
     role?: string;
+    hasPassword?: boolean;
+    twoFactorEnabled?: boolean;
 }
 
 export interface WasteType {
@@ -45,7 +47,10 @@ interface SmartBinContextType {
     sendPhoneOtp: (phone: string) => Promise<{ success: boolean; message?: string }>;
     loginWithPhone: (phone: string, otp: string, machineId: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string }>;
     // Password Login
-    loginWithPassword: (identifier: string, password: string, machineId: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string }>;
+    loginWithPassword: (identifier: string, password: string, machineId: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string; require2fa?: boolean; email?: string; maskedEmail?: string }>;
+    // Admin / User 2FA
+    verifyAdmin2fa: (email: string, otp: string, machineId: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string; user?: any }>;
+    resendAdmin2fa: (email: string) => Promise<{ success: boolean; message?: string }>;
     // Google Login
     loginWithGoogle: (accessToken: string, machineId: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string; email?: string }>;
     // Register: Manual (Email OTP)
@@ -338,9 +343,47 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
                 body: JSON.stringify({ identifier, password, machineId, rememberMe })
             });
             const data = await res.json();
+            if (data.require2fa) {
+                return {
+                    success: false,
+                    require2fa: true,
+                    email: data.email,
+                    maskedEmail: data.maskedEmail,
+                    message: data.message
+                };
+            }
             if (data.error) return { success: false, message: data.error };
             if (data.user && data.token) { saveSession(data.user, data.token, machineId, rememberMe); return { success: true }; }
             return { success: false, message: 'Invalid server response' };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
+    // Admin 2FA: Verify OTP
+    const verifyAdmin2fa = async (email: string, otp: string, machineId: string, rememberMe: boolean = true) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/admin-2fa/verify`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp, machineId, rememberMe })
+            });
+            const data = await res.json();
+            if (data.error) return { success: false, message: data.error };
+            if (data.user && data.token) {
+                saveSession(data.user, data.token, machineId, rememberMe);
+                return { success: true, user: data.user };
+            }
+            return { success: false, message: 'Invalid server response' };
+        } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
+    };
+
+    // Admin 2FA: Resend OTP
+    const resendAdmin2fa = async (email: string) => {
+        try {
+            const res = await fetch(`${apiBase}/auth/admin-2fa/resend`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+            return data.error ? { success: false, message: data.error } : { success: true, message: data.message };
         } catch (e: any) { return { success: false, message: `Network Error: ${e.message}` }; }
     };
 
@@ -486,7 +529,7 @@ export function SmartBinProvider({ children }: { children: React.ReactNode }) {
             user, sessionPoints, sessionHistory, latestSession, wasteTypes: wasteTypes,
             sendOtp, login,
             sendPhoneOtp, loginWithPhone,
-            loginWithPassword, loginWithGoogle,
+            loginWithPassword, verifyAdmin2fa, resendAdmin2fa, loginWithGoogle,
             sendRegisterOtp, sendForgotOtp, register,
             registerWithGoogle,
             sendForgotPasswordOtp,

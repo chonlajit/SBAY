@@ -37,7 +37,9 @@ export default function QRParamsPage() {
             </div>
 
             <div className="bg-green-50 p-6 rounded-2xl shadow-lg border-2 border-green-200 mb-12 flex flex-col items-center">
-                <h2 className="text-2xl font-bold mb-2 text-green-800">🌱 New User Registration</h2>
+                <h2 className="text-2xl font-bold mb-2 text-[#527d40] flex items-center gap-2">
+                    <i className="fa-solid fa-seedling text-[#64964E]"></i> New User Registration
+                </h2>
                 <p className="text-gray-600 mb-6">Scan to register a new account</p>
                 <div className="bg-white p-4 border-2 border-green-500 rounded-xl">
                     <QRCode

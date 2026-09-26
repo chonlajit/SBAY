@@ -43,6 +43,9 @@ public class AppController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private com.example.iotbackend.service.AuditService auditService;
+
     // ─── OTP: Send to Email (Login — user must exist) ────────────────────────
     @PostMapping("/auth/otp/send")
     public Object sendOtp(@RequestBody Map<String, String> payload) {
@@ -137,7 +140,7 @@ public class AppController {
 
     // ─── Google OAuth Login (user must be registered) ─────────────────────────
     @PostMapping("/auth/google")
-    public Object googleLogin(@RequestBody Map<String, String> payload) {
+    public Object googleLogin(@RequestBody Map<String, String> payload, jakarta.servlet.http.HttpServletRequest request) {
         String accessToken = payload.get("idToken");
         String machineId = payload.getOrDefault("machineId", "default-machine");
 
@@ -156,6 +159,9 @@ public class AppController {
             if (userOpt.isEmpty()) return Map.of("error", "ไม่พบอีเมลนี้ในระบบ กรุณาลงทะเบียนก่อน", "email", email);
 
             User user = userOpt.get();
+            if ("ADMIN".equals(user.getRole())) {
+                auditService.logAdminLogin(user, request, "Google OAuth");
+            }
             boolean rememberMe = "true".equalsIgnoreCase(payload.get("rememberMe"));
             recycleService.bindUserToMachine(machineId, user.getId());
             String token = jwtUtil.generateToken(user, rememberMe);
@@ -292,20 +298,12 @@ public class AppController {
         return response;
     }
 
-    // ─── Temporary Admin Promotion Endpoint ──────────────────────────────────────
+    // ─── Admin Promotion Endpoint (Disabled for security) ─────────────────────
     @GetMapping("/auth/promote")
     public Object promoteToAdmin(@RequestParam("email") String email) {
-        if (email == null || email.isBlank()) {
-            return Map.of("error", "Email is required");
-        }
-        Optional<User> userOpt = userRepository.findByEmail(email.toLowerCase().trim());
-        if (userOpt.isPresent()) {
-            User u = userOpt.get();
-            u.setRole("ADMIN");
-            userRepository.save(u);
-            return Map.of("success", true, "message", "Promoted user with email " + email + " to ADMIN.");
-        }
-        return Map.of("error", "User not found with email: " + email);
+        throw new org.springframework.web.server.ResponseStatusException(
+            org.springframework.http.HttpStatus.FORBIDDEN, "Endpoint นี้ถูกปิดการใช้งานเพื่อความปลอดภัย"
+        );
     }
 
     // ─── Legacy phone login (IoT backward compat) ─────────────────────────────
@@ -326,9 +324,11 @@ public class AppController {
         return Map.of("error", "User not found", "status", 404);
     }
 
-    // ─── Password Login ───────────────────────────────────────────────────────
+    private final org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder passwordEncoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+
+    // ─── Password Login (with BCrypt, Brute-force protection & Admin 2FA) ──────
     @PostMapping("/auth/login-password")
-    public Object loginWithPassword(@RequestBody Map<String, String> payload) {
+    public Object loginWithPassword(@RequestBody Map<String, String> payload, jakarta.servlet.http.HttpServletRequest request) {
         String identifier = payload.get("identifier");
         String password = payload.get("password");
         String machineId = payload.getOrDefault("machineId", "default-machine");
@@ -356,16 +356,76 @@ public class AppController {
         }
 
         User user = userOpt.get();
+
+        // 1. ตรวจสอบการถูก Lockout จากการกรอกรหัสผ่านผิดเกิน 5 ครั้ง
+        if (user.getLockoutUntil() != null && user.getLockoutUntil().isAfter(java.time.LocalDateTime.now())) {
+            long minutesLeft = java.time.Duration.between(java.time.LocalDateTime.now(), user.getLockoutUntil()).toMinutes() + 1;
+            return Map.of("error", "บัญชีนี้ถูกระงับชั่วคราวเนื่องจากกรอกรหัสผ่านผิดเกิน 5 ครั้ง กรุณาลองใหม่ในอีก " + minutesLeft + " นาที");
+        }
+
         if (user.getPassword() == null) {
             return Map.of("error", "บัญชีนี้ไม่ได้ตั้งรหัสผ่าน กรุณาเข้าสู่ระบบด้วย Google");
         }
 
-        String hashedAttempt = hashPassword(password);
-        if (!user.getPassword().equals(hashedAttempt)) {
-            return Map.of("error", "รหัสผ่านไม่ถูกต้อง");
+        // 2. ตรวจสอบรหัสผ่าน (BCrypt พร้อม Backward Compatibility รองรับ SHA-256 เดิม)
+        String storedPassword = user.getPassword();
+        boolean passwordMatches = false;
+        if (storedPassword != null) {
+            if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$") || storedPassword.startsWith("$2y$")) {
+                passwordMatches = passwordEncoder.matches(password, storedPassword);
+            } else {
+                // Legacy SHA-256 fallback
+                if (storedPassword.equals(hashLegacySha256(password))) {
+                    passwordMatches = true;
+                    // อัปเกรดรหัสผ่านเป็น BCrypt ทันทีอย่างแนบเนียน
+                    user.setPassword(passwordEncoder.encode(password));
+                    userRepository.save(user);
+                }
+            }
         }
 
+        // หากรหัสผ่านไม่ถูกต้อง
+        if (!passwordMatches) {
+            int failed = (user.getFailedLoginAttempts() != null ? user.getFailedLoginAttempts() : 0) + 1;
+            user.setFailedLoginAttempts(failed);
+            if (failed >= 5) {
+                user.setLockoutUntil(java.time.LocalDateTime.now().plusMinutes(15));
+                userRepository.save(user);
+                auditService.sendLockoutAlert(rawIdentifier, request);
+                return Map.of("error", "รหัสผ่านไม่ถูกต้องเกิน 5 ครั้ง บัญชีนี้ถูกระงับการเข้าสู่ระบบชั่วคราว 15 นาที เพื่อความปลอดภัย");
+            } else {
+                userRepository.save(user);
+                int remaining = 5 - failed;
+                return Map.of("error", "รหัสผ่านไม่ถูกต้อง (เหลือโอกาสอีก " + remaining + " ครั้ง ก่อนที่บัญชีจะถูกระงับชั่วคราว)");
+            }
+        }
+
+        // 3. รหัสผ่านถูกต้อง -> รีเซ็ตจำนวนครั้งที่ผิด
+        user.setFailedLoginAttempts(0);
+        user.setLockoutUntil(null);
+        userRepository.save(user);
+
         boolean rememberMe = "true".equalsIgnoreCase(payload.get("rememberMe"));
+        boolean isAdmin = "ADMIN".equals(user.getRole()) || "SUPER_ADMIN".equals(user.getRole()) || "sbay.smartcompany@gmail.com".equalsIgnoreCase(user.getEmail());
+        boolean require2fa = isAdmin || Boolean.TRUE.equals(user.getTwoFactorEnabled());
+
+        // 4. หากเป็น Admin / Super Admin หรือผู้ใช้เปิด 2FA ให้บังคับใช้ระบบ 2FA Email OTP
+        if (require2fa) {
+            String targetEmail = user.getEmail() != null && !user.getEmail().isBlank() ? user.getEmail() : "sbay.smartcompany@gmail.com";
+            String otp = otpService.generateAndSendOtp(targetEmail);
+            auditService.send2faOtpEmail(targetEmail, otp);
+            Map<String, Object> resp = new java.util.HashMap<>();
+            resp.put("require2fa", true);
+            resp.put("email", targetEmail);
+            resp.put("maskedEmail", maskEmail(targetEmail));
+            resp.put("identifier", rawIdentifier);
+            resp.put("rememberMe", rememberMe);
+            resp.put("isAdmin", isAdmin);
+            resp.put("message", "เพื่อความปลอดภัย กรุณากรอกรหัส OTP 6 หลักที่ส่งไปยังอีเมล " + maskEmail(targetEmail));
+            return resp;
+        }
+
+        // สำหรับผู้ใช้ทั่วไป ออก Token ปกติ
         recycleService.bindUserToMachine(machineId, user.getId());
         String token = jwtUtil.generateToken(user, rememberMe);
         Map<String, Object> response = new java.util.HashMap<>();
@@ -374,8 +434,73 @@ public class AppController {
         return response;
     }
 
-    // ─── Helper: hash password (SHA-256) ───────────────────────────────────────
+    // ─── 2FA: Verify OTP & Issue Token (Supports Admin & All Users) ───────────
+    @PostMapping({"/auth/admin-2fa/verify", "/auth/2fa/verify"})
+    public Object verifyAdmin2fa(@RequestBody Map<String, String> payload, jakarta.servlet.http.HttpServletRequest request) {
+        String email = payload.get("email");
+        String otp = payload.get("otp");
+        String machineId = payload.getOrDefault("machineId", "default-machine");
+        boolean rememberMe = "true".equalsIgnoreCase(payload.get("rememberMe"));
+
+        if (email == null || otp == null) {
+            return Map.of("error", "Email and OTP are required");
+        }
+
+        boolean valid = otpService.verifyOtp(email.toLowerCase().trim(), otp.trim());
+        if (!valid) {
+            return Map.of("error", "รหัส OTP 2FA ไม่ถูกต้องหรือหมดอายุแล้ว");
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(email.toLowerCase().trim());
+        if (userOpt.isEmpty()) {
+            return Map.of("error", "ไม่พบข้อมูลผู้ใช้งาน");
+        }
+
+        User user = userOpt.get();
+        boolean isAdmin = "ADMIN".equals(user.getRole()) || "SUPER_ADMIN".equals(user.getRole()) || "sbay.smartcompany@gmail.com".equalsIgnoreCase(user.getEmail());
+        if (isAdmin) {
+            auditService.logAdminLogin(user, request, "2FA Password (Admin Verified)");
+        }
+        recycleService.bindUserToMachine(machineId, user.getId());
+        String token = jwtUtil.generateToken(user, rememberMe);
+
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("user", user);
+        response.put("token", token);
+        return response;
+    }
+
+    // ─── 2FA: Resend OTP ───────────────────────────────────────────────────────
+    @PostMapping({"/auth/admin-2fa/resend", "/auth/2fa/resend"})
+    public Object resendAdmin2fa(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        if (email == null || email.isBlank()) {
+            return Map.of("error", "Email is required");
+        }
+        String otp = otpService.generateAndSendOtp(email.toLowerCase().trim());
+        auditService.send2faOtpEmail(email.toLowerCase().trim(), otp);
+        return Map.of("success", true, "message", "ส่งรหัส OTP 2FA ใหม่เรียบร้อยแล้ว");
+    }
+
+    // ─── Helper: Mask Email for Security Display ──────────────────────────────
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) return email;
+        String[] parts = email.split("@");
+        String name = parts[0];
+        String domain = parts[1];
+        if (name.length() <= 2) {
+            return name.charAt(0) + "***@" + domain;
+        }
+        return name.substring(0, 2) + "***" + name.charAt(name.length() - 1) + "@" + domain;
+    }
+
+    // ─── Helper: hash password (BCrypt) ────────────────────────────────────────
     private String hashPassword(String password) {
+        return passwordEncoder.encode(password);
+    }
+
+    // ─── Helper: legacy hash (SHA-256 for backward compatibility) ──────────────
+    private String hashLegacySha256(String password) {
         try {
             java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
             byte[] encodedhash = digest.digest(password.getBytes(java.nio.charset.StandardCharsets.UTF_8));
@@ -699,5 +824,195 @@ public class AppController {
         userRepository.save(user);
         
         return Map.of("success", true, "message", "อัปเดตข้อมูลสำเร็จ");
+    }
+
+    // ─── User Profile: Security Management ────────────────────────────────────
+    @GetMapping("/user/{id}/security-status")
+    public Object getUserSecurityStatus(@PathVariable("id") String id) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้");
+        User user = userOpt.get();
+        Map<String, Object> resp = new java.util.HashMap<>();
+        resp.put("hasPassword", user.isHasPassword());
+        resp.put("twoFactorEnabled", user.getTwoFactorEnabled());
+        resp.put("email", user.getEmail());
+        resp.put("maskedEmail", maskEmail(user.getEmail()));
+        boolean isAdmin = "ADMIN".equals(user.getRole()) || "SUPER_ADMIN".equals(user.getRole()) || "sbay.smartcompany@gmail.com".equalsIgnoreCase(user.getEmail());
+        resp.put("isAdmin", isAdmin);
+        return resp;
+    }
+
+    @PostMapping("/user/{id}/security-otp")
+    public Object sendSecurityOtp(@PathVariable("id") String id) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้");
+        User user = userOpt.get();
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            return Map.of("error", "ไม่พบบัญชีอีเมลที่ผูกไว้ กรุณาตั้งค่าอีเมลในหน้าข้อมูลส่วนตัวก่อน");
+        }
+        String targetEmail = user.getEmail().trim().toLowerCase();
+        String otp = otpService.generateAndSendOtp(targetEmail);
+        auditService.send2faOtpEmail(targetEmail, otp);
+        return Map.of(
+            "success", true,
+            "message", "ส่งรหัส OTP 6 หลักไปยังอีเมล " + maskEmail(targetEmail) + " เรียบร้อยแล้ว",
+            "maskedEmail", maskEmail(targetEmail)
+        );
+    }
+
+    @PostMapping("/user/{id}/set-password")
+    public Object setUserPassword(@PathVariable("id") String id, @RequestBody Map<String, String> payload, jakarta.servlet.http.HttpServletRequest request) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้");
+        User user = userOpt.get();
+
+        String newPassword = payload.get("newPassword");
+        String otp = payload.get("otp");
+
+        if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 20) {
+            return Map.of("error", "รหัสผ่านต้องมีความยาวระหว่าง 8-20 ตัวอักษร");
+        }
+        if (otp == null || otp.isBlank()) {
+            return Map.of("error", "กรุณาระบุรหัส OTP ที่ได้รับทางอีเมล");
+        }
+
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            return Map.of("error", "ไม่พบบัญชีอีเมล กรุณาผูกอีเมลก่อนตั้งรหัสผ่าน");
+        }
+
+        boolean validOtp = otpService.verifyOtp(user.getEmail().toLowerCase().trim(), otp.trim());
+        if (!validOtp) {
+            return Map.of("error", "รหัส OTP ไม่ถูกต้องหรือหมดอายุแล้ว");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setFailedLoginAttempts(0);
+        user.setLockoutUntil(null);
+        userRepository.save(user);
+
+        auditService.logAction(
+            user.getId(),
+            user.getEmail() != null ? user.getEmail() : user.getUsername(),
+            user.getUsername() != null ? user.getUsername() : user.getFirstName(),
+            "SET_PASSWORD",
+            user.getId(),
+            user.getEmail(),
+            "ผู้ใช้ตั้งรหัสผ่านสำเร็จผ่านการยืนยัน Email OTP",
+            null,
+            request
+        );
+
+        return Map.of("success", true, "message", "ตั้งรหัสผ่านสำเร็จ ตอนนี้คุณสามารถเข้าสู่ระบบด้วยรหัสผ่านได้แล้ว", "hasPassword", true);
+    }
+
+    @PostMapping("/user/{id}/change-password")
+    public Object changeUserPassword(@PathVariable("id") String id, @RequestBody Map<String, String> payload, jakarta.servlet.http.HttpServletRequest request) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้");
+        User user = userOpt.get();
+
+        String currentPassword = payload.get("currentPassword");
+        String newPassword = payload.get("newPassword");
+        String otp = payload.get("otp");
+
+        if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 20) {
+            return Map.of("error", "รหัสผ่านใหม่ต้องมีความยาวระหว่าง 8-20 ตัวอักษร");
+        }
+
+        boolean verified = false;
+
+        // Verify via current password if provided
+        if (currentPassword != null && !currentPassword.isBlank()) {
+            String storedPassword = user.getPassword();
+            if (storedPassword != null) {
+                if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$") || storedPassword.startsWith("$2y$")) {
+                    verified = passwordEncoder.matches(currentPassword, storedPassword);
+                } else {
+                    verified = storedPassword.equals(hashLegacySha256(currentPassword));
+                }
+            }
+            if (!verified) {
+                return Map.of("error", "รหัสผ่านเดิมไม่ถูกต้อง");
+            }
+        } else if (otp != null && !otp.isBlank()) {
+            // Verify via OTP
+            if (user.getEmail() == null || user.getEmail().isBlank()) {
+                return Map.of("error", "ไม่พบบัญชีอีเมล");
+            }
+            verified = otpService.verifyOtp(user.getEmail().toLowerCase().trim(), otp.trim());
+            if (!verified) {
+                return Map.of("error", "รหัส OTP ไม่ถูกต้องหรือหมดอายุแล้ว");
+            }
+        } else {
+            return Map.of("error", "กรุณากรอกรหัสผ่านเดิม หรือยืนยันตัวตนด้วยรหัส OTP ทางอีเมล");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setFailedLoginAttempts(0);
+        user.setLockoutUntil(null);
+        userRepository.save(user);
+
+        auditService.logAction(
+            user.getId(),
+            user.getEmail() != null ? user.getEmail() : user.getUsername(),
+            user.getUsername() != null ? user.getUsername() : user.getFirstName(),
+            "CHANGE_PASSWORD",
+            user.getId(),
+            user.getEmail(),
+            "ผู้ใช้เปลี่ยนรหัสผ่านสำเร็จ",
+            null,
+            request
+        );
+
+        return Map.of("success", true, "message", "เปลี่ยนรหัสผ่านสำเร็จ");
+    }
+
+    @PostMapping("/user/{id}/toggle-2fa")
+    public Object toggleUser2fa(@PathVariable("id") String id, @RequestBody Map<String, Object> payload, jakarta.servlet.http.HttpServletRequest request) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) return Map.of("error", "ไม่พบผู้ใช้");
+        User user = userOpt.get();
+
+        boolean enable = Boolean.parseBoolean(String.valueOf(payload.get("enabled")));
+        String otp = (String) payload.get("otp");
+
+        boolean isAdmin = "ADMIN".equals(user.getRole()) || "SUPER_ADMIN".equals(user.getRole()) || "sbay.smartcompany@gmail.com".equalsIgnoreCase(user.getEmail());
+        if (isAdmin && !enable) {
+            return Map.of("error", "บัญชีผู้ดูแลระบบ (Admin) ต้องเปิดใช้งาน 2FA เสมอตามนโยบายความปลอดภัย ไม่สามารถปิดได้");
+        }
+
+        if (otp == null || otp.isBlank()) {
+            return Map.of("error", "กรุณาระบุรหัส OTP ที่ได้รับทางอีเมลเพื่อยืนยันการตั้งค่าความปลอดภัย");
+        }
+
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            return Map.of("error", "ไม่พบบัญชีอีเมล กรุณาผูกอีเมลก่อนตั้งค่า 2FA");
+        }
+
+        boolean validOtp = otpService.verifyOtp(user.getEmail().toLowerCase().trim(), otp.trim());
+        if (!validOtp) {
+            return Map.of("error", "รหัส OTP ไม่ถูกต้องหรือหมดอายุแล้ว");
+        }
+
+        user.setTwoFactorEnabled(enable);
+        userRepository.save(user);
+
+        auditService.logAction(
+            user.getId(),
+            user.getEmail() != null ? user.getEmail() : user.getUsername(),
+            user.getUsername() != null ? user.getUsername() : user.getFirstName(),
+            enable ? "ENABLE_2FA" : "DISABLE_2FA",
+            user.getId(),
+            user.getEmail(),
+            enable ? "ผู้ใช้เปิดใช้งานการยืนยันตัวตน 2 ขั้นตอน (2FA) ทางอีเมล" : "ผู้ใช้ปิดใช้งานการยืนยันตัวตน 2 ขั้นตอน (2FA)",
+            null,
+            request
+        );
+
+        return Map.of(
+            "success", true,
+            "twoFactorEnabled", enable,
+            "message", enable ? "เปิดใช้งานการยืนยันตัวตน 2 ขั้นตอน (2FA) สำเร็จ" : "ปิดใช้งาน 2FA เรียบร้อยแล้ว"
+        );
     }
 }

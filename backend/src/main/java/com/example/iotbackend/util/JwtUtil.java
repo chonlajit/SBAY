@@ -23,6 +23,7 @@ public class JwtUtil {
     private Key secretKey;
     public static final long EXPIRATION_SHORT = 5L * 60 * 60 * 1000;       // 5 Hours (18,000,000 ms)
     public static final long EXPIRATION_REMEMBER = 30L * 24 * 60 * 60 * 1000; // 30 Days (2,592,000,000 ms)
+    public static final long EXPIRATION_ADMIN = 2L * 60 * 60 * 1000;        // 2 Hours strictly for Admin / Super Admin
 
     @PostConstruct
     public void init() {
@@ -33,11 +34,19 @@ public class JwtUtil {
     }
 
     public String generateToken(User user, boolean rememberMe) {
-        long expirationTime = rememberMe ? EXPIRATION_REMEMBER : EXPIRATION_SHORT;
+        boolean isAdmin = "ADMIN".equals(user.getRole()) || "SUPER_ADMIN".equals(user.getRole()) || "sbay.smartcompany@gmail.com".equalsIgnoreCase(user.getEmail());
+        long expirationTime = isAdmin ? EXPIRATION_ADMIN : (rememberMe ? EXPIRATION_REMEMBER : EXPIRATION_SHORT);
+        
+        String effectiveRole = user.getRole();
+        if ("sbay.smartcompany@gmail.com".equalsIgnoreCase(user.getEmail())) {
+            effectiveRole = "SUPER_ADMIN";
+        }
+
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", user.getRole());
-        claims.put("name", user.getFirstName() + " " + user.getLastName());
-        claims.put("rememberMe", rememberMe);
+        claims.put("role", effectiveRole != null ? effectiveRole : "USER");
+        claims.put("name", (user.getFirstName() != null ? user.getFirstName() : "") + " " + (user.getLastName() != null ? user.getLastName() : ""));
+        claims.put("email", user.getEmail());
+        claims.put("rememberMe", isAdmin ? false : rememberMe);
         
         return Jwts.builder()
                 .setClaims(claims)

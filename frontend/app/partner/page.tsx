@@ -98,7 +98,7 @@ export default function PartnerProductsPage() {
     const [storeForm, setStoreForm] = useState({ name: '', description: '', logoUrl: '' });
 
     useEffect(() => {
-        if (isInitialized && (!user || (user.role !== 'PARTNER' && user.role !== 'ADMIN'))) {
+        if (isInitialized && (!user || (user.role !== 'PARTNER' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.email !== 'sbay.smartcompany@gmail.com'))) {
             router.push('/');
         }
     }, [user, isInitialized, router]);
@@ -136,7 +136,7 @@ export default function PartnerProductsPage() {
     }, [apiBase, token]);
 
     useEffect(() => {
-        if (user && (user.role === 'PARTNER' || user.role === 'ADMIN')) {
+        if (user && (user.role === 'PARTNER' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.email === 'sbay.smartcompany@gmail.com')) {
             fetchMyPartner();
             fetchRedemptions();
         }

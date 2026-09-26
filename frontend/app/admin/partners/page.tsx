@@ -101,7 +101,8 @@ export default function AdminPartnersPage() {
     const [assignPartnerId, setAssignPartnerId] = useState('');
 
     useEffect(() => {
-        if (isInitialized && (!user || user.role !== 'ADMIN')) {
+        const isAdminUser = user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.email === 'sbay.smartcompany@gmail.com');
+        if (isInitialized && !isAdminUser) {
             router.push('/');
         }
     }, [user, isInitialized, router]);
@@ -260,7 +261,7 @@ export default function AdminPartnersPage() {
     if (!isInitialized || !user) return null;
 
     const partnerUsers = users.filter(u => u.role === 'PARTNER');
-    const regularUsers = users.filter(u => u.role !== 'PARTNER' && u.role !== 'ADMIN');
+    const regularUsers = users.filter(u => u.role !== 'PARTNER' && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN');
 
     return (
         <div className="min-h-screen pb-20" style={{ backgroundImage: "url('/images/bg_loginregis.jpg')", backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>

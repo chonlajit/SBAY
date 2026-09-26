@@ -134,7 +134,8 @@ export default function ForgotPasswordPage() {
 
                             {error && (
                                 <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm flex items-center space-x-2">
-                                    <span>⚠️</span><span>{error}</span>
+                                    <i className="fa-solid fa-circle-exclamation shrink-0"></i>
+                                    <span>{error}</span>
                                 </div>
                             )}
 
@@ -161,7 +162,8 @@ export default function ForgotPasswordPage() {
                         <div className="space-y-4">
                             {successMsg && (
                                 <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm flex items-center space-x-2">
-                                    <span>✅</span><span>{successMsg}</span>
+                                    <i className="fa-solid fa-circle-check text-[#64964E] shrink-0"></i>
+                                    <span>{successMsg}</span>
                                 </div>
                             )}
 
@@ -250,7 +252,8 @@ export default function ForgotPasswordPage() {
 
                             {error && (
                                 <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm flex items-center space-x-2">
-                                    <span>⚠️</span><span>{error}</span>
+                                    <i className="fa-solid fa-circle-exclamation shrink-0"></i>
+                                    <span>{error}</span>
                                 </div>
                             )}
 

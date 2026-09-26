@@ -18,7 +18,60 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const { user, loginWithPassword, loginWithGoogle, sendRegisterOtp, sendForgotOtp, register, registerWithGoogle } = useSmartBin();
+    const { user, loginWithPassword, verifyAdmin2fa, resendAdmin2fa, loginWithGoogle, sendRegisterOtp, sendForgotOtp, register, registerWithGoogle } = useSmartBin();
+
+    // ── Admin 2FA State ──
+    const [admin2fa, setAdmin2fa] = useState<{
+        active: boolean;
+        email: string;
+        maskedEmail: string;
+        rememberMe: boolean;
+        otp: string;
+        error: string;
+        loading: boolean;
+        countdown: number;
+    } | null>(null);
+
+    useEffect(() => {
+        if (admin2fa && admin2fa.countdown > 0) {
+            const timer = setTimeout(() => {
+                setAdmin2fa(prev => prev ? { ...prev, countdown: prev.countdown - 1 } : null);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [admin2fa?.countdown]);
+
+    const handleVerifyAdmin2fa = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!admin2fa || !admin2fa.otp || admin2fa.otp.trim().length !== 6) {
+            setAdmin2fa(prev => prev ? { ...prev, error: 'กรุณากรอกรหัส OTP 6 หลักให้ครบถ้วน' } : null);
+            return;
+        }
+
+        setAdmin2fa(prev => prev ? { ...prev, loading: true, error: '' } : null);
+        const res = await verifyAdmin2fa(admin2fa.email, admin2fa.otp.trim(), machineId, admin2fa.rememberMe);
+        if (res.success) {
+            setAdmin2fa(null);
+            const redirectUrl = searchParams.get('redirect');
+            if (redirectUrl) router.push(redirectUrl);
+            else if (res.user?.role === 'ADMIN' || res.user?.role === 'SUPER_ADMIN') router.push('/admin');
+            else router.push('/dashboard');
+        } else {
+            setAdmin2fa(prev => prev ? { ...prev, loading: false, error: res.message || 'รหัส OTP ไม่ถูกต้อง' } : null);
+        }
+    };
+
+    const handleResendAdmin2fa = async () => {
+        if (!admin2fa || admin2fa.countdown > 0) return;
+        setAdmin2fa(prev => prev ? { ...prev, loading: true, error: '' } : null);
+        const res = await resendAdmin2fa(admin2fa.email);
+        setAdmin2fa(prev => prev ? {
+            ...prev,
+            loading: false,
+            countdown: 60,
+            error: res.success ? '' : (res.message || 'ไม่สามารถส่ง OTP ได้')
+        } : null);
+    };
 
     const [mode, setMode] = useState<Mode>(initialMode);
 
@@ -182,7 +235,7 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
             }
 
             setForgotError('');
-            setForgotMsg('🎉 เปลี่ยนรหัสผ่านสำเร็จเรียบร้อย! กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...');
+            setForgotMsg('เปลี่ยนรหัสผ่านสำเร็จเรียบร้อย! กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...');
 
             setTimeout(() => {
                 setMode('login');
@@ -296,6 +349,20 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
         const result = await loginWithPassword(identifier.trim(), loginPassword, machineId, rememberMe);
 
         setIsLoginLoading(false);
+
+        if (result.require2fa) {
+            setAdmin2fa({
+                active: true,
+                email: result.email || '',
+                maskedEmail: result.maskedEmail || '',
+                rememberMe,
+                otp: '',
+                error: '',
+                loading: false,
+                countdown: 60
+            });
+            return;
+        }
 
         if (result.success) {
             const mech = searchParams.get('mech_id');
@@ -598,7 +665,7 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
 
                                             {loginError && (
                                                 <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 text-red-600 font-bold text-xs flex items-center space-x-1.5">
-                                                    <span>⚠️</span>
+                                                    <i className="fa-solid fa-circle-exclamation shrink-0"></i>
                                                     <span>{loginError}</span>
                                                 </div>
                                             )}
@@ -776,14 +843,14 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
 
                                             {forgotError && (
                                                 <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 text-red-600 font-bold text-xs flex items-center space-x-1.5">
-                                                    <span>⚠️</span>
+                                                    <i className="fa-solid fa-circle-exclamation shrink-0"></i>
                                                     <span>{forgotError}</span>
                                                 </div>
                                             )}
 
                                             {forgotMsg && !forgotError && (
                                                 <div className="bg-green-50 border border-green-200 rounded-xl p-2.5 text-green-700 font-bold text-xs flex items-center space-x-1.5">
-                                                    <span>✅</span>
+                                                    <i className="fa-solid fa-circle-check text-[#64964E] shrink-0"></i>
                                                     <span>{forgotMsg}</span>
                                                 </div>
                                             )}
@@ -985,7 +1052,7 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
                                                         <div className="bg-white rounded-2xl p-3.5 min-h-[120px] shadow-sm flex flex-col justify-center items-center text-center mt-2 border border-gray-200">
                                                             {regError ? (
                                                                 <div className="bg-red-50 border border-red-200 rounded-xl p-3 w-full text-red-600 font-bold text-xs sm:text-sm flex items-center justify-center space-x-2">
-                                                                    <span className="text-base">⚠️</span>
+                                                                    <i className="fa-solid fa-circle-exclamation text-base shrink-0"></i>
                                                                     <span>{regError}</span>
                                                                 </div>
                                                             ) : regForm.confirmPassword && !passwordsMatch ? (
@@ -1071,9 +1138,79 @@ export default function AuthContainer({ initialMode = 'login' }: { initialMode?:
                                 </motion.div>
                             )}
                         </AnimatePresence>
+            {/* === 2FA Verification Modal === */}
+            {admin2fa?.active && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-in fade-in zoom-in duration-200">
+                        <div className="w-16 h-16 bg-[#64964E]/10 text-[#64964E] rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#64964E]/20 text-2xl">
+                            <i className="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h2 className="text-xl font-black text-slate-800 mb-1">
+                            การยืนยันตัวตน 2 ขั้นตอน (2FA)
+                        </h2>
+                        <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                            เพื่อความปลอดภัย กรุณากรอกรหัส OTP 6 หลักที่ส่งไปยังอีเมล:
+                            <br />
+                            <span className="font-bold text-slate-800 font-mono text-sm mt-1 inline-block bg-slate-100 px-3 py-1 rounded-lg">
+                                {admin2fa.maskedEmail}
+                            </span>
+                        </p>
+
+                        {admin2fa.error && (
+                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-bold flex items-center justify-center gap-1.5">
+                                <i className="fa-solid fa-triangle-exclamation"></i>
+                                <span>{admin2fa.error}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleVerifyAdmin2fa} className="space-y-4">
+                            <div>
+                                <input
+                                    type="text"
+                                    maxLength={6}
+                                    autoFocus
+                                    value={admin2fa.otp}
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '');
+                                        setAdmin2fa(prev => prev ? { ...prev, otp: val, error: '' } : null);
+                                    }}
+                                    placeholder="• • • • • •"
+                                    className="w-full text-center text-2xl font-black tracking-[0.5em] py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none focus:border-[#64964E] transition font-mono"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={admin2fa.loading || admin2fa.otp.length !== 6}
+                                className="w-full bg-[#64964E] hover:bg-[#527d40] disabled:opacity-50 text-white font-bold py-3.5 rounded-2xl transition shadow-lg shadow-[#64964E]/25 active:scale-95 text-sm"
+                            >
+                                {admin2fa.loading ? 'กำลังตรวจสอบ...' : 'ยืนยันความปลอดภัย'}
+                            </button>
+
+                            <div className="flex items-center justify-between text-xs pt-2">
+                                <button
+                                    type="button"
+                                    onClick={handleResendAdmin2fa}
+                                    disabled={admin2fa.countdown > 0 || admin2fa.loading}
+                                    className="text-[#64964E] hover:text-[#527d40] font-bold disabled:text-slate-400 disabled:cursor-not-allowed"
+                                >
+                                    {admin2fa.countdown > 0 ? `ส่งรหัสใหม่ใน (${admin2fa.countdown}s)` : 'ขอรหัส OTP อีกครั้ง'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAdmin2fa(null)}
+                                    className="text-slate-400 hover:text-slate-600 font-medium"
+                                >
+                                    ยกเลิก
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
                     </div>
                 </div>
             </motion.div>
-        </div >
+        </div>
     );
 }

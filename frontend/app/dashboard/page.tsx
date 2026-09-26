@@ -291,7 +291,7 @@ export default function DashboardPage() {
     const displayName = user.username || (user.firstName ? `${user.title || ''}${user.firstName}` : user.email || 'Username');
 
     return (
-        <div className="min-h-full px-2 sm:px-6 lg:px-8 py-4 md:py-2 lg:py-6 font-sans flex flex-col relative z-0">
+        <div className="min-h-full px-2 sm:px-6 lg:px-8 pt-3 pb-8 md:py-2 lg:py-6 font-sans flex flex-col relative z-0">
             <div className="fixed inset-0 -z-10 bg-cover bg-center md:bg-fixed" style={{ backgroundImage: "url('/images/bg-white.jpg')" }}></div>
             <div className="bg-white/30 backdrop-blur-md p-2 sm:p-4 lg:p-8 rounded-3xl lg:rounded-[3rem] shadow-2xl max-w-[1500px] mx-auto w-full border border-white/50 flex-1 flex flex-col relative overflow-visible">
                 <div className="max-w-[1440px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch flex-1 relative z-10 lg:h-[550px] xl:h-[600px] tall:h-[660px]">

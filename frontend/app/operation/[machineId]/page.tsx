@@ -40,10 +40,10 @@ export default function OperationPage({ params }: { params: Promise<{ machineId:
         <div className="flex flex-col min-h-screen bg-gradient-to-b from-green-50 to-white font-sans text-gray-900">
 
             {/* Header */}
-            <div className="bg-gradient-to-r from-green-600 to-emerald-500 px-4 py-4 flex items-center justify-between shadow-md sticky top-0 z-10">
+            <div className="bg-gradient-to-r from-[#527d40] to-[#64964E] px-4 py-4 flex items-center justify-between shadow-md sticky top-0 z-10">
                 <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
-                        <span className="text-lg">♻️</span>
+                    <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center text-white text-base">
+                        <i className="fa-solid fa-recycle"></i>
                     </div>
                     <div>
                         <p className="text-white font-bold text-sm leading-tight">Smart Bin</p>
@@ -56,7 +56,7 @@ export default function OperationPage({ params }: { params: Promise<{ machineId:
                     <div className={`flex items-center space-x-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
                         wsConnected ? 'bg-white/20 text-white' : 'bg-red-400/30 text-red-100'
                     }`}>
-                        <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-300 animate-pulse' : 'bg-red-300'}`}/>
+                        <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-300 animate-pulse' : 'bg-red-300'}`}/>
                         <span>{wsConnected ? 'Online' : 'Offline'}</span>
                     </div>
 
@@ -74,16 +74,16 @@ export default function OperationPage({ params }: { params: Promise<{ machineId:
 
                 {/* Greeting */}
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-gray-800">สวัสดี คุณ{user.firstName}! 👋</h1>
+                    <h1 className="text-2xl font-bold text-gray-800">สวัสดี คุณ{user.firstName}!</h1>
                     <p className="text-gray-500 text-sm mt-1">โปรดนำขยะใส่ที่ช่องรับของตู้ Smart Bin</p>
                 </div>
 
                 {/* Points this session */}
-                <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-3xl p-5 text-white text-center shadow-lg">
-                    <p className="text-green-100 text-sm font-medium mb-1">แต้มที่ได้รับในเซสชันนี้</p>
+                <div className="bg-gradient-to-r from-[#527d40] to-[#64964E] rounded-3xl p-5 text-white text-center shadow-lg">
+                    <p className="text-emerald-100 text-sm font-medium mb-1">แต้มที่ได้รับในเซสชันนี้</p>
                     <div className="flex items-end justify-center space-x-1">
                         <span className="text-5xl font-black">{sessionPoints}</span>
-                        <span className="text-yellow-300 font-bold text-xl mb-1">pt</span>
+                        <span className="text-amber-300 font-bold text-xl mb-1">pt</span>
                     </div>
                 </div>
 
@@ -95,9 +95,11 @@ export default function OperationPage({ params }: { params: Promise<{ machineId:
 
                     {sessionHistory.length === 0 ? (
                         <div className="py-10 text-center">
-                            <div className="text-4xl mb-3">📥</div>
-                            <p className="text-gray-400 text-sm">รอรับขวด / กระป๋อง...</p>
-                            <p className="text-gray-300 text-xs mt-1">ระบบจะบันทึกอัตโนมัติเมื่อตรวจจับขยะ</p>
+                            <div className="w-14 h-14 rounded-2xl bg-[#64964E]/10 text-[#64964E] flex items-center justify-center mx-auto mb-3 text-2xl">
+                                <i className="fa-solid fa-inbox"></i>
+                            </div>
+                            <p className="text-gray-400 text-sm font-medium">รอรับขวด / กระป๋อง...</p>
+                            <p className="text-gray-400/80 text-xs mt-1">ระบบจะบันทึกอัตโนมัติเมื่อตรวจจับขยะ</p>
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
@@ -109,15 +111,15 @@ export default function OperationPage({ params }: { params: Promise<{ machineId:
                                 return (
                                     <div key={idx} className="flex items-center justify-between px-4 py-3">
                                         <div className="flex items-center space-x-3">
-                                            <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center text-base">
-                                                ♻️
+                                            <div className="w-9 h-9 bg-[#64964E]/10 rounded-xl flex items-center justify-center text-base text-[#64964E]">
+                                                <i className="fa-solid fa-recycle"></i>
                                             </div>
                                             <div>
                                                 <p className="font-semibold text-gray-800 text-sm">{typeLabel}</p>
                                                 <p className="text-gray-400 text-xs">{time} น.</p>
                                             </div>
                                         </div>
-                                        <span className="text-green-600 font-black">+{tx.pointsEarned} pt</span>
+                                        <span className="text-[#527d40] font-black">+{tx.pointsEarned} pt</span>
                                     </div>
                                 );
                             })}
@@ -128,9 +130,10 @@ export default function OperationPage({ params }: { params: Promise<{ machineId:
                 {/* Finish Button */}
                 <button
                     onClick={handleFinish}
-                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:from-green-600 hover:to-emerald-700 transition active:scale-95 text-base"
+                    className="w-full bg-[#64964E] hover:bg-[#527d40] text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-900/20 transition active:scale-95 text-base flex items-center justify-center gap-2"
                 >
-                    ✓ เสร็จสิ้น — ปิดเซสชัน
+                    <i className="fa-solid fa-check"></i>
+                    <span>เสร็จสิ้น — ปิดเซสชัน</span>
                 </button>
             </div>
         </div>

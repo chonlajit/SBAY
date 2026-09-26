@@ -24,7 +24,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         { href: '/redeem', icon: <i className="fa-solid fa-gift"></i>, label: 'แลกของรางวัล' },
         { href: '/about', icon: <i className="fa-solid fa-circle-info"></i>, label: 'เกี่ยวกับเรา' },
         ...(user.role === 'PARTNER' ? [{ href: '/partner', icon: <i className="fa-solid fa-store"></i>, label: 'ร้านของฉัน' }] : []),
-        ...(user.role === 'ADMIN' ? [{ href: '/admin', icon: <i className="fa-solid fa-user-gear"></i>, label: 'ผู้ดูแลระบบ (Admin)' }] : []),
+        ...((user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.email === 'sbay.smartcompany@gmail.com') ? [{ href: '/admin', icon: <i className="fa-solid fa-user-gear"></i>, label: user.role === 'SUPER_ADMIN' ? 'ผู้ดูแลระบบ (Super Admin)' : 'ผู้ดูแลระบบ (Admin)' }] : []),
     ] : [
         { href: '/', icon: <i className="fa-solid fa-house"></i>, label: 'หน้าหลัก' },
         { href: '/redeem', icon: <i className="fa-solid fa-store"></i>, label: 'ร้านค้า' },
@@ -47,7 +47,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50 font-sans text-gray-900 overflow-hidden">
+        <div className="flex flex-col h-screen h-[100dvh] bg-gray-50 font-sans text-gray-900 overflow-hidden">
 
             {/* ─── Top Header ─── */}
             <header className="bg-[#64964E] shadow-xl h-16 flex items-center justify-between px-4 md:px-6 shrink-0 z-20 sticky top-0 relative">
@@ -193,7 +193,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 { href: '/dashboard', icon: <i className="fa-solid fa-chart-bar text-black"></i>, label: 'สถิติและแต้มสะสม' },
                                 { href: '/redeem', icon: <i className="fa-solid fa-gift text-black"></i>, label: 'แลกของรางวัล' },
                                 ...(user.role === 'PARTNER' ? [{ href: '/partner', icon: <i className="fa-solid fa-store text-black"></i>, label: 'จัดการหน้าร้าน' }] : []),
-                                ...(user.role === 'ADMIN' ? [{ href: '/admin', icon: <i className="fa-solid fa-tools text-black"></i>, label: 'Admin Dashboard' }] : []),
+                                ...((user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.email === 'sbay.smartcompany@gmail.com') ? [{ href: '/admin', icon: <i className="fa-solid fa-tools text-black"></i>, label: user.role === 'SUPER_ADMIN' ? 'Super Admin Dashboard' : 'Admin Dashboard' }] : []),
                             ].map(item => (
                                 <Link
                                     key={item.href}
@@ -219,13 +219,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </div>
             )}
 
-            <main className={`flex-1 ${pathname === '/login' || pathname === '/register' ? 'overflow-hidden flex flex-col' : pathname === '/dashboard' ? 'overflow-y-auto flex flex-col' : 'overflow-y-auto'} ${pathname !== '/' && pathname !== '/login' && pathname !== '/register' ? 'pb-16 md:pb-0' : ''}`}>
+            <main className={`flex-1 min-h-0 min-w-0 ${pathname === '/login' || pathname === '/register' ? 'overflow-hidden flex flex-col' : pathname === '/dashboard' ? 'overflow-y-auto flex flex-col' : 'overflow-y-auto'} ${pathname !== '/' && pathname !== '/login' && pathname !== '/register' ? 'pb-4 md:pb-0' : ''}`}>
                 {children}
             </main>
 
             {/* Mobile Bottom Nav (non-home, non-auth pages) */}
             {pathname !== '/' && pathname !== '/login' && pathname !== '/register' && (
-                <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-20 safe-area-inset-bottom">
+                <nav className="md:hidden shrink-0 bg-white border-t border-gray-200 z-20 safe-area-inset-bottom">
                     <div className="flex items-center justify-around h-16 px-2">
                         {navItems.map((item) => {
                             const active = isActive(item.href);
@@ -233,7 +233,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 transition-all active:scale-90 ${active ? 'text-[#64964E]' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`relative flex flex-col items-center justify-center flex-1 h-full space-y-1 transition-all active:scale-90 ${active ? 'text-[#64964E]' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     <span className={`text-2xl transition-transform ${active ? 'scale-110' : ''}`}>
                                         {item.icon}
