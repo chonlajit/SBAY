@@ -102,7 +102,6 @@ RELEASE_ANGLE_PLASTIC = 145
 RELEASE_ANGLE_CAN = 55
 RELEASE_ANGLE_CARTON = 55
 RELEASE_ANGLE_RETURN = 60
-
 # --- Ultrasonic Sensors (GPIO BCM) ---
 # Compartments: Plastic, Can, Carton
 # Circuit Note: ECHO pins connect through 1k/2k voltage dividers (5V -> 3.3V safe for Pi)
@@ -128,9 +127,9 @@ ULTRASONIC_PINS = {
 # ปรับแต่งระยะถังเปล่า (empty) และระยะถังเต็ม (full) แยกตามประเภท
 # หมายเหตุ: ค่าเริ่มต้นเป็น placeholder ต้องทำการ calibrate วัดระยะหน้างานจริงหลังติดตั้ง
 ULTRASONIC_CALIBRATION = {
-    "PLASTIC_BOTTLE": {"empty_distance": 50.0, "full_distance": 10.0},
-    "ALUMINUM_CAN": {"empty_distance": 50.0, "full_distance": 10.0},
-    "BEVERAGE_CARTON": {"empty_distance": 50.0, "full_distance": 10.0},
+    "PLASTIC_BOTTLE": {"empty_distance": 70.7, "full_distance": 10.0},
+    "ALUMINUM_CAN": {"empty_distance": 44, "full_distance": 10.0},
+    "BEVERAGE_CARTON": {"empty_distance": 44, "full_distance": 10.0},
 }
 
 # --- Fill Status Thresholds (%) ---
@@ -150,7 +149,6 @@ LED_BIN_FULL_PIN = 7
 # โมเดลตรวจจับขยะ (ใช้โมเดลใหม่ v7: runs/detect/v7/best.pt)
 _base_dir = os.path.dirname(os.path.dirname(__file__))
 _root_dir = os.path.dirname(_base_dir)
-
 _candidate_models = [
     os.path.join(_base_dir, "bin-device", "runs", "detect", "v7", "best.pt"),
     os.path.join(_base_dir, "bin-device", "runs", "detect", "v7", "best (4).pt"),
@@ -173,9 +171,9 @@ DETECT_TIMEOUT = 10      # วินาที ถ้า detect ไม่ได�
 CAMERA_ROTATION = 270
 USE_ROTATED_BBOX = True   # ปรับกรอบ Bounding Box ให้เอียงตามรูปทรงขวดจริง
 CROP_TOP_PCT = 0.23
-CROP_BOTTOM_PCT = 0.70
-CROP_LEFT_PCT = 0.26
-CROP_RIGHT_PCT = 0.83
+CROP_BOTTOM_PCT = 0.75
+CROP_LEFT_PCT = 0.29
+CROP_RIGHT_PCT = 0.93
 
 # --- Size Estimation ---
 K = 80  # ค่าคงที่คำนวณ Score
@@ -183,45 +181,39 @@ K = 80  # ค่าคงที่คำนวณ Score
 # --- Camera & Size Estimation Calibration ---
 USE_FOCAL = False
 
-# 1. 2-Point Calibration (เล็กสุด กับ ใหญ่สุด)
-# กระป๋องกาแฟ (ชิ้นเล็ก 170ml)
 REF_SMALL_W_CM = 5.25
 REF_SMALL_W_PX = 103
-REF_SMALL_H_CM = 10.0
+REF_SMALL_H_CM = 10
 REF_SMALL_H_PX = 210
 
-# ขวดพลาสติก 1.5L (ชิ้นใหญ่)
 REF_LARGE_W_CM = 8.5
 REF_LARGE_W_PX = 195
 REF_LARGE_H_CM = 33.0
 REF_LARGE_H_PX = 600
 
-# ค่าคงที่สำหรับ Fallback / 1-Point Mode เดิม
 REF_WIDTH_CM = REF_SMALL_W_CM
 REF_WIDTH_PX = REF_SMALL_W_PX
 REF_HEIGHT_CM = REF_SMALL_H_CM
 REF_HEIGHT_PX = REF_SMALL_H_PX
 
-DISTANCE_CM = 34.0  # ระยะห่างจากกล้องถึงพื้นวางขวด
+DISTANCE_CM = 34.0  # ระยะห่างจากกล้องถึงพื้นวางขวด (เดิม 40.0cm)
 FOCAL_LENGTH_PX = int((REF_WIDTH_PX * DISTANCE_CM) / REF_WIDTH_CM) if REF_WIDTH_CM else 1038
-CORRECTION_FACTOR = 0.98
+CORRECTION_FACTOR = 0.78  # ปรับเป็น 1.00 เพื่อดึง 350ml ลงมาที่ 324ml
 MIN_HEIGHT_PX = 100
 SERVO_HOLD_ON_DROP = True  # เกร็งสู้แรงกระแทกเมื่อมีขวดตกใส่แผ่นรอง
 
 ML_RANGES = [
     # (min_ml, max_ml, label_ml)
-    (0, 225, 170),      # ครอบคลุมกระป๋องกาแฟ 170ml
+    (0, 225, 170),      # กระป๋องกาแฟ 170ml
     (225, 275, 250),
     (275, 312, 300),
-    (312, 360, 325),
-    (360, 470, 450),
-    (470, 495, 490),
-    (495, 550, 500),
-    (550, 615, 600),
-    (615, 715, 630),   # 620-640 -> ใช้ค่ากลาง 630 เพื่อให้คำนวณคะแนนได้
-    (715, 900, 800),
-    (900, 1250, 1000),
-    (1250, 9999, 1500)
+    (312, 380, 325),    # กระป๋อง 325ml
+    (380, 480, 450),
+    (480, 550, 500),
+    (550, 800, 600),    # ครอบคลุมขวด 600ml
+    (800, 950, 800),
+    (950, 1250, 1000),
+    (1250, 9999, 1500)  # ขวดลิตร 1.5L
 ]
 
 # --- Heartbeat ---
