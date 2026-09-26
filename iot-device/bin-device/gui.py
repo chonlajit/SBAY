@@ -1200,14 +1200,32 @@ class SmartBinGUI:
         # กรอบรายการขยะ (Scrollable Frame)
         self.list_container = tk.Frame(self.canvas, bg=COLORS["cream"], bd=0)
         self.items_canvas = tk.Canvas(self.list_container, bg=COLORS["cream"], highlightthickness=0)
+        self.items_scrollbar = tk.Scrollbar(self.list_container, orient="vertical", command=self.items_canvas.yview, width=12)
+        self.items_canvas.configure(yscrollcommand=self.items_scrollbar.set)
+
         self.items_inner = tk.Frame(self.items_canvas, bg=COLORS["cream"])
         self.items_window = self.items_canvas.create_window((0, 0), window=self.items_inner, anchor="nw")
 
         self.items_inner.bind("<Configure>", lambda e: self.items_canvas.configure(scrollregion=self.items_canvas.bbox("all")))
         self.items_canvas.bind("<Configure>", lambda e: self.items_canvas.itemconfig(self.items_window, width=e.width))
 
-        self.items_canvas.pack(fill="both", expand=True, padx=10, pady=5)
+        self.items_scrollbar.pack(side="right", fill="y", pady=5)
+        self.items_canvas.pack(side="left", fill="both", expand=True, padx=(8, 2), pady=5)
         self.canvas.create_window(280, 315, window=self.list_container, width=420, height=255, tags="content")
+
+        # ผูกระบบ Scroll ด้วยลูกกลิ้งเมาส์ และรองรับทัชสกรีน (Touch Drag)
+        def _on_mousewheel(event):
+            if event.num == 5 or getattr(event, 'delta', 0) < 0:
+                self.items_canvas.yview_scroll(1, "units")
+            elif event.num == 4 or getattr(event, 'delta', 0) > 0:
+                self.items_canvas.yview_scroll(-1, "units")
+
+        for w in (self.items_canvas, self.items_inner):
+            w.bind("<MouseWheel>", _on_mousewheel)
+            w.bind("<Button-4>", _on_mousewheel)
+            w.bind("<Button-5>", _on_mousewheel)
+            w.bind("<ButtonPress-1>", lambda e: self.items_canvas.scan_mark(e.x, e.y))
+            w.bind("<B1-Motion>", lambda e: self.items_canvas.scan_dragto(e.x, e.y, gain=1))
 
         # ข้อความสถานะการหยอด
         status_msg = "สแตนด์บาย: รอการหยอดขยะ..." if USE_IR else "สแตนด์บาย: กล้องพร้อมทำงาน..."
@@ -1377,6 +1395,26 @@ class SmartBinGUI:
         lower_bound = size_ml - (size_ml % 10)
         size_str = f"{lower_bound}-{lower_bound + 20}ml"
         tk.Label(row, text=f"{size_str}  ·  +{score:.1f} pt", font=(FONT, 11, "bold"), fg="#2A824C", bg="white").pack(side="right")
+
+        # ผูกระบบ Scroll เมื่อวางเมาส์หรือสัมผัสบนแถวรายการ
+        def _row_wheel(event):
+            if hasattr(self, 'items_canvas') and self.items_canvas.winfo_exists():
+                if event.num == 5 or getattr(event, 'delta', 0) < 0:
+                    self.items_canvas.yview_scroll(1, "units")
+                elif event.num == 4 or getattr(event, 'delta', 0) > 0:
+                    self.items_canvas.yview_scroll(-1, "units")
+
+        for w in (row, *row.winfo_children()):
+            w.bind("<MouseWheel>", _row_wheel)
+            w.bind("<Button-4>", _row_wheel)
+            w.bind("<Button-5>", _row_wheel)
+            w.bind("<ButtonPress-1>", lambda e: self.items_canvas.scan_mark(e.x, e.y) if hasattr(self, 'items_canvas') else None)
+            w.bind("<B1-Motion>", lambda e: self.items_canvas.scan_dragto(e.x, e.y, gain=1) if hasattr(self, 'items_canvas') else None)
+
+        # เลื่อนลงมาแสดงรายการล่าสุดอัตโนมัติ (Auto-scroll to latest item)
+        if hasattr(self, 'items_canvas') and self.items_canvas.winfo_exists():
+            self.items_canvas.update_idletasks()
+            self.items_canvas.yview_moveto(1.0)
 
     def update_status(self, message, color=None):
         """อัปเดตข้อความสถานะในหน้าตรวจจับ"""

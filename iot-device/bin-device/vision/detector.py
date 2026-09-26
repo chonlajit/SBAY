@@ -20,7 +20,7 @@ class Detector:
             "ba": "BEVERAGE_CARTON",
         }
 
-    def _find_rotated_box(self, roi, x1, y1, x2, y2):
+    def _find_rotated_box(self, roi, x1, y1, x2, y2, label="PLASTIC_BOTTLE"):
         """
         คำนวณหากรอบสี่เหลี่ยมเอียงตามมุมจริงของขวด (Oriented Bounding Box)
         โดยใช้การวิเคราะห์ Contour ภายในกรอบวัตถุของ YOLO
@@ -57,7 +57,12 @@ class Detector:
         valid_cnts = [c for c in contours if cv2.contourArea(c) > 0.05 * roi_area]
 
         if valid_cnts:
-            all_pts = np.vstack(valid_cnts)
+            # คัดเลือกเฉพาะ Contour หลักของตัวขวด ไม่เอาเศษสะท้อนขอบถาดมาขยายกรอบ
+            main_cnt = max(valid_cnts, key=cv2.contourArea)
+            main_area = cv2.contourArea(main_cnt)
+            good_cnts = [c for c in valid_cnts if cv2.contourArea(c) >= 0.12 * main_area]
+
+            all_pts = np.vstack(good_cnts)
             hull = cv2.convexHull(all_pts)
             rect = cv2.minAreaRect(hull)
             (cx, cy), (dim1, dim2), angle = rect
@@ -73,6 +78,17 @@ class Detector:
                 true_height = max(dim1, dim2)
                 true_width = min(dim1, dim2)
 
+                # ป้องกันปัญหากรอบบวมหลวมเกินความจริง (Sanity Clamping)
+                # สำหรับขวดพลาสติก สัดส่วน สูง : กว้าง ในชีวิตจริงอยู่ที่ 2.8 - 4.2 เท่า
+                # ถ้ากว้างเกินไปจนสัดส่วนต่ำกว่า 2.3 แสดงว่ากรอบบวมกินเงา/ขอบข้าง -> ดึงความกว้างกลับมาที่สัดส่วนจริง
+                label_str = str(label).upper()
+                if "BOTTLE" in label_str and true_width > 0:
+                    if (true_height / true_width) < 2.3:
+                        true_width = true_height / 3.3
+                elif "CAN" in label_str and true_width > 0:
+                    if (true_height / true_width) < 1.5:
+                        true_width = true_height / 1.9
+
                 # คำนวณองศาเทียบกับแนวตั้ง (-90 ถึง +90 องศา)
                 tilt_deg = angle if dim1 < dim2 else angle + 90
                 while tilt_deg > 90:
@@ -83,8 +99,14 @@ class Detector:
                 return box_pts, true_height, true_width, tilt_deg
 
         # กรณีไม่สามารถคำนวณมุมได้ ให้ใช้กรอบสี่เหลี่ยมเดิม
+        fallback_h = float(max(roi_h, roi_w))
+        fallback_w = float(min(roi_h, roi_w))
+        label_str = str(label).upper()
+        if "BOTTLE" in label_str and fallback_w > 0 and (fallback_h / fallback_w) < 2.3:
+            fallback_w = fallback_h / 3.3
+
         box_pts = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]], dtype=np.int32)
-        return box_pts, float(max(roi_h, roi_w)), float(min(roi_h, roi_w)), 0.0
+        return box_pts, fallback_h, fallback_w, 0.0
 
     def detect(self, frame):
         import settings.config as config
@@ -132,10 +154,13 @@ class Detector:
 
             if use_rotated:
                 roi = frame[y1:y2, x1:x2]
-                box_pts, height, width, tilt_deg = self._find_rotated_box(roi, x1, y1, x2, y2)
+                box_pts, height, width, tilt_deg = self._find_rotated_box(roi, x1, y1, x2, y2, sbay_label)
             else:
                 height = y2 - y1
                 width = x2 - x1
+                label_str = str(sbay_label).upper()
+                if "BOTTLE" in label_str and width > 0 and (height / width) < 2.3:
+                    width = height / 3.3
                 tilt_deg = 0.0
                 box_pts = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]], dtype=np.int32)
 
