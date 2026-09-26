@@ -88,14 +88,6 @@ class Detector:
                     if (true_height / true_width) < 1.3:
                         true_width = true_height / 1.7
 
-                # คำนวณความกว้างเฉลี่ยที่แท้จริงจาก Shape Fill Ratio
-                # ชดเชยสำหรับขวดที่มีส่วนคอดลึก (เช่น ขวดโค้ก/น้ำอัดลม) หรือขวดโออิชิที่มีจุดแคบกว้างไม่เท่ากัน
-                shape_area = cv2.contourArea(good_cnts[0]) if len(good_cnts) == 1 else cv2.contourArea(hull)
-                if box_area > 0 and shape_area > 0:
-                    fill_ratio = min(1.0, max(0.65, shape_area / box_area))
-                    # ปรับลดความกว้างตามสัดส่วนเนื้อที่จริง (sqrt(fill_ratio))
-                    true_width = true_width * (fill_ratio ** 0.5)
-
                 # คำนวณองศาเทียบกับแนวตั้ง (-90 ถึง +90 องศา)
                 tilt_deg = angle if dim1 < dim2 else angle + 90
                 while tilt_deg > 90:
