@@ -78,16 +78,23 @@ class Detector:
                 true_height = max(dim1, dim2)
                 true_width = min(dim1, dim2)
 
-                # ป้องกันปัญหากรอบบวมหลวมเกินความจริง (Sanity Clamping)
-                # สำหรับขวดพลาสติก สัดส่วน สูง : กว้าง ในชีวิตจริงอยู่ที่ 2.8 - 4.2 เท่า
-                # ถ้ากว้างเกินไปจนสัดส่วนต่ำกว่า 2.3 แสดงว่ากรอบบวมกินเงา/ขอบข้าง -> ดึงความกว้างกลับมาที่สัดส่วนจริง
+                # ป้องกันปัญหากรอบบวมหลวมจากเงาข้างถาด (Sanity Clamping)
+                # ตั้ง threshold ที่ 1.7 เพื่อไม่ให้กระทบขวดทรงป้อมสั้น (เช่น ขวด 350-380ml)
                 label_str = str(label).upper()
                 if "BOTTLE" in label_str and true_width > 0:
-                    if (true_height / true_width) < 2.3:
-                        true_width = true_height / 3.3
+                    if (true_height / true_width) < 1.7:
+                        true_width = true_height / 2.8
                 elif "CAN" in label_str and true_width > 0:
-                    if (true_height / true_width) < 1.5:
-                        true_width = true_height / 1.9
+                    if (true_height / true_width) < 1.3:
+                        true_width = true_height / 1.7
+
+                # คำนวณความกว้างเฉลี่ยที่แท้จริงจาก Shape Fill Ratio
+                # ชดเชยสำหรับขวดที่มีส่วนคอดลึก (เช่น ขวดโค้ก/น้ำอัดลม) หรือขวดโออิชิที่มีจุดแคบกว้างไม่เท่ากัน
+                shape_area = cv2.contourArea(good_cnts[0]) if len(good_cnts) == 1 else cv2.contourArea(hull)
+                if box_area > 0 and shape_area > 0:
+                    fill_ratio = min(1.0, max(0.65, shape_area / box_area))
+                    # ปรับลดความกว้างตามสัดส่วนเนื้อที่จริง (sqrt(fill_ratio))
+                    true_width = true_width * (fill_ratio ** 0.5)
 
                 # คำนวณองศาเทียบกับแนวตั้ง (-90 ถึง +90 องศา)
                 tilt_deg = angle if dim1 < dim2 else angle + 90
@@ -102,8 +109,8 @@ class Detector:
         fallback_h = float(max(roi_h, roi_w))
         fallback_w = float(min(roi_h, roi_w))
         label_str = str(label).upper()
-        if "BOTTLE" in label_str and fallback_w > 0 and (fallback_h / fallback_w) < 2.3:
-            fallback_w = fallback_h / 3.3
+        if "BOTTLE" in label_str and fallback_w > 0 and (fallback_h / fallback_w) < 1.7:
+            fallback_w = fallback_h / 2.8
 
         box_pts = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]], dtype=np.int32)
         return box_pts, fallback_h, fallback_w, 0.0
