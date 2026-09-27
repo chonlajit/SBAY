@@ -39,6 +39,7 @@ class UltrasonicSensor:
                 logger.info(f"[{self.name}] Initialized on TRIG={self.trig_pin}, ECHO={self.echo_pin}")
             except Exception as e:
                 logger.error(f"[{self.name}] GPIO setup failed: {e}")
+                print(f"❌ [{self.name}] GPIO setup failed (TRIG={self.trig_pin}, ECHO={self.echo_pin}): {e}")
         else:
             logger.debug(f"[{self.name}] GPIO not available. Running in mock/simulation mode.")
 
