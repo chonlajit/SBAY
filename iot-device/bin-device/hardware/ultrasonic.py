@@ -35,7 +35,8 @@ class UltrasonicSensor:
                 if GPIO.getmode() != GPIO.BCM:
                     GPIO.setmode(GPIO.BCM)
                 GPIO.setup(self.trig_pin, GPIO.OUT)
-                GPIO.setup(self.echo_pin, GPIO.IN)
+                # เพิ่ม Pull-down resistor ที่ขา ECHO เพื่อป้องกันสัญญาณลอย (Floating Pin / Noise)
+                GPIO.setup(self.echo_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
                 GPIO.output(self.trig_pin, False)
                 self._initialized = True
                 logger.info(f"[{self.name}] Initialized on TRIG={self.trig_pin}, ECHO={self.echo_pin}")
@@ -45,30 +46,19 @@ class UltrasonicSensor:
         else:
             logger.debug(f"[{self.name}] GPIO not available. Running in mock/simulation mode.")
 
-    def measure_distance_cm(self, timeout_sec: float = 0.03) -> float | None:
-        """
-        วัดระยะทางจากเซนเซอร์เป็นเซนติเมตร
-        - ยิง Pulse TRIG 10µs
-        - ดักรอ ECHO กลับมาพร้อม Timeout เพื่อป้องกันระบบค้าง
-        - ใช้ time.perf_counter() เพื่อความแม่นยำระดับ sub-microsecond
-        - คืนค่าระยะทาง (cm) หรือ None หากเกิด timeout / อ่านค่าไม่ได้
-        """
-        if not GPIO_AVAILABLE or not self._initialized:
-            logger.warning(f"[{self.name}] GPIO not available or sensor not initialized")
-            return None
-
+    def _single_measure(self, timeout_sec: float = 0.04) -> float | None:
+        """ยิงคลื่นวัดระยะทางรอบเดี่ยว (Single ping)"""
         try:
             if GPIO.getmode() != GPIO.BCM:
                 GPIO.setmode(GPIO.BCM)
 
-            # 1. รอให้ขา ECHO เคลียร์เป็น LOW ก่อน (ป้องกันคลื่นสะท้อนค้างจากรอบก่อน)
+            # 1. รอให้ขา ECHO เคลียร์เป็น LOW ก่อน
             wait_clear = time.perf_counter()
             while GPIO.input(self.echo_pin) == 1:
-                if time.perf_counter() - wait_clear > 0.01:
-                    logger.debug(f"[{self.name}] ECHO pin stuck HIGH before trigger")
+                if time.perf_counter() - wait_clear > 0.015:
                     return None
 
-            # 2. ให้ TRIG เคลียร์สัญญาณ LOW สั้นๆ
+            # 2. ให้ TRIG เคลียร์สัญญาณ LOW
             GPIO.output(self.trig_pin, False)
             time.sleep(0.000005)  # 5µs
 
@@ -81,7 +71,6 @@ class UltrasonicSensor:
             timeout_start = time.perf_counter()
             while GPIO.input(self.echo_pin) == 0:
                 if time.perf_counter() - timeout_start > timeout_sec:
-                    logger.debug(f"[{self.name}] Timeout waiting for ECHO HIGH")
                     return None
             pulse_start = time.perf_counter()
 
@@ -89,7 +78,6 @@ class UltrasonicSensor:
             timeout_echo = time.perf_counter()
             while GPIO.input(self.echo_pin) == 1:
                 if time.perf_counter() - timeout_echo > timeout_sec:
-                    logger.debug(f"[{self.name}] Timeout waiting for ECHO LOW")
                     return None
             pulse_end = time.perf_counter()
 
@@ -97,16 +85,38 @@ class UltrasonicSensor:
             pulse_duration = pulse_end - pulse_start
             distance = (pulse_duration * 34300.0) / 2.0
 
-            # ตรวจสอบขอบเขตระยะที่เป็นไปได้ของ HC-SR04 (2 cm - 400 cm)
             if 2.0 <= distance <= 400.0:
                 return round(distance, 2)
-            else:
-                logger.debug(f"[{self.name}] Out of range reading: {distance:.1f} cm")
-                return None
+            return None
 
         except Exception as e:
             logger.warning(f"[{self.name}] Measurement error: {e}")
             return None
+
+    def measure_distance_cm(self, timeout_sec: float = 0.04, samples: int = 3) -> float | None:
+        """
+        วัดระยะทางจากเซนเซอร์เป็นเซนติเมตร
+        - ยิง Pulse TRIG พร้อม timeout ป้องกันค้าง
+        - ทำ Multi-sample (3 ครั้ง) แล้วหาค่า Median เพื่อตัดค่าเหวี่ยง/Noise
+        """
+        if not GPIO_AVAILABLE or not self._initialized:
+            logger.warning(f"[{self.name}] GPIO not available or sensor not initialized")
+            return None
+
+        readings = []
+        for _ in range(samples):
+            d = self._single_measure(timeout_sec=timeout_sec)
+            if d is not None:
+                readings.append(d)
+            time.sleep(0.01)  # พัก 10ms ระหว่าง ping ย่อย
+
+        if not readings:
+            return None
+
+        readings.sort()
+        # ใช้ค่า Median (มัธยฐาน) ป้องกันค่ากระโดด/ค่าสุ่ม
+        median_dist = readings[len(readings) // 2]
+        return round(median_dist, 2)
 
     # Alias for convenience
     read_distance = measure_distance_cm
