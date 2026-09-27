@@ -253,7 +253,7 @@ class DetectionService:
 
         # Hardware action (ปกติ)
         sort_item(stable_label)
-        time.sleep(0.3)
+        time.sleep(0.15)
         release_item(stable_label)
 
         # Reset buffers for next item

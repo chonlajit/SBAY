@@ -133,7 +133,7 @@ def set_angle(pin, angle, smooth=False):
                 time.sleep(0.015)
 
         target.angle = angle
-        time.sleep(0.8)
+        time.sleep(0.35)
         
         # ปิดสัญญาณ PWM เพื่อลดความร้อนมอเตอร์เมื่อไปถึงจุดที่ต้องการแล้ว
         if not KEEP_TORQUE:
@@ -151,7 +151,7 @@ def set_angle(pin, angle, smooth=False):
         duty_cycle = 2.5 + (angle / max_angle_scale) * 10.0
         
         target.change_duty_cycle(duty_cycle)
-        time.sleep(1.0)
+        time.sleep(0.4)
         
         # ตัดสัญญาณไฟเพื่อไม่ให้มอเตอร์ร้อน
         if not KEEP_TORQUE:
@@ -246,14 +246,14 @@ def release_item(label="PLASTIC_BOTTLE"):
     angle = mapping.get(str(label).upper(), 45)
     
     set_angle(SERVO_RELEASE_PIN, angle)
-    time.sleep(1)
+    time.sleep(0.35)
     set_angle(SERVO_RELEASE_PIN, DEFAULT_RELEASE_ANGLE)
     set_angle(SERVO_SORT_PIN, DEFAULT_SORT_ANGLE)
 
 def drop_item():
     """เปิดเพื่อให้ขวดหล่นลงมาในกล่อง จากนั้นปิดกลับ (สำหรับมอเตอร์ 180 องศา)"""
     set_angle(SERVO_DROP_PIN, DROP_ANGLE_OPEN, smooth=True)
-    time.sleep(1.0)
+    time.sleep(0.35)
     set_angle(SERVO_DROP_PIN, DROP_ANGLE_CLOSED, smooth=True)
 
 def open_return_door():
@@ -267,7 +267,7 @@ def close_return_door():
 def return_item():
     """เปิดเพื่อคืนขวดให้ผู้ใช้ จากนั้นปิดกลับ (สำหรับมอเตอร์ 180 องศา)"""
     open_return_door()
-    time.sleep(1.0)
+    time.sleep(0.5)
     close_return_door()
 
 def return_bottle():
@@ -281,15 +281,15 @@ def return_bottle():
     """
     # 1. หมุน Return Servo เพื่อเปิดประตูก่อน
     open_return_door()
-    time.sleep(1.0)
+    time.sleep(0.4)
 
     # 2. ค่อยหมุนไปทิศคืนขวด
     sort_item("RETURN")
-    time.sleep(0.5)
+    time.sleep(0.2)
 
     # 3. ปล่อยแผ่นรองขวด และ 4. หมุนกลับมาทิศ default
     release_item("RETURN")
-    time.sleep(0.5)
+    time.sleep(0.25)
 
     # 5. แล้วค่อยปิดประตู return
     close_return_door()

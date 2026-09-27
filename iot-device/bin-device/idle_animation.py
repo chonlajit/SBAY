@@ -53,6 +53,7 @@ class IdleSleepingFace:
         self.release_timer = None
         self.tap_count = 0
         self._last_tap_time = 0.0
+        self._transitioning = False
         self.bounce_choreography = []
         self._wake_finish_timer = None
         self._last_rendered_pct = {}
@@ -607,6 +608,7 @@ class IdleSleepingFace:
         """เริ่มเล่น Animation นอนหลับ และเริ่ม Loop อัปเดตเซนเซอร์"""
         self.state = "sleeping"
         self.tap_count = 0
+        self._transitioning = False
         if hasattr(self, 'release_timer') and self.release_timer:
             try:
                 self.root.after_cancel(self.release_timer)
@@ -627,6 +629,7 @@ class IdleSleepingFace:
         """เริ่มแสดงหน้าโคลสอัปแบบตื่นยิ้มหวาน แล้วค่อยๆ หลับตาลงเข้าสู่โหมดหลับ"""
         self.state = "falling_asleep"
         self.tap_count = 0
+        self._transitioning = False
         if hasattr(self, 'release_timer') and self.release_timer:
             try:
                 self.root.after_cancel(self.release_timer)
@@ -666,6 +669,8 @@ class IdleSleepingFace:
 
     def on_tap(self, event=None):
         """เมื่อมีคนแตะหน้าจอ -> สะดุ้งตื่น / กดย้ำๆ ให้น้องเด้งดึ๋ง"""
+        if getattr(self, '_transitioning', False) or self.state in ("transitioning", "stopped", "finishing"):
+            return
         now = time.time()
         if hasattr(self, '_last_tap_time') and now - self._last_tap_time < 0.04:
             return
@@ -806,9 +811,19 @@ class IdleSleepingFace:
             self.release_timer = self.root.after(650, self._on_release_timeout)
 
     def _on_release_timeout(self):
-        """เมื่อผู้ใช้หยุดกดย้ำๆ (ปล่อย) ให้เคลื่อนต่อไปยังหน้าต่อไป"""
+        """เมื่อผู้ใช้หยุดกดย้ำๆ (ปล่อย) ให้เคลื่อนต่อไปยังหน้าต่อไป และล็อกไม่ให้กดย้ำเด้งต่อ"""
         self.release_timer = None
-        self.state = "awake"
+        self._transitioning = True
+        self.state = "transitioning"
+        try:
+            self.canvas.unbind("<Button-1>")
+        except Exception:
+            pass
+        try:
+            self.canvas.tag_unbind("idle_sleeping_face", "<Button-1>")
+            self.canvas.tag_unbind("waste_gauge", "<Button-1>")
+        except Exception:
+            pass
         if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
             try:
                 self.canvas.itemconfig(self.sub_item, text="ยินดีต้อนรับครับ!", fill="#16A34A", font=(self.font_family, self.s_thai_prompt, "bold"))
@@ -826,6 +841,7 @@ class IdleSleepingFace:
 
     def stop(self):
         """หยุดการทำงานและเคลียร์ Timer และองค์ประกอบทั้งหมด"""
+        self._transitioning = True
         self.state = "stopped"
         if self.timer_id:
             try:

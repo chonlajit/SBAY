@@ -283,7 +283,7 @@ class SmartBinController:
                     if self.gui:
                         self.gui.schedule(self.gui.update_status, "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)...", "#94a3b8")
                     self.detection.start_camera()
-                    time.sleep(1.0)
+                    time.sleep(0.3)
             
             # 1. เช็คว่ามีของใหม่มาจ่อเซ็นเซอร์ไหม (เฉพาะตอนที่ยังไม่ได้กำลังวิเคราะห์ของเก่าอยู่)
             if not processing_item and (not USE_IR or self.detection.is_item_present()):
@@ -306,7 +306,7 @@ class SmartBinController:
                         self.gui.schedule(self.gui.update_status, "กำลังเปิดกล้องและวิเคราะห์...", "#eab308")
                     
                     self.detection.start_camera()
-                    time.sleep(1.0) # Wait for camera warmup
+                    time.sleep(0.3) # Wait for camera warmup
                 else:
                     # กรณีไม่ใช้ IR ให้เกร็งสู้เมื่อเริ่มวิเคราะห์เช่นกัน
                     if SERVO_HOLD_ON_DROP:
@@ -319,6 +319,8 @@ class SmartBinController:
                 # เปลี่ยนสถานะว่า "กำลังมีของอยู่ข้างในตู้ ให้กล้องวิเคราะห์ต่อไปเรื่อยๆ"
                 processing_item = True
                 processing_start_time = time.time()
+                if self.gui and hasattr(self.gui, 'set_finish_enabled'):
+                    self.gui.schedule(self.gui.set_finish_enabled, False)
                 if self.gui and hasattr(self.gui, 'reset_inactivity'):
                     self.gui.schedule(self.gui.reset_inactivity)
 
@@ -351,26 +353,28 @@ class SmartBinController:
                             self.gui.schedule(self.gui.update_status, f"ช่อง {type_th} เต็มแล้ว! (คืนขยะเรียบร้อย)", "#ef4444")
                             if hasattr(self.gui, 'reset_inactivity'):
                                 self.gui.schedule(self.gui.reset_inactivity)
-                            time.sleep(3.0)
+                            time.sleep(1.5)
                             status_msg = "สแตนด์บาย: รอการหยอดขยะ"
                             self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
                             self.gui.schedule(self.gui.update_camera_frame, None)
                             if hasattr(self.gui, 'reset_inactivity'):
                                 self.gui.schedule(self.gui.reset_inactivity)
 
-                        time.sleep(1.0)
+                        time.sleep(0.2)
                         if USE_IR:
                             clear_wait_start = time.time()
                             while self.detecting and self.detection.is_item_present():
                                 time.sleep(0.1)
                                 if time.time() - clear_wait_start > 4.0:
                                     break
-                            time.sleep(0.5)
+                            time.sleep(0.2)
                         else:
                             self.detection.reset_buffers()
-                            time.sleep(1.5)
+                            time.sleep(0.5)
                         processing_item = False
                         processing_start_time = 0
+                        if self.gui and hasattr(self.gui, 'set_finish_enabled'):
+                            self.gui.schedule(self.gui.set_finish_enabled, True)
                     else:
                         # 🎯 AI ตรวจเจอขยะสำเร็จและเสถียรแล้ว
                         item = self.session.add_item(
@@ -401,7 +405,7 @@ class SmartBinController:
                                 self.gui.schedule(self.gui.reset_inactivity)
                         
                         # รอให้ Servo หมุนและปล่อยขยะตกลงช่องเสร็จสมบูรณ์
-                        time.sleep(2.0)
+                        time.sleep(0.35)
 
                         # 🛡️ Edge-trigger protection: รอจนกว่าเซ็นเซอร์ IR จะเคลียร์
                         # ป้องกันระดับสัญญาณค้างทำให้ระบบคิดว่ามีขวดใหม่อีกชิ้นเข้ามาทันที
@@ -412,14 +416,16 @@ class SmartBinController:
                                 if time.time() - clear_wait_start > 4.0:
                                     logger.warning("IR sensor remained active after drop. Forcing clear.")
                                     break
-                            time.sleep(0.5)  # Debounce delay หลังจาก IR เคลียร์แล้ว
+                            time.sleep(0.2)  # Debounce delay หลังจาก IR เคลียร์แล้ว
                         else:
-                            # กรณีไม่มี IR (หรือโหมดทดสอบ) ให้ล้างบัฟเฟอร์และพัก 1.5 วินาที
+                            # กรณีไม่มี IR (หรือโหมดทดสอบ) ให้ล้างบัฟเฟอร์และพัก 0.5 วินาที
                             self.detection.reset_buffers()
-                            time.sleep(1.5)
+                            time.sleep(0.5)
 
                         processing_item = False  # กลับไปรอรับของชิ้นใหม่ได้
                         processing_start_time = 0
+                        if self.gui and hasattr(self.gui, 'set_finish_enabled'):
+                            self.gui.schedule(self.gui.set_finish_enabled, True)
                     
                 else:
                     # ⏳ AI ยังหาไม่เจอ หรือยังไม่เสถียร เช็คว่าหมดเวลา (Timeout) หรือยัง
@@ -448,7 +454,7 @@ class SmartBinController:
                             self.gui.schedule(self.gui.update_status, "ไม่พบขวด หรือขยะไม่ถูกต้อง (คืนขวดแล้ว)...", "#ef4444")
                             if hasattr(self.gui, 'reset_inactivity'):
                                 self.gui.schedule(self.gui.reset_inactivity)
-                            time.sleep(3.0)
+                            time.sleep(1.5)
                             status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
                             self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
                             self.gui.schedule(self.gui.update_camera_frame, None)
@@ -461,13 +467,15 @@ class SmartBinController:
                                 time.sleep(0.1)
                                 if time.time() - clear_wait_start > 4.0:
                                     break
-                            time.sleep(0.5)
+                            time.sleep(0.2)
                         else:
                             self.detection.reset_buffers()
-                            time.sleep(1.0)
+                            time.sleep(0.4)
 
                         processing_item = False
                         processing_start_time = 0
+                        if self.gui and hasattr(self.gui, 'set_finish_enabled'):
+                            self.gui.schedule(self.gui.set_finish_enabled, True)
 
             time.sleep(0.1)  # Prevent CPU spike
 
@@ -575,7 +583,7 @@ class SmartBinController:
 
                     self.detection.drop_item()
                     self.detection.start_camera()
-                    time.sleep(1.0)  # รอ Warmup กล้อง
+                    time.sleep(0.3)  # รอ Warmup กล้อง
 
                     # 2. ทำการวิเคราะห์ภาพด้วย AI
                     proc_start = time.time()

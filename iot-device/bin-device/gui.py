@@ -174,6 +174,7 @@ class SmartBinGUI:
         self._alert_overlay_img = None
         self._alert_on_close = None
         self.is_verifying_phone = False
+        self.finish_btn_enabled = True
 
         # ระบบ Inactivity Timeout (กลับหน้าหลับอัตโนมัติเมื่อไม่มีการใช้งาน)
         self._inactivity_timer = None
@@ -434,6 +435,21 @@ class SmartBinGUI:
                     lx + offset * lscale + 12 * lscale, ly + offset * lscale + 9 * lscale,
                     fill="#8AD66B", outline="", tags="ambient",
                 )
+        self._create_secret_reset_hotspot()
+
+    def _create_secret_reset_hotspot(self):
+        """สร้าง Invisible Corner Hotspot มุมซ้ายบน สำหรับรีเซ็ต/รีโหลด 5 ครั้งติดกันโดยไม่ต้องรอสถานะออนไลน์"""
+        if not hasattr(self, 'canvas') or not self.canvas:
+            return
+        self.canvas.delete("secret_reset_hotspot")
+        hx2 = max(80, int(140 * self.scale))
+        hy2 = max(60, int(90 * self.scale))
+        self.canvas.create_rectangle(
+            0, 0, hx2, hy2,
+            fill="", outline="", tags="secret_reset_hotspot"
+        )
+        self.canvas.tag_bind("secret_reset_hotspot", "<Button-1>", self._on_secret_reload_tap)
+        self.canvas.tag_raise("secret_reset_hotspot")
 
     def bind_button(self, tag, command, normal, pressed):
         last_click = [0.0]
@@ -480,7 +496,7 @@ class SmartBinGUI:
         title_y = (y1 + y2) / 2 if compact else y1 + 43
         self.canvas.create_text(
             (x1 + x2) / 2, title_y, text=title, fill=COLORS["ink"],
-            font=(FONT, 18 if compact else 22, "bold"), tags=tag
+            font=(FONT, 18 if compact else 22, "bold"), tags=(tag, f"{tag}_title")
         )
         if subtitle and not compact:
             self.canvas.create_text(
@@ -786,6 +802,7 @@ class SmartBinGUI:
             self.bind_button(tag, action, fill, "#FFFFFF")
 
         self.update_phone_text()
+        self._create_secret_reset_hotspot()
 
     def _draw_phone_mascot(self):
         self.canvas.delete("phone_mascot")
@@ -1267,6 +1284,7 @@ class SmartBinGUI:
         )
 
         # 3. ปุ่มเสร็จสิ้น (Finish Button)
+        self.finish_btn_enabled = True
         self.button(535, 465, 965, 535, "✓  เสร็จสิ้น (FINISH)", "", COLORS["mint"], self._handle_finish, "finish_btn")
 
         # 4. น้อง Mascot ที่มุมล่างขวาของกล่องกล้อง เหนือปุ่มเสร็จสิ้น
@@ -1277,6 +1295,33 @@ class SmartBinGUI:
             self._render_item_row(item["type"], item["ml"], item["score"])
 
         self._reset_inactivity_timer(GUI_IDLE_TIMEOUT_DETECTING)
+
+    def set_finish_enabled(self, enabled: bool):
+        """เปิดหรือปิดการทำงานของปุ่มเสร็จสิ้น (FINISH) เมื่ออยู่ในสถานะดีเทค / สแตนด์บาย"""
+        self.finish_btn_enabled = bool(enabled)
+        if self.page != "detecting" or not self.canvas:
+            return
+
+        if self.finish_btn_enabled:
+            fill_color = COLORS["mint"]
+            text_color = COLORS["ink"]
+            btn_text = "✓  เสร็จสิ้น (FINISH)"
+            if not self.cursor_hidden:
+                self.canvas.tag_bind("finish_btn", "<Enter>", lambda _e: self._set_cursor("hand2"))
+                self.canvas.tag_bind("finish_btn", "<Leave>", lambda _e: self._set_cursor(""))
+        else:
+            fill_color = "#123C2D"  # สีโทนมืดเดียวกับกรอบกล้อง แสดงสถานะล็อก
+            text_color = "#5A7A6E"  # สีเขียวเข้มหม่น
+            btn_text = "⏳  กำลังตรวจจับขยะ..."
+            if not self.cursor_hidden:
+                self.canvas.tag_bind("finish_btn", "<Enter>", lambda _e: self._set_cursor(""))
+                self.canvas.tag_bind("finish_btn", "<Leave>", lambda _e: self._set_cursor(""))
+
+        try:
+            self.canvas.itemconfigure("finish_btn_surface", fill=fill_color)
+            self.canvas.itemconfigure("finish_btn_title", text=btn_text, fill=text_color)
+        except Exception as e:
+            logger.debug(f"Error updating finish button state: {e}")
 
     def _draw_detect_mascot(self):
         """วาดน้อง Mascot ยืนอยู่ที่มุมล่างขวาของกล่องกล้อง เหนือปุ่มเสร็จสิ้นตาม mockup ของผู้ใช้"""
@@ -1462,6 +1507,15 @@ class SmartBinGUI:
                 is_err = True
             if is_err:
                 self.show_detect_mascot_sad()
+
+            # ตรวจสอบสถานะการตรวจจับเพื่อเปิด/ปิดปุ่มเสร็จสิ้นอัตโนมัติ (ปิดเมื่ออยู่ในสถานะ ดีเทค)
+            is_detecting = any(w in message for w in ("กำลังรับขยะ", "กำลังเปิดกล้อง", "กำลังวิเคราะห์", "ตรวจจับขยะ")) and "สแตนด์บาย" not in message
+            is_standby = any(w in message for w in ("สแตนด์บาย", "พร้อมทำงาน"))
+            if is_detecting:
+                self.set_finish_enabled(False)
+            elif is_standby:
+                self.set_finish_enabled(True)
+
             self._reset_inactivity_timer(GUI_IDLE_TIMEOUT_DETECTING)
 
     def schedule_camera_frame(self, cv2_frame):
@@ -1650,6 +1704,9 @@ class SmartBinGUI:
 
     def _handle_finish(self):
         """จัดการเมื่อผู้ใช้กดปุ่มเสร็จสิ้น"""
+        if not getattr(self, "finish_btn_enabled", True):
+            logger.info("Finish button is disabled during detection. Ignoring finish request.")
+            return
         if self.on_finish and callable(self.on_finish):
             try:
                 self.on_finish()
@@ -1682,7 +1739,8 @@ class SmartBinGUI:
                 self.confirm_phone(is_guest=False)
         elif self.page == "detecting":
             if event.keysym in ("Return", "KP_Enter"):
-                self._handle_finish()
+                if getattr(self, "finish_btn_enabled", True):
+                    self._handle_finish()
         elif self.page == "welcome":
             if event.keysym in ("Return", "KP_Enter", "space"):
                 self.show_detecting()

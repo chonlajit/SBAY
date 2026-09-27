@@ -90,7 +90,7 @@ SERVO_RETURN_PIN = 13
 DEFAULT_SORT_ANGLE = 265
 DEFAULT_RELEASE_ANGLE = 82
 DROP_ANGLE_CLOSED = 180
-DROP_ANGLE_OPEN = 80
+DROP_ANGLE_OPEN = 100
 
 RETURN_ANGLE_CLOSED = 180
 RETURN_ANGLE_OPEN = 9
@@ -169,8 +169,8 @@ for _candidate in _candidate_models:
         MODEL_PATH = _candidate
         break
 CONF_THRESHOLD = 0.5
-STABLE_FRAMES = 5       # ต้อง detect ซ้ำกี่เฟรมถึงจะยืนยัน
-COOLDOWN = 3             # วินาที ระหว่างการ detect แต่ละชิ้น
+STABLE_FRAMES = 3       # ต้อง detect ซ้ำกี่เฟรมถึงจะยืนยัน (ปรับให้ไวขึ้น)
+COOLDOWN = 1.0           # วินาที ระหว่างการ detect แต่ละชิ้น (ลดให้ตอบสนองไวขึ้น)
 DETECT_TIMEOUT = 10      # วินาที ถ้า detect ไม่ได้ให้ timeout
 
 # --- AI Detection Crop Area & Camera ---
