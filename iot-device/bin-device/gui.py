@@ -757,7 +757,7 @@ class SmartBinGUI:
         # ปุ่มข้ามขั้นตอน (Guest Mode)
         self.button(
             92, 412, 558, 482,
-            "ข้ามขั้นตอน (Guest Mode) ➔", "",
+            "ข้ามขั้นตอน", "",
             "#E2EBE5", lambda: self.confirm_phone(is_guest=True), "guest_btn"
         )
 
@@ -787,7 +787,6 @@ class SmartBinGUI:
         self.update_phone_text()
 
     def _draw_phone_mascot(self):
-        """วาดน้อง Mascot ยืนบนขอบกล่องหมายเลขโทรศัพท์ (x=459, y=49 ตามรูปแรก)"""
         self.canvas.delete("phone_mascot")
         if not hasattr(self, 'mascot_photo_awake') or not self.mascot_photo_awake:
             self._update_mascot_photos()
@@ -806,7 +805,6 @@ class SmartBinGUI:
         )
 
     def _start_mascot_blinking(self):
-        """เริ่ม Loop ให้ Mascot ยืนกระพริบตาเป็นระยะ"""
         self._stop_mascot_blinking()
         if self.page != "phone":
             return
@@ -814,7 +812,6 @@ class SmartBinGUI:
         self.blink_timer = self.root.after(delay, self._play_mascot_blink)
 
     def _play_mascot_blink(self):
-        """เล่นจังหวะกระพริบตา: ครึ่งตา -> หลับตา -> ครึ่งตา -> ตาโต"""
         if self.page != "phone" or not hasattr(self, 'mascot_photo_awake') or not self.mascot_photo_awake:
             return
 
@@ -844,7 +841,6 @@ class SmartBinGUI:
         self.blink_timer = self.root.after(next_interval, self._start_mascot_blinking)
 
     def _stop_mascot_blinking(self):
-        """หยุดการกระพริบตา"""
         if hasattr(self, 'blink_timer') and self.blink_timer:
             try:
                 self.root.after_cancel(self.blink_timer)
@@ -853,7 +849,6 @@ class SmartBinGUI:
             self.blink_timer = None
 
     def show_phone_input(self):
-        """หน้าจอกรอกเบอร์โทรศัพท์ด้วยแป้นพิมพ์สไตล์ Eco-tech"""
         self._clear()
         self.page = "phone"
         self.phone = ""
@@ -884,14 +879,12 @@ class SmartBinGUI:
             self.update_phone_text()
 
     def set_server_status(self, is_online):
-        """อัปเดตสถานะการเชื่อมต่อฐานข้อมูลจาก Controller หรือ Heartbeat"""
         prev = getattr(self, 'server_online', True)
         self.server_online = is_online
         if prev != is_online and self.page == "phone":
             self.update_server_status_indicator()
 
     def update_server_status_indicator(self):
-        """แสดง Badge สถานะการเชื่อมต่อฐานข้อมูลบนหน้า Phone Input"""
         if self.page != "phone" or not self.canvas:
             return
         self.canvas.delete("server_status_badge")
@@ -913,7 +906,6 @@ class SmartBinGUI:
         self.canvas.tag_bind("server_status_badge", "<Button-1>", self._on_secret_reload_tap)
 
     def set_phone_checking(self, is_checking=True):
-        """แสดงสถานะกำลังตรวจสอบเบอร์โทรศัพท์ และล็อกปุ่มกดชั่วคราว"""
         self.is_verifying_phone = is_checking
         if self.page != "phone" or not self.canvas:
             return
@@ -951,10 +943,6 @@ class SmartBinGUI:
             self.show_idle()
 
     def show_alert(self, title, message, button_text="ตกลง", on_close=None, alert_type="warning"):
-        """
-        แสดงหน้าต่าง Alert Modal ขนาดใหญ่ สไตล์ Eco-Tech คมชัด สัมผัสง่ายบนจอสัมผัส
-        (ทดแทน tk.messagebox ขนาดเล็กเดิม)
-        """
         self.close_alert()
         self.alert_active = True
         self._alert_on_close = on_close
@@ -1005,7 +993,7 @@ class SmartBinGUI:
         badge_bg = "#FEE2E2" if is_warn else "#E3F2C7"
         badge_border = "#FCA5A5" if is_warn else "#86EFAC"
         icon_color = "#DC2626" if is_warn else "#15803D"
-        icon_symbol = "⚠️" if is_warn else "✓"
+        icon_symbol = "!" if is_warn else "✓"
 
         self.canvas.create_oval(
             cx - 36, icon_cy - 36, cx + 36, icon_cy + 36,
@@ -1161,12 +1149,12 @@ class SmartBinGUI:
 
         # หากมีข้อความแจ้งเตือน (เช่น ฐานข้อมูลขัดข้อง)
         if alert_message:
-            is_err = any(k in alert_message for k in ("ไม่", "ล่ม", "เต็ม", "ขัดข้อง", "error", "fail", "⚠️"))
+            is_err = any(k in alert_message for k in ("ไม่", "ล่ม", "เต็ม", "ขัดข้อง", "error", "fail"))
             bg_color = "#FEE2E2" if is_err else "#FEF3C7"
             fg_color = "#991B1B" if is_err else "#92400E"
             border_color = "#FCA5A5" if is_err else "#FCD34D"
             self.round_rect(180, card_y1 + 230, 844, card_y1 + 300, 20, fill=bg_color, outline=border_color, width=2, tags=("content", "welcome_card"))
-            clean_msg = alert_message if alert_message.startswith("⚠️") else f"⚠️ {alert_message}"
+            clean_msg = alert_message.replace("⚠️", "").strip()
             self.canvas.create_text(
                 512, card_y1 + 265, text=clean_msg,
                 fill=fg_color, font=(FONT, 15, "bold"), tags=("content", "welcome_card"),

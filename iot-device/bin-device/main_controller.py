@@ -519,9 +519,9 @@ class SmartBinController:
                                     weight=result["weight"],
                                     score=result["score"]
                                 )
-                                logger.info(f"✅ Item sorted: {result['type']} ({result['size_ml']}ml)")
+                                logger.info(f"Item sorted: {result['type']} ({result['size_ml']}ml)")
                             else:
-                                logger.warning("⚠️ Compartment full! Item returned.")
+                                logger.warning("Compartment full! Item returned.")
                             break
                         time.sleep(0.08)
 

@@ -724,11 +724,11 @@ class IdleSleepingFace:
 
         # แสดงข้อความตอบสนองแบบน่ารักเมื่อกดย้ำๆ
         phrases = [
-            "ดึ๋งๆๆ! ✨",
-            "ตื่นแย้ววว! 🎉",
-            "ฮึบ! ฮึบ! 🎈",
-            "สดชื่น พร้อมคัดแยกขยะ! 🌱",
-            "ดึ๋ง! สบายจัง! 💚"
+            "ดึ๋งๆๆ!",
+            "ตื่นแล้วครับ!",
+            "ฮึบ! ฮึบ!",
+            "สดชื่น พร้อมคัดแยกขยะ!",
+            "ดึ๋ง! ดึ๋ง!"
         ]
         phrase = phrases[(self.tap_count - 2) % len(phrases)]
         if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
