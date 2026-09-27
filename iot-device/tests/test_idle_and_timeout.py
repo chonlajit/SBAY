@@ -109,6 +109,107 @@ def test_idle_and_timeouts():
     assert finish_called[0] is True, "on_finish should be called on detecting timeout"
     print("[PASS] Detecting screen timed out -> automatically called on_finish to save data and show result")
 
+    # 5. Test Inactivity Timeout Reset on Phone Error Alert & Close Alert
+    print("\n--- Testing Inactivity Timeout Reset on Phone Error Alert ---")
+    app.show_phone_input()
+    app.phone = "08123"  # Incomplete phone (error)
+    timer_before = app._inactivity_timer
+    time.sleep(0.05)
+    app.show_alert("ตรวจสอบหมายเลขโทรศัพท์", "กรุณากรอกหมายเลขให้ครบ 10 หลัก", alert_type="warning")
+    app.root.update()
+    assert app.alert_active is True, "Alert modal should be active"
+    assert app._inactivity_timer is not None, "Inactivity timer should be scheduled"
+    assert app._inactivity_timer != timer_before, "Inactivity timer should have been reset on alert popup"
+
+    timer_during_alert = app._inactivity_timer
+    time.sleep(0.05)
+    app.close_alert()
+    app.root.update()
+    assert app.alert_active is False, "Alert modal should be closed"
+    assert app._inactivity_timer != timer_during_alert, "Inactivity timer should have been reset on alert close"
+    print("[PASS] Inactivity timer resets properly on alert display and alert close")
+
+    # 6. Test Inactivity Timeout Reset on Detecting Error & Standby Status
+    print("\n--- Testing Inactivity Timeout Reset on Detecting Error Status ---")
+    app.show_detecting()
+    timer_detect_before = app._inactivity_timer
+    time.sleep(0.05)
+    # Simulate error status (item not found / returned / full)
+    app.update_status("ไม่พบขวด หรือขยะไม่ถูกต้อง (คืนขวดแล้ว)...", "#ef4444")
+    app.root.update()
+    assert app._inactivity_timer != timer_detect_before, "Inactivity timer should reset when error status is shown"
+
+    timer_after_error = app._inactivity_timer
+    time.sleep(0.05)
+    # Simulate standby status
+    app.update_status("สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)", "#94a3b8")
+    app.root.update()
+    assert app._inactivity_timer != timer_after_error, "Inactivity timer should reset when returning to standby"
+    print("[PASS] Inactivity timer resets properly on detection error status and standby return")
+
+    # 7. Test Public reset_inactivity method
+    print("\n--- Testing reset_inactivity Method ---")
+    timer_prior = app._inactivity_timer
+    time.sleep(0.05)
+    app.reset_inactivity()
+    app.root.update()
+    assert app._inactivity_timer != timer_prior, "reset_inactivity() should reset the inactivity timer"
+    print("[PASS] reset_inactivity() successfully refreshed the inactivity timer")
+
+    # 8. Test Idle Screen Multi-Tap Bouncing & Single Tap Wake Up
+    print("\n--- Testing Idle Screen Multi-Tap Bouncing & Single Tap ---")
+    wake_callback_called = [False]
+    def on_wake():
+        wake_callback_called[0] = True
+
+    idle_test_face = IdleSleepingFace(
+        root=app.root,
+        container=app.container,
+        width=960,
+        height=540,
+        on_wake_complete=on_wake
+    )
+    idle_test_face.start()
+    app.root.update()
+    assert idle_test_face.state == "sleeping", "Initial state should be sleeping"
+
+    # Tap once -> should enter waking
+    idle_test_face.on_tap()
+    app.root.update()
+    assert idle_test_face.state == "waking", f"Expected waking, got {idle_test_face.state}"
+    assert idle_test_face.tap_count == 1, "tap_count should be 1"
+
+    # Tap again rapidly (กดย้ำๆๆ) -> should enter bouncing
+    time.sleep(0.08)
+    idle_test_face.on_tap()
+    app.root.update()
+    assert idle_test_face.state == "bouncing", f"Expected bouncing on rapid tap, got {idle_test_face.state}"
+    assert idle_test_face.tap_count == 2, "tap_count should be 2"
+
+    # Tap third time -> stays bouncing, increments tap count
+    time.sleep(0.08)
+    idle_test_face.on_tap()
+    app.root.update()
+    assert idle_test_face.state == "bouncing", f"Expected bouncing, got {idle_test_face.state}"
+    assert idle_test_face.tap_count == 3, "tap_count should be 3"
+    print("[PASS] Repeated tapping triggers bouncy state and increases tap count")
+
+    # Now release (stop tapping) -> after release delay, should complete wake
+    # Temporarily set release timer shorter to verify release transition
+    if idle_test_face.release_timer:
+        app.root.after_cancel(idle_test_face.release_timer)
+    idle_test_face.release_timer = app.root.after(100, idle_test_face._on_release_timeout)
+
+    start_release_t = time.time()
+    while not wake_callback_called[0] and time.time() - start_release_t < 2.0:
+        time.sleep(0.02)
+        app.root.update()
+
+    assert wake_callback_called[0] is True, "Wake callback should be called after releasing"
+    print("[PASS] Releasing after repeated taps successfully proceeds to next screen")
+
+    idle_test_face.stop()
+
     # Clean up
     app.quit()
     app.root.destroy()

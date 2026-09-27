@@ -179,7 +179,10 @@ class SmartBinGUI:
         self._inactivity_timer = None
         self._inactivity_timeout_sec = GUI_IDLE_TIMEOUT_PHONE
         self.root.bind_all("<Button-1>", self._on_global_user_activity, add="+")
+        self.root.bind_all("<ButtonRelease-1>", self._on_global_user_activity, add="+")
+        self.root.bind_all("<B1-Motion>", self._on_global_user_activity, add="+")
         self.root.bind_all("<Key>", self._on_global_user_activity, add="+")
+        self.root.bind_all("<KeyPress>", self._on_global_user_activity, add="+")
 
         self._recalculate_scale()
         self._setup_scaled_canvas()
@@ -202,6 +205,10 @@ class SmartBinGUI:
         if sec and sec > 0:
             self._inactivity_timeout_sec = sec
             self._inactivity_timer = self.root.after(int(sec * 1000), self._on_inactivity_timeout)
+
+    def reset_inactivity(self, timeout_sec=None):
+        """รีเซ็ตเวลานับถอยหลัง Inactivity Timeout จากภายนอก (Controller/Service)"""
+        self._reset_inactivity_timer(timeout_sec)
 
     def _cancel_inactivity_timer(self):
         """ยกเลิก Inactivity Timeout ที่กำลังนับอยู่"""
@@ -436,6 +443,7 @@ class SmartBinGUI:
             if now - last_click[0] < 0.15:  # Debounce 150ms ป้องกัน double tap บนจอสัมผัส
                 return "break"
             last_click[0] = now
+            self._reset_inactivity_timer()  # แตะปุ่มใดๆ ให้รีเซ็ต Inactivity Timeout เสมอ
 
             try:
                 self.canvas.itemconfigure(f"{tag}_surface", fill=pressed)
@@ -950,6 +958,7 @@ class SmartBinGUI:
         self.close_alert()
         self.alert_active = True
         self._alert_on_close = on_close
+        self._reset_inactivity_timer()  # รีเซ็ตเวลานับถอยหลังทันทีเมื่อมี Alert แจ้งเตือนขึ้นมา เพื่อให้ผู้ใช้มีเวลาอ่าน
 
         # 1. วาดม่าน Dimmed Overlay เต็มพื้นที่หน้าจอ
         try:
@@ -968,8 +977,11 @@ class SmartBinGUI:
                 tags=("alert_modal", "alert_overlay")
             )
 
-        # บล็อกการกดทะลุ และแตะนอกการ์ดเพื่อปิดได้
-        self.canvas.tag_bind("alert_overlay", "<Button-1>", lambda e: self.close_alert())
+        # บล็อกการกดทะลุ และแตะนอกการ์ดเพื่อปิดได้ พร้อมรีเซ็ตเวลา
+        def _on_overlay_tap(_e):
+            self._reset_inactivity_timer()
+            self.close_alert()
+        self.canvas.tag_bind("alert_overlay", "<Button-1>", _on_overlay_tap)
 
         # 2. การ์ดแจ้งเตือนตรงกลางจอ (ขนาดใหญ่พิเศษ 620 x 360 px)
         cx, cy = 512, 300
@@ -982,7 +994,10 @@ class SmartBinGUI:
 
         # ตัวการ์ดสีขาวขอบเนียนตา
         self.round_rect(x1, y1, x2, y2, 32, fill="#FFFFFF", outline="#CBD5E1", width=2, tags=("alert_modal", "alert_card"))
-        self.canvas.tag_bind("alert_card", "<Button-1>", lambda e: "break")
+        def _on_card_tap(_e):
+            self._reset_inactivity_timer()
+            return "break"
+        self.canvas.tag_bind("alert_card", "<Button-1>", _on_card_tap)
 
         # 3. ไอคอนหัวเรื่อง (Badge ทรงกลมขนาดใหญ่)
         icon_cy = y1 + 68
@@ -1030,12 +1045,13 @@ class SmartBinGUI:
         self.bind_button(btn_tag, self.close_alert, btn_fill, "#0A2B22")
 
     def close_alert(self):
-        """ปิดหน้าต่าง Alert Modal และเรียก Callback (ถ้ามี)"""
+        """ปิดหน้าต่าง Alert Modal และเรียก Callback (ถ้ามี) พร้อมรีเซ็ต Inactivity Timer"""
         if not getattr(self, "alert_active", False):
             return
         self.alert_active = False
         self.canvas.delete("alert_modal")
         self._alert_overlay_img = None
+        self._reset_inactivity_timer()  # ปิด Alert แล้วรีเซ็ตเวลาใหม่ ให้ผู้ใช้มีเวลาใช้งานต่อ
         cb = getattr(self, "_alert_on_close", None)
         self._alert_on_close = None
         if cb and callable(cb):
@@ -1221,11 +1237,11 @@ class SmartBinGUI:
                 self.items_canvas.yview_scroll(-1, "units")
 
         for w in (self.items_canvas, self.items_inner):
-            w.bind("<MouseWheel>", _on_mousewheel)
-            w.bind("<Button-4>", _on_mousewheel)
-            w.bind("<Button-5>", _on_mousewheel)
-            w.bind("<ButtonPress-1>", lambda e: self.items_canvas.scan_mark(e.x, e.y))
-            w.bind("<B1-Motion>", lambda e: self.items_canvas.scan_dragto(e.x, e.y, gain=1))
+            w.bind("<MouseWheel>", lambda e: (self._reset_inactivity_timer(), _on_mousewheel(e)))
+            w.bind("<Button-4>", lambda e: (self._reset_inactivity_timer(), _on_mousewheel(e)))
+            w.bind("<Button-5>", lambda e: (self._reset_inactivity_timer(), _on_mousewheel(e)))
+            w.bind("<ButtonPress-1>", lambda e: (self._reset_inactivity_timer(), self.items_canvas.scan_mark(e.x, e.y)))
+            w.bind("<B1-Motion>", lambda e: (self._reset_inactivity_timer(), self.items_canvas.scan_dragto(e.x, e.y, gain=1)))
 
         # ข้อความสถานะการหยอด
         status_msg = "สแตนด์บาย: รอการหยอดขยะ..." if USE_IR else "สแตนด์บาย: กล้องพร้อมทำงาน..."
@@ -1405,11 +1421,11 @@ class SmartBinGUI:
                     self.items_canvas.yview_scroll(-1, "units")
 
         for w in (row, *row.winfo_children()):
-            w.bind("<MouseWheel>", _row_wheel)
-            w.bind("<Button-4>", _row_wheel)
-            w.bind("<Button-5>", _row_wheel)
-            w.bind("<ButtonPress-1>", lambda e: self.items_canvas.scan_mark(e.x, e.y) if hasattr(self, 'items_canvas') else None)
-            w.bind("<B1-Motion>", lambda e: self.items_canvas.scan_dragto(e.x, e.y, gain=1) if hasattr(self, 'items_canvas') else None)
+            w.bind("<MouseWheel>", lambda e: (self._reset_inactivity_timer(), _row_wheel(e)))
+            w.bind("<Button-4>", lambda e: (self._reset_inactivity_timer(), _row_wheel(e)))
+            w.bind("<Button-5>", lambda e: (self._reset_inactivity_timer(), _row_wheel(e)))
+            w.bind("<ButtonPress-1>", lambda e: (self._reset_inactivity_timer(), self.items_canvas.scan_mark(e.x, e.y) if hasattr(self, 'items_canvas') else None))
+            w.bind("<B1-Motion>", lambda e: (self._reset_inactivity_timer(), self.items_canvas.scan_dragto(e.x, e.y, gain=1) if hasattr(self, 'items_canvas') else None))
 
         # เลื่อนลงมาแสดงรายการล่าสุดอัตโนมัติ (Auto-scroll to latest item)
         if hasattr(self, 'items_canvas') and self.items_canvas.winfo_exists():
@@ -1423,7 +1439,7 @@ class SmartBinGUI:
             if color:
                 self.canvas.itemconfigure(self.status_text, fill=color)
 
-        # ตรวจสอบว่าเป็นข้อความ Error หรือไม่ เพื่อให้น้องทำหน้าเศร้า
+        # ตรวจสอบว่าเป็นข้อความ Error หรือไม่ เพื่อให้น้องทำหน้าเศร้า และรีเซ็ต Inactivity Timeout
         if self.page == "detecting":
             is_err = False
             if color in ("#ef4444", "#EF5D5D", COLORS.get("danger")):
@@ -1432,6 +1448,7 @@ class SmartBinGUI:
                 is_err = True
             if is_err:
                 self.show_detect_mascot_sad()
+            self._reset_inactivity_timer(GUI_IDLE_TIMEOUT_DETECTING)
 
     def schedule_camera_frame(self, cv2_frame):
         """อัปเดตเฟรมกล้องแบบ Drop-frame อัตโนมัติ ป้องกัน Event Queue สะสมจนกระตุก"""
@@ -1453,6 +1470,11 @@ class SmartBinGUI:
                 return
 
             if cv2_frame is not None and cv2 is not None:
+                now = time.time()
+                if not hasattr(self, '_last_cam_inactivity_reset') or now - self._last_cam_inactivity_reset > 3.0:
+                    self._last_cam_inactivity_reset = now
+                    self._reset_inactivity_timer()
+
                 cw = max(20, int(410 * self.scale))
                 ch = max(16, int(280 * self.scale))
                 rgb = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)

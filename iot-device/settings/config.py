@@ -67,11 +67,7 @@ USE_IR = True    # ตั้งค่าเซ็นเซอร์ IR ตรง
 USE_SERVO = True # ตั้งค่าเซอร์โวมอเตอร์ตรงนี้ (True = เปิด, False = ปิด)
 HIDE_CURSOR = True
 
-# --- GUI Engine Type ---
-# 'tkinter' = Classic Desktop GUI (หน้าจอหลักเดิม ปรับแต่งแก้ค้างแล้ว)
-# 'web' = Web Kiosk (Chromium + FastAPI)
-GUI_TYPE = "tkinter"
-WEB_KIOSK_PORT = 8000
+
 
 # --- Hardware Pins (Raspberry Pi BCM) ---
 IR_PIN = 17

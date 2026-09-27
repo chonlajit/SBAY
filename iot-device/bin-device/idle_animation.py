@@ -5,6 +5,7 @@
 # ============================
 
 import os
+import time
 import math
 import tkinter as tk
 from PIL import Image, ImageDraw, ImageFont, ImageTk
@@ -45,10 +46,14 @@ class IdleSleepingFace:
         self.on_wake_complete = on_wake_complete
         self.get_waste_levels_fn = get_waste_levels
 
-        self.state = "sleeping"  # 'sleeping', 'waking', 'awake', 'stopped'
+        self.state = "sleeping"  # 'sleeping', 'waking', 'awake', 'bouncing', 'stopped'
         self.sleep_frame_idx = 0
         self.timer_id = None
         self.poll_timer = None
+        self.release_timer = None
+        self.tap_count = 0
+        self._last_tap_time = 0.0
+        self.bounce_choreography = []
         self._last_rendered_pct = {}
 
         # สเกลขนาดตามความกว้างและความสูงจริงของหน้าจอ
@@ -578,9 +583,30 @@ class IdleSleepingFace:
             photo = self._render_frame(t=0.0, open_ratio=op, dy=dy, scale_x=sx, scale_y=sy, startle_ratio=sr, is_settled=st)
             self.falling_asleep_choreography.append((photo, dur))
 
+        # 4. เฟรมช่วงเด้งดึ๋งเมื่อกดย้ำๆ (Bounce choreography: squash -> spring up -> rebound -> settle)
+        bounce_steps = [
+            (1.00, +16, 1.16, 0.84, 0.50, False, 40),  # ยุบตัวลงเมื่อถูกแตะ (Squash down on tap)
+            (1.00, -32, 0.88, 1.15, 0.80, False, 50),  # สปริงเด้งขึ้นสูง (Spring up)
+            (1.00, -18, 0.94, 1.08, 0.40, False, 50),  # ลอยตัว
+            (1.00,  +6, 1.05, 0.96, 0.10, False, 50),  # เด้งลงมาเล็กน้อย
+            (1.00,  -4, 1.02, 1.01, 0.00, True,  45),  # สปริงกลับเบาๆ
+            (1.00,   0, 1.00, 1.00, 0.00, True,  50),  # คืนตัวนิ่งยิ้มหวาน
+        ]
+        for op, dy, sx, sy, sr, st, dur in bounce_steps:
+            photo = self._render_frame(t=0.0, open_ratio=op, dy=dy, scale_x=sx, scale_y=sy, startle_ratio=sr, is_settled=st)
+            self.bounce_choreography.append((photo, dur))
+
     def start(self):
         """เริ่มเล่น Animation นอนหลับ และเริ่ม Loop อัปเดตเซนเซอร์"""
         self.state = "sleeping"
+        self.tap_count = 0
+        if hasattr(self, 'release_timer') and self.release_timer:
+            try:
+                self.root.after_cancel(self.release_timer)
+            except Exception:
+                pass
+            self.release_timer = None
+
         if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
             try:
                 self.canvas.itemconfig(self.sub_item, text="แตะเพื่อเริ่ม", fill=TEXT_INK, font=(self.font_family, self.s_thai_prompt, "bold"))
@@ -593,6 +619,13 @@ class IdleSleepingFace:
     def start_fall_asleep(self):
         """เริ่มแสดงหน้าโคลสอัปแบบตื่นยิ้มหวาน แล้วค่อยๆ หลับตาลงเข้าสู่โหมดหลับ"""
         self.state = "falling_asleep"
+        self.tap_count = 0
+        if hasattr(self, 'release_timer') and self.release_timer:
+            try:
+                self.root.after_cancel(self.release_timer)
+            except Exception:
+                pass
+            self.release_timer = None
         if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
             try:
                 self.canvas.itemconfig(self.sub_item, text="")
@@ -625,28 +658,104 @@ class IdleSleepingFace:
         self.timer_id = self.root.after(130, self._play_sleep_loop)
 
     def on_tap(self, event=None):
-        """เมื่อมีคนแตะหน้าจอ -> สะดุ้งตื่น"""
+        """เมื่อมีคนแตะหน้าจอ -> สะดุ้งตื่น / กดย้ำๆ ให้น้องเด้งดึ๋ง"""
+        now = time.time()
+        if hasattr(self, '_last_tap_time') and now - self._last_tap_time < 0.07:
+            return
+        self._last_tap_time = now
+
         if self.state in ("sleeping", "falling_asleep"):
             self.wake_up()
+        elif self.state in ("waking", "awake", "bouncing"):
+            self.bounce()
 
     def wake_up(self, on_complete=None):
-        """เล่น Animation สะดุ้งตื่น"""
-        if self.state == "waking" or self.state == "awake":
+        """เล่น Animation สะดุ้งตื่น (แตะครั้งแรก)"""
+        if self.state in ("waking", "awake", "bouncing"):
             return
 
         self.state = "waking"
+        self.tap_count = 1
         if on_complete:
             self.on_wake_complete = on_complete
 
         if self.timer_id:
-            self.root.after_cancel(self.timer_id)
+            try:
+                self.root.after_cancel(self.timer_id)
+            except Exception:
+                pass
             self.timer_id = None
 
         if self.poll_timer:
-            self.root.after_cancel(self.poll_timer)
+            try:
+                self.root.after_cancel(self.poll_timer)
+            except Exception:
+                pass
             self.poll_timer = None
 
+        if hasattr(self, 'release_timer') and self.release_timer:
+            try:
+                self.root.after_cancel(self.release_timer)
+            except Exception:
+                pass
+            self.release_timer = None
+
         self._play_startle_sequence(0)
+
+    def bounce(self):
+        """เมื่อผู้ใช้กดย้ำๆๆๆ ให้น้องเด้งดึ๋งอย่างร่าเริง"""
+        self.tap_count += 1
+        self.state = "bouncing"
+
+        # ยกเลิก timer เฟรมเดิมและ release timer ทันทีเพื่อเริ่มเด้งใหม่
+        if self.timer_id:
+            try:
+                self.root.after_cancel(self.timer_id)
+            except Exception:
+                pass
+            self.timer_id = None
+
+        if hasattr(self, 'release_timer') and self.release_timer:
+            try:
+                self.root.after_cancel(self.release_timer)
+            except Exception:
+                pass
+            self.release_timer = None
+
+        # แสดงข้อความตอบสนองแบบน่ารักเมื่อกดย้ำๆ
+        phrases = [
+            "ดึ๋งๆๆ! ✨",
+            "ตื่นแย้ววว! 🎉",
+            "ฮึบ! ฮึบ! 🎈",
+            "สดชื่น พร้อมคัดแยกขยะ! 🌱",
+            "ดึ๋ง! สบายจัง! 💚"
+        ]
+        phrase = phrases[(self.tap_count - 2) % len(phrases)]
+        if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
+            try:
+                self.canvas.itemconfig(self.sub_item, text=phrase, fill="#16A34A", font=(self.font_family, self.s_thai_prompt, "bold"))
+                self.canvas.tag_raise(self.sub_item)
+            except Exception:
+                pass
+
+        # เล่นแอนิเมชันเด้งดึ๋งจากเฟรม 0 ทันที
+        self._play_bounce_sequence(0)
+
+        # รอปล่อย: หากผู้ใช้หยุดกดย้ำๆ เป็นเวลา 650ms จึงจะปล่อยไปหน้าต่อไป
+        self.release_timer = self.root.after(650, self._on_release_timeout)
+
+    def _play_bounce_sequence(self, step_idx):
+        if self.state != "bouncing":
+            return
+
+        if step_idx < len(self.bounce_choreography):
+            photo, duration = self.bounce_choreography[step_idx]
+            self.canvas.itemconfig(self.image_item, image=photo)
+            self.timer_id = self.root.after(duration, lambda: self._play_bounce_sequence(step_idx + 1))
+        else:
+            # จบเฟรมเด้ง ให้แสดงท่ายิ้มหวานรอการปล่อย
+            if self.waking_choreography:
+                self.canvas.itemconfig(self.image_item, image=self.waking_choreography[-1][0])
 
     def _play_startle_sequence(self, step_idx):
         if self.state != "waking":
@@ -669,8 +778,22 @@ class IdleSleepingFace:
                     self.canvas.tag_raise(self.sub_item)
                 except Exception:
                     pass
-            # ตื่นนิ่งยิ้มหวานค้างไว้ 380ms ก่อนเรียก Callback เปลี่ยนหน้า
-            self.timer_id = self.root.after(380, self._on_wake_finished)
+            # แตะครั้งเดียว: แสดงหน้ายิ้มหวาน รอ 650ms พอปล่อยจึงไปหน้าต่อไป (ถ้ากดย้ำระหว่างนี้จะเข้า bounce)
+            self.release_timer = self.root.after(650, self._on_release_timeout)
+
+    def _on_release_timeout(self):
+        """เมื่อผู้ใช้หยุดกดย้ำๆ (ปล่อย) ให้เคลื่อนต่อไปยังหน้าต่อไป"""
+        self.release_timer = None
+        self.state = "awake"
+        if hasattr(self, 'sub_item') and self.sub_item and self.canvas:
+            try:
+                self.canvas.itemconfig(self.sub_item, text="ยินดีต้อนรับครับ!", fill="#16A34A", font=(self.font_family, self.s_thai_prompt, "bold"))
+                self.canvas.tag_raise(self.sub_item)
+            except Exception:
+                pass
+        if self.waking_choreography:
+            self.canvas.itemconfig(self.image_item, image=self.waking_choreography[-1][0])
+        self.root.after(200, self._on_wake_finished)
 
     def _on_wake_finished(self):
         if self.on_wake_complete and callable(self.on_wake_complete):
@@ -685,6 +808,13 @@ class IdleSleepingFace:
             except Exception:
                 pass
             self.timer_id = None
+
+        if hasattr(self, 'release_timer') and self.release_timer:
+            try:
+                self.root.after_cancel(self.release_timer)
+            except Exception:
+                pass
+            self.release_timer = None
 
         if self.poll_timer:
             try:

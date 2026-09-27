@@ -118,29 +118,17 @@ class SmartBinController:
                 self._start_cli()
 
     # ==============================
-    # GUI MODE (Web Kiosk / Tkinter)
+    # GUI MODE (Tkinter)
     # ==============================
     def _start_with_gui(self):
-        from settings.config import GUI_TYPE, WEB_KIOSK_PORT
-
-        if GUI_TYPE == "web":
-            from web_kiosk.web_gui import SmartBinWebGUI
-            logger.info("Initializing Modern Web Kiosk GUI...")
-            self.gui = SmartBinWebGUI(
-                on_phone_submit=self._on_phone_submit,
-                on_finish=self._on_finish,
-                get_waste_levels=self.ultrasonic.get_waste_levels,
-                port=WEB_KIOSK_PORT
-            )
-        else:
-            from gui import SmartBinGUI
-            logger.info("Initializing Classic Tkinter GUI...")
-            self.gui = SmartBinGUI(
-                on_phone_submit=self._on_phone_submit,
-                on_finish=self._on_finish,
-                get_waste_levels=self.ultrasonic.get_waste_levels,
-                on_exit_cleanup=self._cleanup_all
-            )
+        from gui import SmartBinGUI
+        logger.info("Initializing SmartBin GUI...")
+        self.gui = SmartBinGUI(
+            on_phone_submit=self._on_phone_submit,
+            on_finish=self._on_finish,
+            get_waste_levels=self.ultrasonic.get_waste_levels,
+            on_exit_cleanup=self._cleanup_all
+        )
 
         try:
             self.gui.run()
@@ -171,6 +159,8 @@ class SmartBinController:
 
     def _on_phone_submit(self, phone):
         """Callback: ผู้ใช้กรอกเบอร์เสร็จ"""
+        if self.gui and hasattr(self.gui, 'reset_inactivity'):
+            self.gui.schedule(self.gui.reset_inactivity)
         threading.Thread(target=self._process_phone_submit, args=(phone,), daemon=True).start()
 
     def _process_phone_submit(self, phone):
@@ -218,6 +208,9 @@ class SmartBinController:
             # ผู้ใช้กรอกเบอร์แล้วไม่เจอ -> แสดง Alert แจ้งเตือนขนาดใหญ่ และพากลับมาหน้ากรอกเบอร์อีกรอบ
             formatted = f"{phone[:3]}-{phone[3:6]}-{phone[6:]}" if len(phone) == 10 else phone
             logger.warning(f"User not found for phone {phone} (status={status}). Returning to phone screen.")
+
+            if hasattr(self.gui, 'reset_inactivity'):
+                self.gui.schedule(self.gui.reset_inactivity)
 
             self.gui.schedule(
                 self.gui.show_alert,
@@ -298,6 +291,8 @@ class SmartBinController:
                 # เปลี่ยนสถานะว่า "กำลังมีของอยู่ข้างในตู้ ให้กล้องวิเคราะห์ต่อไปเรื่อยๆ"
                 processing_item = True
                 processing_start_time = time.time()
+                if self.gui and hasattr(self.gui, 'reset_inactivity'):
+                    self.gui.schedule(self.gui.reset_inactivity)
 
             # 2. ถ้ามีของอยู่ข้างใน (หรือเปิดกล้องตลอดเวลา) ให้วิเคราะห์ AI
             if processing_item or not USE_IR:
@@ -326,10 +321,14 @@ class SmartBinController:
 
                         if self.gui:
                             self.gui.schedule(self.gui.update_status, f"ช่อง {type_th} เต็มแล้ว! (คืนขยะเรียบร้อย)", "#ef4444")
+                            if hasattr(self.gui, 'reset_inactivity'):
+                                self.gui.schedule(self.gui.reset_inactivity)
                             time.sleep(3.0)
                             status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
                             self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
                             self.gui.schedule(self.gui.update_camera_frame, None)
+                            if hasattr(self.gui, 'reset_inactivity'):
+                                self.gui.schedule(self.gui.reset_inactivity)
 
                         time.sleep(1.0)
                         processing_item = False
@@ -343,6 +342,8 @@ class SmartBinController:
                         )
 
                         if self.gui:
+                            if hasattr(self.gui, 'reset_inactivity'):
+                                self.gui.schedule(self.gui.reset_inactivity)
                             self.gui.schedule(
                                 self.gui.add_detected_item,
                                 result["type"],
@@ -357,6 +358,8 @@ class SmartBinController:
                             status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
                             self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
                             self.gui.schedule(self.gui.update_camera_frame, None)
+                            if hasattr(self.gui, 'reset_inactivity'):
+                                self.gui.schedule(self.gui.reset_inactivity)
                         
                         time.sleep(2.0) # Wait for item to sort/release completely
                         processing_item = False # กลับไปรอรับของชิ้นใหม่ได้
@@ -386,10 +389,14 @@ class SmartBinController:
 
                         if self.gui:
                             self.gui.schedule(self.gui.update_status, "ไม่พบขวด หรือขยะไม่ถูกต้อง (คืนขวดแล้ว)...", "#ef4444")
+                            if hasattr(self.gui, 'reset_inactivity'):
+                                self.gui.schedule(self.gui.reset_inactivity)
                             time.sleep(3.0)
                             status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
                             self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
                             self.gui.schedule(self.gui.update_camera_frame, None)
+                            if hasattr(self.gui, 'reset_inactivity'):
+                                self.gui.schedule(self.gui.reset_inactivity)
 
                         processing_item = False
                         processing_start_time = 0
