@@ -67,21 +67,39 @@ def print_pinout_table():
     print("=" * 68 + "\n")
 
 def get_sensors():
-    from hardware.ultrasonic import UltrasonicSensor, MockUltrasonicSensor
+    from hardware.ultrasonic import UltrasonicSensor, MockUltrasonicSensor, GPIO_AVAILABLE
     sensors = {}
+    is_mock = False
+
+    if not USE_HARDWARE:
+        print("\n" + "!" * 70)
+        print(" ⚠️  [แจ้งเตือน] ขณะนี้โปรแกรมทำงานใน MOCK MODE (โหมดจำลอง)")
+        print("    เนื่องจาก USE_HARDWARE = False ใน config.py (เช่น รันบน Windows/PC)")
+        print("    ค่าที่ได้จะเป็นค่าจำลอง 35.0 cm เสมอ และจะไม่เปลี่ยนแปลงตามหน้างานจริง")
+        print("    หากต้องการทดสอบกับเซนเซอร์จริง กรุณานำโค้ดไปรันบนบอร์ด Raspberry Pi")
+        print("!" * 70 + "\n")
+        is_mock = True
+    elif not GPIO_AVAILABLE:
+        print("\n" + "!" * 70)
+        print(" ⚠️  [แจ้งเตือน] ไม่พบคลังไลบรารี GPIO (RPi.GPIO / rpi-lgpio)")
+        print("    ทำให้ไม่สามารถสั่งงานพินบนบอร์ดได้ ระบบจะใช้เซนเซอร์จำลอง (Mock) แทน")
+        print("!" * 70 + "\n")
+        is_mock = True
+
     for comp in ["PLASTIC_BOTTLE", "ALUMINUM_CAN", "BEVERAGE_CARTON"]:
         pins = ULTRASONIC_PINS.get(comp, {})
         trig = pins.get("trig")
         echo = pins.get("echo")
-        if USE_HARDWARE:
+        if USE_HARDWARE and GPIO_AVAILABLE:
             try:
                 sensors[comp] = UltrasonicSensor(trig, echo, name=comp)
             except Exception as e:
                 print(f"⚠️  ไม่สามารถเปิด Hardware Sensor {comp}: {e}")
                 sensors[comp] = MockUltrasonicSensor(trig, echo, name=comp)
+                is_mock = True
         else:
             sensors[comp] = MockUltrasonicSensor(trig, echo, name=comp)
-    return sensors
+    return sensors, is_mock
 
 def calculate_fill(comp: str, distance_cm: float) -> tuple[float, str]:
     cal = ULTRASONIC_CALIBRATION.get(comp, {"empty_distance": 50.0, "full_distance": 10.0})
@@ -122,9 +140,11 @@ def test_single_sensor(comp: str, sensors: dict):
             print(f"  ครั้งที่ {i}: ❌ ไม่สามารถอ่านค่าได้ (Echo Timeout/Sensor หลวม)")
         time.sleep(0.5)
 
-def live_monitor_all(sensors: dict):
+def live_monitor_all(sensors: dict, is_mock: bool = False):
     print("\n" + "=" * 70)
     print(" 📊 REAL-TIME CONTINUOUS MONITOR (อ่านวน 3 ช่องทีละตัว หน่วง 60ms)")
+    if is_mock:
+        print(" ⚠️  [MOCK MODE ACTIVE] ค่าที่แสดงเป็นค่าจำลอง 35.0 cm สำหรับทดสอบระบบ")
     print(" กด Ctrl+C เพื่อกลับสู่เมนูหลัก")
     print("=" * 70)
 
@@ -205,7 +225,7 @@ def run_calibration_helper(sensors: dict):
 
 def main():
     print_pinout_table()
-    sensors = get_sensors()
+    sensors, is_mock = get_sensors()
 
     try:
         while True:
@@ -231,7 +251,7 @@ def main():
             elif choice == '3':
                 test_single_sensor("BEVERAGE_CARTON", sensors)
             elif choice == '4':
-                live_monitor_all(sensors)
+                live_monitor_all(sensors, is_mock)
             elif choice == '5':
                 run_calibration_helper(sensors)
             elif choice == 'p':

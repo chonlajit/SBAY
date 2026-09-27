@@ -50,7 +50,17 @@ DEVICE_ID = os.getenv("DEVICE_ID", "BIN-001")
 DEVICE_NAME = os.getenv("DEVICE_NAME", "SBAY Bin")
 DEVICE_LOCATION = os.getenv("DEVICE_LOCATION", "")
 
-BACKEND_URL = os.getenv("BACKEND_URL", "https://sbay-platform.online")
+_raw_backend = os.getenv("BACKEND_URL", "").strip()
+if not _raw_backend or _raw_backend in ("http://localhost:8070", "http://localhost:3000", "http://127.0.0.1:8070"):
+    # บน Raspberry Pi หรือระบบจริง หากใน .env ยังเป็นค่า template localhost ให้ใช้ URL จริงของ Cloud Backend
+    if sys.platform.startswith("linux") or not _raw_backend:
+        BACKEND_URL = "https://sbay-platform.online"
+    else:
+        BACKEND_URL = _raw_backend or "https://sbay-platform.online"
+else:
+    BACKEND_URL = _raw_backend
+
+BACKEND_URL = BACKEND_URL.rstrip('/')
 API_BASE = f"{BACKEND_URL}/api"
 
 

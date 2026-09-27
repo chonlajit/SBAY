@@ -47,40 +47,47 @@ class UltrasonicSensor:
         วัดระยะทางจากเซนเซอร์เป็นเซนติเมตร
         - ยิง Pulse TRIG 10µs
         - ดักรอ ECHO กลับมาพร้อม Timeout เพื่อป้องกันระบบค้าง
+        - ใช้ time.perf_counter() เพื่อความแม่นยำระดับ sub-microsecond
         - คืนค่าระยะทาง (cm) หรือ None หากเกิด timeout / อ่านค่าไม่ได้
         """
         if not GPIO_AVAILABLE or not self._initialized:
-            # Simulation fallback
-            return 35.0
+            logger.warning(f"[{self.name}] GPIO not available or sensor not initialized")
+            return None
 
         try:
-            # 1. ให้ TRIG เคลียร์สัญญาณ LOW สั้นๆ
-            GPIO.output(self.trig_pin, False)
-            time.sleep(0.000002)  # 2µs
+            # 1. รอให้ขา ECHO เคลียร์เป็น LOW ก่อน (ป้องกันคลื่นสะท้อนค้างจากรอบก่อน)
+            wait_clear = time.perf_counter()
+            while GPIO.input(self.echo_pin) == 1:
+                if time.perf_counter() - wait_clear > 0.01:
+                    logger.debug(f"[{self.name}] ECHO pin stuck HIGH before trigger")
+                    return None
 
-            # 2. ส่ง Pulse 10µs ให้ TRIG
+            # 2. ให้ TRIG เคลียร์สัญญาณ LOW สั้นๆ
+            GPIO.output(self.trig_pin, False)
+            time.sleep(0.000005)  # 5µs
+
+            # 3. ส่ง Pulse 10µs ให้ TRIG
             GPIO.output(self.trig_pin, True)
             time.sleep(0.000010)  # 10µs
             GPIO.output(self.trig_pin, False)
 
-            # 3. รอ ECHO เริ่มเป็น HIGH (พร้อม timeout)
-            start_wait = time.time()
-            pulse_start = start_wait
+            # 4. รอ ECHO เริ่มเปลี่ยนเป็น HIGH
+            timeout_start = time.perf_counter()
             while GPIO.input(self.echo_pin) == 0:
-                pulse_start = time.time()
-                if pulse_start - start_wait > timeout_sec:
+                if time.perf_counter() - timeout_start > timeout_sec:
                     logger.debug(f"[{self.name}] Timeout waiting for ECHO HIGH")
                     return None
+            pulse_start = time.perf_counter()
 
-            # 4. รอ ECHO กลับเป็น LOW (พร้อม timeout)
-            pulse_end = pulse_start
+            # 5. รอ ECHO กลับเป็น LOW
+            timeout_echo = time.perf_counter()
             while GPIO.input(self.echo_pin) == 1:
-                pulse_end = time.time()
-                if pulse_end - pulse_start > timeout_sec:
+                if time.perf_counter() - timeout_echo > timeout_sec:
                     logger.debug(f"[{self.name}] Timeout waiting for ECHO LOW")
                     return None
+            pulse_end = time.perf_counter()
 
-            # 5. คำนวณระยะทาง
+            # 6. คำนวณระยะทาง (ความเร็วเสียง 343 m/s = 34,300 cm/s)
             pulse_duration = pulse_end - pulse_start
             distance = (pulse_duration * 34300.0) / 2.0
 
