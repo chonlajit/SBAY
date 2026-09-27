@@ -100,16 +100,16 @@ class ApiClient:
                     headers={"X-Device-Secret": DEVICE_SECRET},
                     timeout=5
                 )
-                if response.status_code == 200:
+                if response.status_code in (200, 201):
                     c.execute("DELETE FROM failed_sessions WHERE id = ?", (record_id,))
                     conn.commit()
-                    logger.info(f"Retried session {record_id} → OK")
+                    logger.info(f"Retried session {record_id} → OK (HTTP {response.status_code})")
                     self.is_connected = True
                 else:
-                    logger.warning(f"Retry session {record_id} → HTTP {response.status_code}")
+                    logger.warning(f"Retry session {record_id} → HTTP {response.status_code}: {response.text}")
                     break
-            except requests.RequestException:
-                logger.warning("Retry failed → Network still down")
+            except requests.RequestException as e:
+                logger.warning(f"Retry failed → Network or server error: {e}")
                 self.is_connected = False
                 break
 
@@ -143,7 +143,7 @@ class ApiClient:
                 resp = self.session.get(
                     f"{self.api_base}/sessions/user/{phone}",
                     headers={"X-Device-Secret": DEVICE_SECRET},
-                    timeout=4
+                    timeout=8
                 )
                 if resp.status_code == 200:
                     self.is_connected = True
@@ -161,8 +161,8 @@ class ApiClient:
                     status_result = "NOT_FOUND"
                     break
                 else:
-                    logger.warning(f"get_user_by_phone HTTP {resp.status_code} (attempt {attempt}/{retries})")
-                    last_error = f"HTTP {resp.status_code}"
+                    logger.warning(f"get_user_by_phone HTTP {resp.status_code} (attempt {attempt}/{retries}): {resp.text}")
+                    last_error = f"HTTP {resp.status_code}: {resp.text}"
             except requests.RequestException as e:
                 logger.warning(f"get_user_by_phone connection error (attempt {attempt}/{retries}): {e}")
                 last_error = str(e)
@@ -183,18 +183,25 @@ class ApiClient:
 
     def post_session(self, session_data):
         """ส่ง Session ไป Backend - ถ้าส่งไม่ได้ จะเก็บลง SQLite"""
+        # ป้องกัน MongoDB CastError: ถ้า userId เป็นค่าว่าง ให้ส่งเป็น None / null
+        if isinstance(session_data, dict):
+            if "userId" in session_data and not session_data["userId"]:
+                session_data["userId"] = None
+
         try:
             resp = self.session.post(
                 f"{self.api_base}/sessions",
                 json=session_data,
                 headers={"X-Device-Secret": DEVICE_SECRET},
-                timeout=5
+                timeout=12
             )
             resp.raise_for_status()
-            logger.info("Session sent successfully")
+            logger.info(f"Session sent successfully (HTTP {resp.status_code})")
             return True
         except requests.RequestException as e:
-            logger.error(f"post_session failed: {e}")
+            status_code = getattr(getattr(e, 'response', None), 'status_code', None)
+            resp_body = getattr(getattr(e, 'response', None), 'text', None)
+            logger.error(f"post_session failed (status={status_code}): {e} | response: {resp_body}")
             self._save_to_queue(session_data)
             return False
 

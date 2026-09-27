@@ -571,6 +571,7 @@ class SmartBinGUI:
         """ล้างหน้าจอและหยุดแอนิเมชันเดิม"""
         self.close_alert()
         self.is_verifying_phone = False
+        self._last_item_added_time = 0.0
         self._cancel_inactivity_timer()
         self._stop_animation()
         self._stop_mascot_blinking()
@@ -1050,11 +1051,14 @@ class SmartBinGUI:
         if getattr(self, 'alert_active', False) or getattr(self, 'is_verifying_phone', False):
             return
 
+        self.is_verifying_phone = True
+
         if is_guest:
             target_phone = None
             display_name = "Guest"
         else:
             if len(self.phone) != 10 or not self.phone.startswith("0"):
+                self.is_verifying_phone = False
                 self.show_alert(
                     title="ตรวจสอบหมายเลขโทรศัพท์",
                     message="กรุณากรอกหมายเลขโทรศัพท์ให้ครบ 10 หลัก\nและขึ้นต้นด้วยเลข 0 (เช่น 08X-XXX-XXXX)",
@@ -1074,9 +1078,11 @@ class SmartBinGUI:
             except Exception as e:
                 logger.error(f"Error executing on_phone_submit: {e}")
                 self.set_phone_checking(False)
+                self.is_verifying_phone = False
                 self.show_welcome(display_name)
         else:
             # Standalone / Default mode: บันทึกประวัติและไปหน้า Welcome ทันที
+            self.is_verifying_phone = False
             if target_phone:
                 self.save_phone_history(target_phone)
             self.show_welcome(display_name)
@@ -1118,6 +1124,7 @@ class SmartBinGUI:
         self._clear()
         self.page = "welcome"
         self.items_list = []
+        self._last_item_added_time = 0.0
         self.draw_environment()
 
         # การ์ดต้อนรับตรงกลาง
@@ -1173,7 +1180,16 @@ class SmartBinGUI:
         )
 
         # แตะที่การ์ดเพื่อข้ามไปหน้าตรวจจับทันที
-        self.canvas.tag_bind("welcome_card", "<Button-1>", lambda e: self.show_detecting())
+        def _go_detecting(e=None):
+            if hasattr(self, '_welcome_timer') and self._welcome_timer:
+                try:
+                    self.root.after_cancel(self._welcome_timer)
+                except Exception:
+                    pass
+                self._welcome_timer = None
+            self.show_detecting()
+
+        self.canvas.tag_bind("welcome_card", "<Button-1>", _go_detecting)
 
         # สลับไปหน้า Detecting อัตโนมัติ (ให้เวลาอ่าน 3.2 วิ ถ้ามี alert, หรือ 2.2 วิ ปกติ)
         delay = 3200 if alert_message else 2200
@@ -1375,6 +1391,13 @@ class SmartBinGUI:
     def add_detected_item(self, item_type, size_ml, score):
         """เพิ่มรายการขยะที่ตรวจจับได้"""
         self._reset_inactivity_timer()
+        # Debounce safeguard: ป้องกันการบันทึกรายการซ้ำซ้อนภายในเวลาสั้น (< 0.8 วินาที)
+        now = time.time()
+        if hasattr(self, '_last_item_added_time') and (now - self._last_item_added_time < 0.8):
+            logger.warning(f"GUI: Debounced duplicate add_detected_item ({item_type}) within {now - self._last_item_added_time:.2f}s")
+            return
+        self._last_item_added_time = now
+
         item_data = {"type": item_type, "ml": size_ml, "score": score}
         self.items_list.append(item_data)
 

@@ -60,9 +60,8 @@ class SessionManager:
     def to_payload(self):
         """แปลงเป็น JSON payload สำหรับส่งไป Backend"""
         summary = self.get_summary()
-        return {
+        payload = {
             "deviceId": self.device_id,
-            "userId": self.user_id,
             "startTime": self.start_time,
             "endTime": datetime.now().isoformat(),
             "items": self.items,
@@ -70,6 +69,12 @@ class SessionManager:
             "totalMl": summary["totalMl"],
             "totalScore": summary["totalScore"]
         }
+        # ส่ง userId เมื่อมีค่าจริงเท่านั้น หากเป็นค่าว่างหรือไม่ระบุให้เป็น None/null ป้องกัน MongoDB CastError
+        if self.user_id and str(self.user_id).strip():
+            payload["userId"] = str(self.user_id).strip()
+        else:
+            payload["userId"] = None
+        return payload
 
     def has_items(self):
         return len(self.items) > 0

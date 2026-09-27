@@ -65,6 +65,8 @@ class SmartBinController:
         # GUI (optional)
         self.gui = None
         self.detecting = False
+        self._detection_thread = None
+        self._phone_submitting = False
 
     def _on_server_status_change(self, is_online):
         """Callback เมื่อสถานะการเชื่อมต่อฐานข้อมูล/เซิร์ฟเวอร์เปลี่ยนไป"""
@@ -159,87 +161,107 @@ class SmartBinController:
 
     def _on_phone_submit(self, phone):
         """Callback: ผู้ใช้กรอกเบอร์เสร็จ"""
+        if getattr(self, '_phone_submitting', False):
+            logger.warning("Ignoring duplicate phone submit while already processing")
+            return
+        self._phone_submitting = True
         if self.gui and hasattr(self.gui, 'reset_inactivity'):
             self.gui.schedule(self.gui.reset_inactivity)
         threading.Thread(target=self._process_phone_submit, args=(phone,), daemon=True).start()
 
+    def _start_detection(self):
+        """เริ่ม Detection thread อย่างปลอดภัย ป้องกัน thread ซ้ำซ้อน"""
+        self.detecting = False
+        if hasattr(self, '_detection_thread') and self._detection_thread and self._detection_thread.is_alive():
+            logger.info("Stopping previous detection thread before starting new one...")
+            try:
+                self._detection_thread.join(timeout=1.5)
+            except Exception as e:
+                logger.warning(f"Error joining previous detection thread: {e}")
+
+        self.detecting = True
+        self._detection_thread = threading.Thread(target=self._detection_loop, daemon=True)
+        self._detection_thread.start()
+
     def _process_phone_submit(self, phone):
         """ประมวลผลการตรวจสอบเบอร์โทรศัพท์ใน Background Thread ป้องกัน UI ค้าง"""
-        if phone:
-            logger.info(f"Phone submitted: {phone}")
-            user, status = self.api_client.get_user_by_phone(phone, return_status=True, retries=2)
-        else:
-            logger.info("Guest mode")
-            user = None
-            status = "OK"
-
-        if hasattr(self.gui, 'set_phone_checking'):
-            self.gui.schedule(self.gui.set_phone_checking, False)
-
-        if user:
-            user_id = user.get('id', '')
-            # แสดง username แทนชื่อตามที่ผู้ใช้ต้องการ
-            username = (
-                user.get('username') or
-                user.get('userName') or
-                user.get('displayName') or
-                f"{user.get('firstName', '')} {user.get('lastName', '')}".strip() or
-                "User"
-            )
-            name = username
-            alert_msg = None
-            logger.info(f"User identified: {name} (ID: {user_id})")
-
-            # บันทึกลงประวัติเมื่อยืนยันผู้ใช้สำเร็จ
-            if hasattr(self.gui, 'save_phone_history'):
-                self.gui.schedule(self.gui.save_phone_history, phone)
-
-            # Start session
-            self.session.start(DEVICE_ID, user_id, name)
-
-            # Show welcome screen
-            self.gui.schedule(self.gui.show_welcome, name, alert_msg)
-
-            # Start detection loop in background
-            self.detecting = True
-            threading.Thread(target=self._detection_loop, daemon=True).start()
-
-        elif phone and (status == "NOT_FOUND" or (not user and status != "DB_ERROR")):
-            # ผู้ใช้กรอกเบอร์แล้วไม่เจอ -> แสดง Alert แจ้งเตือนขนาดใหญ่ และพากลับมาหน้ากรอกเบอร์อีกรอบ
-            formatted = f"{phone[:3]}-{phone[3:6]}-{phone[6:]}" if len(phone) == 10 else phone
-            logger.warning(f"User not found for phone {phone} (status={status}). Returning to phone screen.")
-
-            if hasattr(self.gui, 'reset_inactivity'):
-                self.gui.schedule(self.gui.reset_inactivity)
-
-            self.gui.schedule(
-                self.gui.show_alert,
-                "ไม่พบหมายเลขโทรศัพท์",
-                f"ไม่พบหมายเลข {formatted} ในระบบ SBAY\nกรุณาตรวจสอบหมายเลขและลองใหม่อีกครั้ง",
-                "ลองใหม่อีกครั้ง",
-                self.gui.show_phone_input,
-                "warning"
-            )
-
-        else:
-            # เข้าสู่โหมด Guest (กดข้ามขั้นตอน หรือฐานข้อมูลขัดข้อง)
-            user_id = ""
-            name = "Guest"
-            if phone and status == "DB_ERROR":
-                alert_msg = "ติดต่อฐานข้อมูลไม่ได้! กำลังเข้าสู่โหมด Guest (บันทึกออฟไลน์)"
-                logger.warning(f"Database/server error for phone {phone}. Auto-falling back to offline Guest mode.")
+        try:
+            if phone:
+                logger.info(f"Phone submitted: {phone}")
+                user, status = self.api_client.get_user_by_phone(phone, return_status=True, retries=2)
             else:
+                logger.info("Guest mode")
+                user = None
+                status = "OK"
+
+            if hasattr(self.gui, 'set_phone_checking'):
+                self.gui.schedule(self.gui.set_phone_checking, False)
+
+            if user:
+                user_id = user.get('id') or user.get('_id') or user.get('userId') or user.get('user_id') or ''
+                user_id = str(user_id) if user_id else ""
+                # แสดง username แทนชื่อตามที่ผู้ใช้ต้องการ
+                username = (
+                    user.get('username') or
+                    user.get('userName') or
+                    user.get('displayName') or
+                    f"{user.get('firstName', '')} {user.get('lastName', '')}".strip() or
+                    "User"
+                )
+                name = username
                 alert_msg = None
+                logger.info(f"User identified: {name} (ID: {user_id})")
 
-            # Start session
-            self.session.start(DEVICE_ID, user_id, name)
+                # บันทึกลงประวัติเมื่อยืนยันผู้ใช้สำเร็จ
+                if hasattr(self.gui, 'save_phone_history'):
+                    self.gui.schedule(self.gui.save_phone_history, phone)
 
-            # Show welcome screen
-            self.gui.schedule(self.gui.show_welcome, name, alert_msg)
+                # Start session
+                self.session.start(DEVICE_ID, user_id, name)
 
-            # Start detection loop in background
-            self.detecting = True
-            threading.Thread(target=self._detection_loop, daemon=True).start()
+                # Show welcome screen
+                self.gui.schedule(self.gui.show_welcome, name, alert_msg)
+
+                # Start detection loop in background safely
+                self._start_detection()
+
+            elif phone and (status == "NOT_FOUND" or (not user and status != "DB_ERROR")):
+                # ผู้ใช้กรอกเบอร์แล้วไม่เจอ -> แสดง Alert แจ้งเตือนขนาดใหญ่ และพากลับมาหน้ากรอกเบอร์อีกรอบ
+                formatted = f"{phone[:3]}-{phone[3:6]}-{phone[6:]}" if len(phone) == 10 else phone
+                logger.warning(f"User not found for phone {phone} (status={status}). Returning to phone screen.")
+
+                if hasattr(self.gui, 'reset_inactivity'):
+                    self.gui.schedule(self.gui.reset_inactivity)
+
+                self.gui.schedule(
+                    self.gui.show_alert,
+                    "ไม่พบหมายเลขโทรศัพท์",
+                    f"ไม่พบหมายเลข {formatted} ในระบบ SBAY\nกรุณาตรวจสอบหมายเลขและลองใหม่อีกครั้ง",
+                    "ลองใหม่อีกครั้ง",
+                    self.gui.show_phone_input,
+                    "warning"
+                )
+
+            else:
+                # เข้าสู่โหมด Guest (กดข้ามขั้นตอน หรือฐานข้อมูลขัดข้อง)
+                user_id = ""
+                name = "Guest"
+                if phone and status == "DB_ERROR":
+                    alert_msg = "ติดต่อฐานข้อมูลไม่ได้! กำลังเข้าสู่โหมด Guest (บันทึกออฟไลน์)"
+                    logger.warning(f"Database/server error for phone {phone}. Auto-falling back to offline Guest mode.")
+                else:
+                    alert_msg = None
+
+                # Start session
+                self.session.start(DEVICE_ID, user_id, name)
+
+                # Show welcome screen
+                self.gui.schedule(self.gui.show_welcome, name, alert_msg)
+
+                # Start detection loop in background safely
+                self._start_detection()
+        finally:
+            self._phone_submitting = False
 
     def _detection_loop(self):
         """Background thread: วนตรวจจับขยะจากกล้องและ IR Sensor"""
@@ -331,7 +353,18 @@ class SmartBinController:
                                 self.gui.schedule(self.gui.reset_inactivity)
 
                         time.sleep(1.0)
+                        if USE_IR:
+                            clear_wait_start = time.time()
+                            while self.detecting and self.detection.is_item_present():
+                                time.sleep(0.1)
+                                if time.time() - clear_wait_start > 4.0:
+                                    break
+                            time.sleep(0.5)
+                        else:
+                            self.detection.reset_buffers()
+                            time.sleep(1.5)
                         processing_item = False
+                        processing_start_time = 0
                     else:
                         # 🎯 AI ตรวจเจอขยะสำเร็จและเสถียรแล้ว
                         item = self.session.add_item(
@@ -361,8 +394,26 @@ class SmartBinController:
                             if hasattr(self.gui, 'reset_inactivity'):
                                 self.gui.schedule(self.gui.reset_inactivity)
                         
-                        time.sleep(2.0) # Wait for item to sort/release completely
-                        processing_item = False # กลับไปรอรับของชิ้นใหม่ได้
+                        # รอให้ Servo หมุนและปล่อยขยะตกลงช่องเสร็จสมบูรณ์
+                        time.sleep(2.0)
+
+                        # 🛡️ Edge-trigger protection: รอจนกว่าเซ็นเซอร์ IR จะเคลียร์
+                        # ป้องกันระดับสัญญาณค้างทำให้ระบบคิดว่ามีขวดใหม่อีกชิ้นเข้ามาทันที
+                        if USE_IR:
+                            clear_wait_start = time.time()
+                            while self.detecting and self.detection.is_item_present():
+                                time.sleep(0.1)
+                                if time.time() - clear_wait_start > 4.0:
+                                    logger.warning("IR sensor remained active after drop. Forcing clear.")
+                                    break
+                            time.sleep(0.5)  # Debounce delay หลังจาก IR เคลียร์แล้ว
+                        else:
+                            # กรณีไม่มี IR (หรือโหมดทดสอบ) ให้ล้างบัฟเฟอร์และพัก 1.5 วินาที
+                            self.detection.reset_buffers()
+                            time.sleep(1.5)
+
+                        processing_item = False  # กลับไปรอรับของชิ้นใหม่ได้
+                        processing_start_time = 0
                     
                 else:
                     # ⏳ AI ยังหาไม่เจอ หรือยังไม่เสถียร เช็คว่าหมดเวลา (Timeout) หรือยัง
@@ -398,6 +449,17 @@ class SmartBinController:
                             if hasattr(self.gui, 'reset_inactivity'):
                                 self.gui.schedule(self.gui.reset_inactivity)
 
+                        if USE_IR:
+                            clear_wait_start = time.time()
+                            while self.detecting and self.detection.is_item_present():
+                                time.sleep(0.1)
+                                if time.time() - clear_wait_start > 4.0:
+                                    break
+                            time.sleep(0.5)
+                        else:
+                            self.detection.reset_buffers()
+                            time.sleep(1.0)
+
                         processing_item = False
                         processing_start_time = 0
 
@@ -409,6 +471,11 @@ class SmartBinController:
     def _on_finish(self):
         """Callback: ผู้ใช้กดเสร็จสิ้น"""
         self.detecting = False  # Stop detection loop
+        if hasattr(self, '_detection_thread') and self._detection_thread and self._detection_thread.is_alive():
+            try:
+                self._detection_thread.join(timeout=1.0)
+            except Exception:
+                pass
         logger.info("User pressed finish")
 
         # ถ้าใน session ไม่มีไอเท็ม แต่ใน GUI มี (เช่น จากการทดสอบคีย์ลัด) ให้นำเข้า session
