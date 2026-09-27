@@ -51,10 +51,11 @@ class HeartbeatService:
                 else:
                     logger.warning(f"🔴 Database & Backend connection LOST for {self.device_id}")
 
-                if self.on_status_change and callable(self.on_status_change):
-                    try:
-                        self.on_status_change(ok)
-                    except Exception as e:
-                        logger.error(f"Error in on_status_change callback: {e}")
+            # แจ้งเตือน GUI เสมอเพื่อให้แน่ใจว่าสถานะบนหน้าจอตรงกับความเป็นจริงตลอดเวลา
+            if self.on_status_change and callable(self.on_status_change):
+                try:
+                    self.on_status_change(ok)
+                except Exception as e:
+                    logger.error(f"Error in on_status_change callback: {e}")
 
             time.sleep(self.interval)

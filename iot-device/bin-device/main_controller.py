@@ -131,6 +131,8 @@ class SmartBinController:
             get_waste_levels=self.ultrasonic.get_waste_levels,
             on_exit_cleanup=self._cleanup_all
         )
+        if hasattr(self, 'heartbeat') and self.heartbeat.last_ok is not None:
+            self.gui.server_online = bool(self.heartbeat.last_ok)
 
         try:
             self.gui.run()
@@ -189,6 +191,10 @@ class SmartBinController:
             if phone:
                 logger.info(f"Phone submitted: {phone}")
                 user, status = self.api_client.get_user_by_phone(phone, return_status=True, retries=2)
+                if status == "DB_ERROR" and self.gui:
+                    self.gui.schedule(self.gui.set_server_status, False)
+                elif status == "OK" and self.gui:
+                    self.gui.schedule(self.gui.set_server_status, True)
             else:
                 logger.info("Guest mode")
                 user = None
@@ -519,8 +525,9 @@ class SmartBinController:
                 pass
             success = False
 
-        # Show result
+        # Show result & update server status badge
         if self.gui:
+            self.gui.schedule(self.gui.set_server_status, success)
             self.gui.schedule(
                 self.gui.show_result,
                 summary.get("totalItems", 0),

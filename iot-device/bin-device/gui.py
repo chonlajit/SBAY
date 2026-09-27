@@ -160,7 +160,7 @@ class SmartBinGUI:
         self.idle_face = None
         self.cam_photo = None
         self.cam_label = None
-        self.server_online = True
+        self.server_online = False
         self._pending_cam_frame = None
         self._cam_render_scheduled = False
 
@@ -880,16 +880,15 @@ class SmartBinGUI:
             self.update_phone_text()
 
     def set_server_status(self, is_online):
-        prev = getattr(self, 'server_online', True)
-        self.server_online = is_online
-        if prev != is_online and self.page == "phone":
+        self.server_online = bool(is_online)
+        if self.page == "phone" and self.canvas:
             self.update_server_status_indicator()
 
     def update_server_status_indicator(self):
         if self.page != "phone" or not self.canvas:
             return
         self.canvas.delete("server_status_badge")
-        is_online = getattr(self, 'server_online', True)
+        is_online = getattr(self, 'server_online', False)
         if is_online:
             badge_bg = "#E3F2C7"
             badge_fg = "#2A824C"
@@ -916,7 +915,7 @@ class SmartBinGUI:
             badge_fg = "#B45309"
             badge_txt = "⏳ กำลังตรวจสอบข้อมูล..."
         else:
-            is_online = getattr(self, 'server_online', True)
+            is_online = getattr(self, 'server_online', False)
             if is_online:
                 badge_bg = "#E3F2C7"
                 badge_fg = "#2A824C"
