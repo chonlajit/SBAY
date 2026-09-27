@@ -54,6 +54,7 @@ class IdleSleepingFace:
         self.tap_count = 0
         self._last_tap_time = 0.0
         self.bounce_choreography = []
+        self._wake_finish_timer = None
         self._last_rendered_pct = {}
 
         # สเกลขนาดตามความกว้างและความสูงจริงของหน้าจอ
@@ -119,14 +120,20 @@ class IdleSleepingFace:
 
         # นำเฟรมภาพใบหน้าที่ Cache ไว้มาใช้ซ้ำ (ไม่สร้างใหม่ซ้ำซ้อน ลด Memory Leak และ CPU)
         cache_key = (self.width, self.height)
-        if cache_key in IdleSleepingFace._FRAME_CACHE:
-            self.sleep_photo_frames, self.waking_choreography, self.falling_asleep_choreography = IdleSleepingFace._FRAME_CACHE[cache_key]
+        if cache_key in IdleSleepingFace._FRAME_CACHE and len(IdleSleepingFace._FRAME_CACHE[cache_key]) == 4:
+            self.sleep_photo_frames, self.waking_choreography, self.falling_asleep_choreography, self.bounce_choreography = IdleSleepingFace._FRAME_CACHE[cache_key]
         else:
             self.sleep_photo_frames = []
             self.waking_choreography = []
             self.falling_asleep_choreography = []
+            self.bounce_choreography = []
             self._pre_render_frames()
-            IdleSleepingFace._FRAME_CACHE[cache_key] = (self.sleep_photo_frames, self.waking_choreography, self.falling_asleep_choreography)
+            IdleSleepingFace._FRAME_CACHE[cache_key] = (
+                self.sleep_photo_frames,
+                self.waking_choreography,
+                self.falling_asleep_choreography,
+                self.bounce_choreography
+            )
 
         # Canvas จัดการ
         if canvas is not None:
@@ -660,7 +667,7 @@ class IdleSleepingFace:
     def on_tap(self, event=None):
         """เมื่อมีคนแตะหน้าจอ -> สะดุ้งตื่น / กดย้ำๆ ให้น้องเด้งดึ๋ง"""
         now = time.time()
-        if hasattr(self, '_last_tap_time') and now - self._last_tap_time < 0.07:
+        if hasattr(self, '_last_tap_time') and now - self._last_tap_time < 0.04:
             return
         self._last_tap_time = now
 
@@ -700,10 +707,20 @@ class IdleSleepingFace:
                 pass
             self.release_timer = None
 
+        if hasattr(self, '_wake_finish_timer') and self._wake_finish_timer:
+            try:
+                self.root.after_cancel(self._wake_finish_timer)
+            except Exception:
+                pass
+            self._wake_finish_timer = None
+
         self._play_startle_sequence(0)
 
     def bounce(self):
         """เมื่อผู้ใช้กดย้ำๆๆๆ ให้น้องเด้งดึ๋งอย่างร่าเริง"""
+        if not self.bounce_choreography:
+            return
+
         self.tap_count += 1
         self.state = "bouncing"
 
@@ -721,6 +738,13 @@ class IdleSleepingFace:
             except Exception:
                 pass
             self.release_timer = None
+
+        if hasattr(self, '_wake_finish_timer') and self._wake_finish_timer:
+            try:
+                self.root.after_cancel(self._wake_finish_timer)
+            except Exception:
+                pass
+            self._wake_finish_timer = None
 
         # แสดงข้อความตอบสนองแบบน่ารักเมื่อกดย้ำๆ
         phrases = [
@@ -793,9 +817,10 @@ class IdleSleepingFace:
                 pass
         if self.waking_choreography:
             self.canvas.itemconfig(self.image_item, image=self.waking_choreography[-1][0])
-        self.root.after(200, self._on_wake_finished)
+        self._wake_finish_timer = self.root.after(200, self._on_wake_finished)
 
     def _on_wake_finished(self):
+        self._wake_finish_timer = None
         if self.on_wake_complete and callable(self.on_wake_complete):
             self.on_wake_complete()
 
@@ -815,6 +840,13 @@ class IdleSleepingFace:
             except Exception:
                 pass
             self.release_timer = None
+
+        if hasattr(self, '_wake_finish_timer') and self._wake_finish_timer:
+            try:
+                self.root.after_cancel(self._wake_finish_timer)
+            except Exception:
+                pass
+            self._wake_finish_timer = None
 
         if self.poll_timer:
             try:

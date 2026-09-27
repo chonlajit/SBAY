@@ -210,6 +210,35 @@ def test_idle_and_timeouts():
 
     idle_test_face.stop()
 
+    # 7. Test loop back after finish (หน้าผลลัพธ์จบการทำงานแล้ววนกลับมา Idle)
+    print("\n--- Testing Bounce After Session Completion (Loop Back) ---")
+    app.show_result(2, 650.0, 5.0, True)
+    assert app.page == "result"
+    app.transition_to_idle()
+    assert app.page == "idle"
+    assert app.idle_face is not None
+    assert len(app.idle_face.bounce_choreography) == 6, f"Expected 6 bounce frames in cached idle_face, got {len(app.idle_face.bounce_choreography)}"
+
+    # First tap to wake up
+    time.sleep(0.08)
+    app.idle_face.on_tap()
+    app.root.update()
+    assert app.idle_face.state == "waking"
+
+    # Rapid tap to bounce
+    time.sleep(0.08)
+    app.idle_face.on_tap()
+    app.root.update()
+    assert app.idle_face.state == "bouncing", f"Expected bouncing after session loop back, got {app.idle_face.state}"
+    assert app.idle_face.tap_count == 2
+
+    time.sleep(0.08)
+    app.idle_face.on_tap()
+    app.root.update()
+    assert app.idle_face.state == "bouncing"
+    assert app.idle_face.tap_count == 3
+    print("[PASS] Repeated tapping bounces successfully after session completion and loop back")
+
     # Clean up
     app.quit()
     app.root.destroy()
