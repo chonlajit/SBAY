@@ -32,6 +32,8 @@ class UltrasonicSensor:
 
         if GPIO_AVAILABLE:
             try:
+                if GPIO.getmode() != GPIO.BCM:
+                    GPIO.setmode(GPIO.BCM)
                 GPIO.setup(self.trig_pin, GPIO.OUT)
                 GPIO.setup(self.echo_pin, GPIO.IN)
                 GPIO.output(self.trig_pin, False)
@@ -56,6 +58,9 @@ class UltrasonicSensor:
             return None
 
         try:
+            if GPIO.getmode() != GPIO.BCM:
+                GPIO.setmode(GPIO.BCM)
+
             # 1. รอให้ขา ECHO เคลียร์เป็น LOW ก่อน (ป้องกันคลื่นสะท้อนค้างจากรอบก่อน)
             wait_clear = time.perf_counter()
             while GPIO.input(self.echo_pin) == 1:
