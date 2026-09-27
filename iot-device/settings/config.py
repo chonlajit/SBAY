@@ -99,6 +99,13 @@ RETURN_ANGLE_OPEN = 9
 # ค่าเริ่มต้นเป็น False เพื่อป้องกันไม่ให้มอเตอร์สะบัด/หมุนจนสุดตอนรัน main_controller
 RESET_180_SERVOS_ON_STARTUP = False
 
+# --- Servo Timing Configuration (วินาที) ---
+# กำหนดเวลาหน่วงให้ Servo Drop / Return หมุนไปถึงระยะจริง (Mechanical Stroke) ก่อนตัดไฟหรือทำขั้นตอนถัดไป
+SERVO_DROP_TRAVEL_TIME = 0.8       # เวลาให้มอเตอร์ Drop หมุนเปิด/ปิดจนสุดระยะ (180 <-> 100 องศา)
+SERVO_DROP_HOLD_TIME = 0.9         # เวลาเปิดค้างไว้ให้ขวดไหลลงช่องวิเคราะห์จนหมด
+SERVO_RETURN_TRAVEL_TIME = 0.95    # เวลาให้มอเตอร์ Return หมุนเปิด/ปิดจนสุดระยะ (180 <-> 9 องศา)
+SERVO_RETURN_HOLD_TIME = 1.0       # เวลาเปิดประตูค้างไว้ให้ขวดคืนออกมาถึงมือผู้ใช้
+
 SORT_ANGLE_PLASTIC = 265
 SORT_ANGLE_CAN = 200
 SORT_ANGLE_CARTON = 320

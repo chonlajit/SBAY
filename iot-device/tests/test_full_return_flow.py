@@ -156,7 +156,7 @@ class TestFullReturnFlow(unittest.TestCase):
             mock_hold.assert_called_once_with(servo.SERVO_RETURN_PIN, servo.RETURN_ANGLE_OPEN)
 
             servo.close_return_door()
-            mock_set.assert_called_once_with(servo.SERVO_RETURN_PIN, servo.RETURN_ANGLE_CLOSED)
+            mock_set.assert_called_once_with(servo.SERVO_RETURN_PIN, servo.RETURN_ANGLE_CLOSED, smooth=True)
 
 
 if __name__ == "__main__":
