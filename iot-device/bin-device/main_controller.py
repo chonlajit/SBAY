@@ -324,7 +324,7 @@ class SmartBinController:
                             if hasattr(self.gui, 'reset_inactivity'):
                                 self.gui.schedule(self.gui.reset_inactivity)
                             time.sleep(3.0)
-                            status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
+                            status_msg = "สแตนด์บาย: รอการหยอดขยะ"
                             self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
                             self.gui.schedule(self.gui.update_camera_frame, None)
                             if hasattr(self.gui, 'reset_inactivity'):
@@ -355,7 +355,7 @@ class SmartBinController:
                             self.detection.stop_camera()
                             
                         if self.gui:
-                            status_msg = "สแตนด์บาย: รอการหยอดขยะ (เซ็นเซอร์อินฟาเรด)" if USE_IR else "สแตนด์บาย: รอการหยอดขยะ (กล้องทำงานตลอด)"
+                            status_msg = "สแตนด์บาย: รอการหยอดขยะ"
                             self.gui.schedule(self.gui.update_status, status_msg, "#94a3b8")
                             self.gui.schedule(self.gui.update_camera_frame, None)
                             if hasattr(self.gui, 'reset_inactivity'):

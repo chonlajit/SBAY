@@ -1199,7 +1199,7 @@ class SmartBinGUI:
 
         # 1. ฝั่งซ้าย: กล่องแสดงรายการขยะ
         self.round_rect(55, 140, 505, 535, 28, fill=COLORS["cream"], outline="", tags="content")
-        self.canvas.create_text(85, 172, anchor="w", text="รายการที่คัดแยกได้", fill=COLORS["forest"], font=(FONT, 16, "bold"))
+        self.canvas.create_text(85, 172, anchor="w", text="รายการที่คัดแยกได้", fill=COLORS["forest"], font=(FONT, 18, "bold"))
 
         # กรอบรายการขยะ (Scrollable Frame)
         self.list_container = tk.Frame(self.canvas, bg=COLORS["cream"], bd=0)
@@ -1215,7 +1215,7 @@ class SmartBinGUI:
 
         self.items_scrollbar.pack(side="right", fill="y", pady=5)
         self.items_canvas.pack(side="left", fill="both", expand=True, padx=(8, 2), pady=5)
-        self.canvas.create_window(280, 315, window=self.list_container, width=420, height=255, tags="content")
+        self.canvas.create_window(280, 315, window=self.list_container, width=426, height=255, tags="content")
 
         # ผูกระบบ Scroll ด้วยลูกกลิ้งเมาส์ และรองรับทัชสกรีน (Touch Drag)
         def _on_mousewheel(event):
@@ -1390,15 +1390,19 @@ class SmartBinGUI:
             return
 
         label_name = WASTE_LABELS.get(item_type, item_type)
-        row = tk.Frame(self.items_inner, bg="white", padx=12, pady=6, bd=0)
-        row.pack(fill="x", pady=4, padx=5)
+        row = tk.Frame(self.items_inner, bg="white", padx=10, pady=8, bd=0)
+        row.pack(fill="x", pady=4, padx=4)
 
-        tk.Label(row, text=f"●  {label_name}", font=(FONT, 11, "bold"), fg=COLORS["forest"], bg="white").pack(side="left")
+        # ขยายขนาดตัวหนังสือให้อ่านง่าย ชัดเจน (ชื่อขยะ 15pt, ขนาด/คะแนน 14pt)
+        font_name = (FONT, max(14, self.sf(15)), "bold")
+        font_detail = (FONT, max(13, self.sf(14)), "bold")
+
+        tk.Label(row, text=f"●  {label_name}", font=font_name, fg=COLORS["forest"], bg="white").pack(side="left")
 
         # ขนาด ml และคะแนน
         lower_bound = size_ml - (size_ml % 10)
         size_str = f"{lower_bound}-{lower_bound + 20}ml"
-        tk.Label(row, text=f"{size_str}  ·  +{score:.1f} pt", font=(FONT, 11, "bold"), fg="#2A824C", bg="white").pack(side="right")
+        tk.Label(row, text=f"{size_str}  ·  +{score:.1f} pt", font=font_detail, fg="#2A824C", bg="white").pack(side="right")
 
         # ผูกระบบ Scroll เมื่อวางเมาส์หรือสัมผัสบนแถวรายการ
         def _row_wheel(event):
