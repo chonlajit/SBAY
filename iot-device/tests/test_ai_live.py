@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import cv2
+import numpy as np
 import threading
 
 # เพิ่ม Path ให้มองเห็นโฟลเดอร์ปัจจุบัน
@@ -158,9 +159,23 @@ def main():
                 cv2.putText(annotated_frame_bgr, "Crop area too small!", (10, 50), 
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             else:
+                # ปรับภาพเป็นทรงกลม (Circular Mask) ถ้าเปิดใช้งาน
+                if getattr(_cfg, 'USE_CIRCULAR_MASK', True) and cropped_frame.shape[0] > 10 and cropped_frame.shape[1] > 10:
+                    cf_h, cf_w = cropped_frame.shape[:2]
+                    cx = int(cf_w * getattr(_cfg, 'CIRCLE_CENTER_X_PCT', 0.50))
+                    cy = int(cf_h * getattr(_cfg, 'CIRCLE_CENTER_Y_PCT', 0.50))
+                    r = int(min(cf_w, cf_h) * getattr(_cfg, 'CIRCLE_RADIUS_PCT', 0.48))
+                    c_mask = np.zeros((cf_h, cf_w), dtype=np.uint8)
+                    cv2.circle(c_mask, (cx, cy), r, 255, -1)
+                    cropped_frame = cv2.bitwise_and(cropped_frame, cropped_frame, mask=c_mask)
+
                 # รัน AI บนภาพที่ครอปแล้ว
                 detections, annotated_frame_rgb = detector.detect(cropped_frame)
                 annotated_frame_bgr = cv2.cvtColor(annotated_frame_rgb, cv2.COLOR_RGB2BGR)
+
+                # วาดเส้นไกด์วงกลมบนภาพสด
+                if getattr(_cfg, 'USE_CIRCULAR_MASK', True) and cropped_frame.shape[0] > 10 and cropped_frame.shape[1] > 10:
+                    cv2.circle(annotated_frame_bgr, (cx, cy), r, (0, 255, 100), 2)
 
                 # แสดงข้อมูลค่าที่ตั้งไว้บนภาพ
                 servo_status = "MOVING..." if is_servo_moving else "STABLE"

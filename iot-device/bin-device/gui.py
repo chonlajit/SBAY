@@ -20,10 +20,11 @@ try:
 except ImportError:
     cv2 = None
 
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw
 
 # กำหนด Path ให้เข้าถึงโมดูลหลักได้เสมอ
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import settings.config as config
 from settings.config import WASTE_LABELS, USE_IR
 try:
     from settings.config import (
@@ -1271,8 +1272,37 @@ class SmartBinGUI:
         )
 
         # 2. ฝั่งขวา: กล่องแสดงภาพกล้อง (Camera Frame)
-        self.round_rect(530, 140, 969, 445, 28, fill="#061D17", outline="", tags="content")
-        self.round_rect(535, 145, 964, 440, 24, fill="#123C2D", outline="", tags="content")
+        use_circular = getattr(config, 'USE_CIRCULAR_CAMERA', True)
+        if use_circular:
+            # กล่อง Card ด้านหลัง
+            self.round_rect(530, 140, 969, 445, 28, fill="#061D17", outline="", tags="content")
+            self.round_rect(535, 145, 964, 440, 24, fill="#0B261F", outline="", tags="content")
+
+            # วาดกรอบวงกลมเลนส์สไตล์ Eco-Tech Futuristic Optical Scanner
+            cx, cy = self.sx(750), self.sy(292)
+            r_outer = int(140 * self.scale)
+            r_mid = int(134 * self.scale)
+
+            # วงแหวนนอก (Glow ring)
+            self.canvas.create_oval(
+                cx - r_outer, cy - r_outer, cx + r_outer, cy + r_outer,
+                outline=COLORS["mint"], width=max(1, int(2 * self.scale)), fill="#061D17", tags=("camera_ring", "content")
+            )
+            # วงแหวนกลาง
+            self.canvas.create_oval(
+                cx - r_mid, cy - r_mid, cx + r_mid, cy + r_mid,
+                outline="#124838", width=max(1, int(1 * self.scale)), fill="#020C09", tags=("camera_ring", "content")
+            )
+
+            # เครื่องหมาย Crosshair ticks สไตล์ช่องส่องกล้อง (Top, Bottom, Left, Right)
+            tick_len = int(10 * self.scale)
+            self.canvas.create_line(cx, cy - r_outer - 2, cx, cy - r_outer + tick_len, fill=COLORS["mint"], width=2, tags=("camera_ring", "content"))
+            self.canvas.create_line(cx, cy + r_outer + 2, cx, cy + r_outer - tick_len, fill=COLORS["mint"], width=2, tags=("camera_ring", "content"))
+            self.canvas.create_line(cx - r_outer - 2, cy, cx - r_outer + tick_len, cy, fill=COLORS["mint"], width=2, tags=("camera_ring", "content"))
+            self.canvas.create_line(cx + r_outer + 2, cy, cx + r_outer - tick_len, cy, fill=COLORS["mint"], width=2, tags=("camera_ring", "content"))
+        else:
+            self.round_rect(530, 140, 969, 445, 28, fill="#061D17", outline="", tags="content")
+            self.round_rect(535, 145, 964, 440, 24, fill="#123C2D", outline="", tags="content")
 
         # ภาพกล้องวงจรปิดและข้อความกำกับ (วาดบน Canvas โดยตรง ไม่ใช้ tk.Frame เพื่อไม่ให้กล้องบังน้อง Mascot)
         self.cam_image_item = self.canvas.create_image(
@@ -1543,11 +1573,28 @@ class SmartBinGUI:
                     self._last_cam_inactivity_reset = now
                     self._reset_inactivity_timer()
 
-                cw = max(20, int(410 * self.scale))
-                ch = max(16, int(280 * self.scale))
                 rgb = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(rgb)
-                img = img.resize((cw, ch), Image.Resampling.BILINEAR)
+
+                use_circular = getattr(config, 'USE_CIRCULAR_CAMERA', True)
+                if use_circular:
+                    diameter = max(20, int(260 * self.scale))
+                    w_orig, h_orig = img.size
+                    min_edge = min(w_orig, h_orig)
+                    left = (w_orig - min_edge) // 2
+                    top = (h_orig - min_edge) // 2
+                    img = img.crop((left, top, left + min_edge, top + min_edge))
+                    img = img.resize((diameter, diameter), Image.Resampling.BILINEAR)
+
+                    mask = Image.new("L", (diameter, diameter), 0)
+                    mask_draw = ImageDraw.Draw(mask)
+                    mask_draw.ellipse((0, 0, diameter - 1, diameter - 1), fill=255)
+                    img.putalpha(mask)
+                else:
+                    cw = max(20, int(410 * self.scale))
+                    ch = max(16, int(280 * self.scale))
+                    img = img.resize((cw, ch), Image.Resampling.BILINEAR)
+
                 self.cam_photo = ImageTk.PhotoImage(image=img)
                 if hasattr(self, 'cam_image_item') and self.cam_image_item:
                     self.canvas.itemconfigure(self.cam_image_item, image=self.cam_photo)

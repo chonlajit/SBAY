@@ -4,10 +4,12 @@
 # ============================
 
 import cv2
+import numpy as np
 import time
 import logging
 from collections import deque
 
+import settings.config as config
 from vision.detector import Detector
 from size.estimator import SizeEstimator
 from scoring.calculator import ScoreCalculator
@@ -159,6 +161,21 @@ class DetectionService:
         y1, y2 = int(h * CROP_TOP_PCT), int(h * CROP_BOTTOM_PCT)
         x1, x2 = int(w * CROP_LEFT_PCT), int(w * CROP_RIGHT_PCT)
         frame = frame[y1:y2, x1:x2]
+
+        # ปรับภาพเป็นทรงกลม (Circular Mask) เพื่อตัดขอบมุมของช่องหยอด/ถังออก ไม่ให้แสงหรือขอบโลหะรบกวน AI
+        if getattr(config, 'USE_CIRCULAR_MASK', True) and frame.shape[0] > 10 and frame.shape[1] > 10:
+            fh, fw = frame.shape[:2]
+            cx_pct = getattr(config, 'CIRCLE_CENTER_X_PCT', 0.50)
+            cy_pct = getattr(config, 'CIRCLE_CENTER_Y_PCT', 0.50)
+            rad_pct = getattr(config, 'CIRCLE_RADIUS_PCT', 0.48)
+            cx = int(fw * cx_pct)
+            cy = int(fh * cy_pct)
+            r = int(min(fw, fh) * rad_pct)
+
+            mask = np.zeros((fh, fw), dtype=np.uint8)
+            cv2.circle(mask, (cx, cy), r, 255, -1)
+            frame = cv2.bitwise_and(frame, frame, mask=mask)
+
         # 3. อัปเดตเฟรมล่าสุดสำหรับ GUI (ทำทุกรอบ ไม่ว่าจะ cooldown หรือไม่)
         display_frame = frame.copy()
         self.latest_frame = display_frame

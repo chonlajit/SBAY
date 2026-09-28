@@ -188,6 +188,13 @@ CROP_BOTTOM_PCT = 0.75
 CROP_LEFT_PCT = 0.29
 CROP_RIGHT_PCT = 0.93
 
+# --- Circular Camera & AI Masking (ปรับภาพกล้องเป็นทรงกลม) ---
+USE_CIRCULAR_MASK = True          # ตัดภาพเป็นวงกลมสำหรับ AI (ตัดขอบถัง/มุมท่อทรงกลมออกไม่ให้รบกวน AI)
+USE_CIRCULAR_CAMERA = True        # แสดงผลภาพกล้องบนหน้าจอ GUI เป็นทรงกลม
+CIRCLE_CENTER_X_PCT = 0.50        # จุดศูนย์กลางวงกลมแนวนอน (0.0 - 1.0)
+CIRCLE_CENTER_Y_PCT = 0.50        # จุดศูนย์กลางวงกลมแนวตั้ง (0.0 - 1.0)
+CIRCLE_RADIUS_PCT = 0.48          # รัศมีวงกลมเทียบกับด้านที่สั้นที่สุด (0.48 = เต็มขอบพอดี)
+
 # --- Size Estimation ---
 K = 80  # ค่าคงที่คำนวณ Score
 
