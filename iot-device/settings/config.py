@@ -183,10 +183,11 @@ DETECT_TIMEOUT = 10      # วินาที ถ้า detect ไม่ได�
 # --- AI Detection Crop Area & Camera ---
 CAMERA_ROTATION = 270
 USE_ROTATED_BBOX = True   # ปรับกรอบ Bounding Box ให้เอียงตามรูปทรงขวดจริง
-CROP_TOP_PCT = 0.15
-CROP_BOTTOM_PCT = 0.85
-CROP_LEFT_PCT = 0.28
+CROP_TOP_PCT = 0.25
+CROP_BOTTOM_PCT = 0.77
+CROP_LEFT_PCT = 0.24
 CROP_RIGHT_PCT = 0.92
+
 
 # --- Circular Camera & AI Masking (ปรับภาพกล้องเป็นทรงกลม) ---
 USE_CIRCULAR_MASK = False          # ตัดภาพเป็นวงกลมสำหรับ AI 
