@@ -159,7 +159,7 @@ public class AppController {
             if (userOpt.isEmpty()) return Map.of("error", "ไม่พบอีเมลนี้ในระบบ กรุณาลงทะเบียนก่อน", "email", email);
 
             User user = userOpt.get();
-            if ("ADMIN".equals(user.getRole())) {
+            if ("ADMIN".equals(user.getRole()) || "SUPER_ADMIN".equals(user.getRole())) {
                 auditService.logAdminLogin(user, request, "Google OAuth");
             }
             boolean rememberMe = "true".equalsIgnoreCase(payload.get("rememberMe"));

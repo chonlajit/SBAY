@@ -307,10 +307,22 @@ export default function PartnerProductsPage() {
                 {loading ? (
                     <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#64964E]"></div></div>
                 ) : !partner ? (
-                    <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                    <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-200 p-6">
                         <i className="fa-solid fa-store-slash text-5xl text-slate-300 block mb-3"></i>
                         <p className="font-bold text-slate-500 text-lg">ยังไม่มีร้านที่ผูกกับบัญชีนี้</p>
-                        <p className="text-slate-400 text-sm mt-1">กรุณาติดต่อแอดมินเพื่อสร้างร้านให้คุณ</p>
+                        <p className="text-slate-400 text-sm mt-1 mb-4">
+                            {user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.email === 'sbay.smartcompany@gmail.com')
+                                ? 'คุณสามารถเข้าไปจัดการร้านค้าและกำหนดสิทธิ์ผู้ดูแลร้านได้ที่หน้า Admin Partners'
+                                : 'กรุณาติดต่อแอดมินเพื่อสร้างร้านค้าหรือผูกบัญชีให้คุณ'}
+                        </p>
+                        {user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.email === 'sbay.smartcompany@gmail.com') && (
+                            <button
+                                onClick={() => router.push('/admin/partners')}
+                                className="bg-[#64964E] text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#527d40] transition shadow-md inline-flex items-center gap-2"
+                            >
+                                <i className="fa-solid fa-store"></i> จัดการร้านพาร์ทเนอร์ใน Admin
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <>

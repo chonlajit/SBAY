@@ -46,8 +46,12 @@ public class PartnerController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
         }
         String role = jwtUtil.getRoleFromToken(jwt);
-        if (!"ADMIN".equals(role)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access Denied");
+        if (!"ADMIN".equals(role) && !"SUPER_ADMIN".equals(role)) {
+            String userId = jwtUtil.getUserIdFromToken(jwt);
+            com.example.iotbackend.model.User user = userRepository.findById(userId).orElse(null);
+            if (user == null || (!"ADMIN".equals(user.getRole()) && !"SUPER_ADMIN".equals(user.getRole()) && !"sbay.smartcompany@gmail.com".equalsIgnoreCase(user.getEmail()))) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access Denied");
+            }
         }
     }
 
@@ -61,7 +65,7 @@ public class PartnerController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Token");
         }
         String role = jwtUtil.getRoleFromToken(jwt);
-        if (!"PARTNER".equals(role) && !"ADMIN".equals(role)) {
+        if (!"PARTNER".equals(role) && !"ADMIN".equals(role) && !"SUPER_ADMIN".equals(role)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access Denied: Partner only");
         }
         String userId = jwtUtil.getUserIdFromToken(jwt);
@@ -128,12 +132,77 @@ public class PartnerController {
         return partnerRepository.save(existing);
     }
 
-    /** ลบร้าน */
+    /** ลบร้าน (และเคลียร์สถานะผู้ดูแลที่เคยผูกกับร้านนี้) */
     @DeleteMapping("/api/admin/partners/{id}")
     public Map<String, String> deletePartner(@RequestHeader("Authorization") String token, @PathVariable String id) {
         validateAdmin(token);
         partnerRepository.deleteById(id);
+
+        // ทำความสะอาดบัญชีผู้ใช้ที่เคยผูกกับร้านนี้
+        List<com.example.iotbackend.model.User> linkedUsers = userRepository.findAll().stream()
+                .filter(u -> id.equals(u.getPartnerId()))
+                .collect(java.util.stream.Collectors.toList());
+        for (com.example.iotbackend.model.User u : linkedUsers) {
+            u.setPartnerId(null);
+            if ("PARTNER".equals(u.getRole())) {
+                u.setRole("USER");
+            }
+            userRepository.save(u);
+        }
         return Map.of("message", "Partner deleted");
+    }
+
+    /** ปลดผู้ดูแล (Partner User) ออกจากร้านค้า โดยร้านค้าและข้อมูลของรางวัลยังคงอยู่ครบถ้วน */
+    @PostMapping("/api/admin/partners/{partnerId}/unlink")
+    public Map<String, Object> unlinkPartnerUser(@RequestHeader("Authorization") String token, @PathVariable String partnerId) {
+        validateAdmin(token);
+        Partner partner = partnerRepository.findById(partnerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Partner not found"));
+
+        List<com.example.iotbackend.model.User> linkedUsers = userRepository.findAll().stream()
+                .filter(u -> partnerId.equals(u.getPartnerId()))
+                .collect(java.util.stream.Collectors.toList());
+        for (com.example.iotbackend.model.User u : linkedUsers) {
+            u.setPartnerId(null);
+            if ("PARTNER".equals(u.getRole())) {
+                u.setRole("USER");
+            }
+            userRepository.save(u);
+        }
+        return Map.of("success", true, "message", "ปลดผู้ดูแลออกจากร้าน " + partner.getName() + " เรียบร้อยแล้ว (ร้านค้ายังคงอยู่)");
+    }
+
+    /** กำหนด/เปลี่ยนผู้ดูแลร้านค้า */
+    @PostMapping("/api/admin/partners/{partnerId}/assign-user/{userId}")
+    public Map<String, Object> assignPartnerUser(@RequestHeader("Authorization") String token,
+                                                 @PathVariable String partnerId,
+                                                 @PathVariable String userId) {
+        validateAdmin(token);
+        Partner partner = partnerRepository.findById(partnerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Partner not found"));
+        com.example.iotbackend.model.User targetUser = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        // ปลดผู้ดูแลเดิมของร้านนี้ก่อน (ถ้ามี)
+        List<com.example.iotbackend.model.User> prevLinked = userRepository.findAll().stream()
+                .filter(u -> partnerId.equals(u.getPartnerId()))
+                .collect(java.util.stream.Collectors.toList());
+        for (com.example.iotbackend.model.User u : prevLinked) {
+            if (!u.getId().equals(userId)) {
+                u.setPartnerId(null);
+                if ("PARTNER".equals(u.getRole())) {
+                    u.setRole("USER");
+                }
+                userRepository.save(u);
+            }
+        }
+
+        targetUser.setRole("PARTNER");
+        targetUser.setPartnerId(partnerId);
+        userRepository.save(targetUser);
+
+        String displayName = targetUser.getUsername() != null ? targetUser.getUsername() : (targetUser.getFirstName() != null ? targetUser.getFirstName() : targetUser.getEmail());
+        return Map.of("success", true, "message", "กำหนด " + displayName + " เป็นผู้ดูแลร้าน " + partner.getName() + " สำเร็จ");
     }
 
     /** เพิ่มของรางวัลให้กับร้าน */

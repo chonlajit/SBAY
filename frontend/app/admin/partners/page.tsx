@@ -95,10 +95,16 @@ export default function AdminPartnersPage() {
     const [modalUserFilter, setModalUserFilter] = useState('');
     const [assignUserFilter, setAssignUserFilter] = useState('');
 
-    // Partner User assignment
+    // Partner User assignment (User -> Store)
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [assignUser, setAssignUser] = useState<UserItem | null>(null);
     const [assignPartnerId, setAssignPartnerId] = useState('');
+
+    // Partner User assignment (Store -> User)
+    const [showStoreAssignModal, setShowStoreAssignModal] = useState(false);
+    const [targetStoreForAssign, setTargetStoreForAssign] = useState<Partner | null>(null);
+    const [selectedStoreUserId, setSelectedStoreUserId] = useState('');
+    const [storeUserFilter, setStoreUserFilter] = useState('');
 
     useEffect(() => {
         const isAdminUser = user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.email === 'sbay.smartcompany@gmail.com');
@@ -114,7 +120,11 @@ export default function AdminPartnersPage() {
             const res = await fetch(`${apiBase}/admin/partners`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) setPartners(await res.json());
+            if (res.ok) {
+                setPartners(await res.json());
+            } else {
+                console.error("fetchPartners error:", res.status, res.statusText);
+            }
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     }, [apiBase, token]);
@@ -138,14 +148,20 @@ export default function AdminPartnersPage() {
         const defaultCat = type === 'student' ? 'ร้านสำหรับนักศึกษา' : 'ร้านขายของ';
         setPartnerForm({ ...emptyPartner, category: defaultCat });
         setSelectedUserId('');
+        setModalUserFilter('');
         setShowPartnerModal(true);
     };
+
     const openEditPartner = (p: Partner) => {
         setEditingPartner(p);
         setPartnerModalType(p.category === 'ร้านสำหรับนักศึกษา' ? 'student' : 'general');
         setPartnerForm({ name: p.name, description: p.description, logoUrl: p.logoUrl || '', category: p.category, active: p.active });
+        const existingAssigned = users.find(u => u.partnerId === p.id);
+        setSelectedUserId(existingAssigned ? existingAssigned.id : '');
+        setModalUserFilter('');
         setShowPartnerModal(true);
     };
+
     const savePartner = async () => {
         setSaving(true);
         try {
@@ -158,18 +174,28 @@ export default function AdminPartnersPage() {
             });
             if (res.ok) {
                 const partnerData = await res.json();
-                // If creating new partner and a user is selected, assign role
-                if (!editingPartner && selectedUserId) {
-                    await fetch(`${apiBase}/admin/user/${selectedUserId}/role`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ role: 'PARTNER', partnerId: partnerData.id })
+                const targetPartnerId = editingPartner ? editingPartner.id : partnerData.id;
+
+                const currentAssigned = users.find(u => u.partnerId === targetPartnerId);
+                const currentAssignedId = currentAssigned ? currentAssigned.id : '';
+
+                if (selectedUserId && selectedUserId !== currentAssignedId) {
+                    await fetch(`${apiBase}/admin/partners/${targetPartnerId}/assign-user/${selectedUserId}`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    setSelectedUserId('');
+                } else if (!selectedUserId && currentAssignedId) {
+                    // Admin cleared the assigned user
+                    await fetch(`${apiBase}/admin/partners/${targetPartnerId}/unlink`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
                 }
+
                 setShowPartnerModal(false);
                 fetchPartners();
                 fetchUsers();
+                alert(editingPartner ? 'บันทึกข้อมูลร้านค้าสำเร็จ' : 'สร้างร้านค้าใหม่สำเร็จ');
             } else {
                 const errorData = await res.json().catch(() => ({}));
                 alert(`เกิดข้อผิดพลาดในการบันทึก: ${errorData.message || res.statusText || 'Unknown error'}`);
@@ -179,10 +205,99 @@ export default function AdminPartnersPage() {
         }
         finally { setSaving(false); }
     };
+
     const deletePartner = async (id: string) => {
-        if (!confirm('ลบร้านนี้?')) return;
-        await fetch(`${apiBase}/admin/partners/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-        fetchPartners();
+        const p = partners.find(item => item.id === id);
+        const pName = p ? ` "${p.name}"` : '';
+        if (!confirm(`คุณแน่ใจหรือไม่ที่จะลบร้านค้า${pName}?\n\n*คำเตือน: ร้านค้าและของรางวัลทั้งหมดของร้านนี้จะถูกลบถาวร`)) return;
+        setSaving(true);
+        try {
+            const res = await fetch(`${apiBase}/admin/partners/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                alert('ลบร้านค้าสำเร็จ');
+                fetchPartners();
+                fetchUsers();
+            } else {
+                alert('เกิดข้อผิดพลาดในการลบร้านค้า');
+            }
+        } catch (e: any) {
+            alert(`เกิดข้อผิดพลาด: ${e.message}`);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // ปลดผู้ดูแลออกจากร้านค้า โดยร้านค้ายังคงอยู่
+    const handleUnlinkPartner = async (p: Partner) => {
+        const assigned = users.find(u => u.partnerId === p.id);
+        const userName = assigned ? `${assigned.firstName} ${assigned.lastName}` : 'ผู้ดูแล';
+        if (!confirm(`ยืนยันการปลด ${userName} ออกจากการเป็นผู้ดูแลร้าน "${p.name}"?\n\n*หมายเหตุ: ร้านค้าและของรางวัลจะยังคงอยู่ในระบบปกติ สามารถกำหนดผู้ดูแลใหม่ได้ทุกเมื่อ`)) return;
+
+        setSaving(true);
+        try {
+            const res = await fetch(`${apiBase}/admin/partners/${p.id}/unlink`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                alert(`ปลดผู้ดูแลร้าน "${p.name}" สำเร็จ (ร้านค้ายังคงเปิดให้บริการปกติ)`);
+                fetchPartners();
+                fetchUsers();
+            } else {
+                alert('เกิดข้อผิดพลาดในการปลดผู้ดูแล');
+            }
+        } catch (e: any) {
+            alert(`เกิดข้อผิดพลาด: ${e.message}`);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // กำหนดผู้ดูแลจากฝั่งร้านค้า
+    const openAssignModalForStore = (p: Partner) => {
+        setTargetStoreForAssign(p);
+        const existingAssigned = users.find(u => u.partnerId === p.id);
+        setSelectedStoreUserId(existingAssigned ? existingAssigned.id : '');
+        setStoreUserFilter('');
+        setShowStoreAssignModal(true);
+    };
+
+    const saveAssignUserToStore = async () => {
+        if (!targetStoreForAssign) return;
+        setSaving(true);
+        try {
+            if (selectedStoreUserId) {
+                const res = await fetch(`${apiBase}/admin/partners/${targetStoreForAssign.id}/assign-user/${selectedStoreUserId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    setShowStoreAssignModal(false);
+                    fetchPartners();
+                    fetchUsers();
+                    alert(`กำหนดผู้ดูแลร้าน "${targetStoreForAssign.name}" สำเร็จ`);
+                } else {
+                    alert('เกิดข้อผิดพลาดในการกำหนดผู้ดูแล');
+                }
+            } else {
+                const res = await fetch(`${apiBase}/admin/partners/${targetStoreForAssign.id}/unlink`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    setShowStoreAssignModal(false);
+                    fetchPartners();
+                    fetchUsers();
+                    alert(`ปลดผู้ดูแลร้าน "${targetStoreForAssign.name}" สำเร็จ (ร้านค้ายังคงอยู่ปกติ)`);
+                } else {
+                    alert('เกิดข้อผิดพลาดในการปลดผู้ดูแล');
+                }
+            }
+        } catch (e: any) {
+            alert(`เกิดข้อผิดพลาด: ${e.message}`);
+        } finally {
+            setSaving(false);
+        }
     };
 
     // === Reward CRUD ===
@@ -226,36 +341,57 @@ export default function AdminPartnersPage() {
         fetchPartners();
     };
 
-    // === Partner User Assignment ===
+    // === Partner User Assignment (User -> Store) ===
     const openAssignModal = (u: UserItem) => {
         setAssignUser(u);
         setAssignPartnerId(u.partnerId || '');
         setShowAssignModal(true);
     };
     const saveAssignPartner = async () => {
-        if (!assignUser) return;
+        if (!assignUser || !assignPartnerId) return;
         setSaving(true);
         try {
-            const res = await fetch(`${apiBase}/admin/user/${assignUser.id}/role`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ role: 'PARTNER', partnerId: assignPartnerId })
+            const res = await fetch(`${apiBase}/admin/partners/${assignPartnerId}/assign-user/${assignUser.id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) { setShowAssignModal(false); fetchUsers(); alert(`กำหนด ${assignUser.firstName} เป็น PARTNER สำเร็จ`); }
-            else { alert('เกิดข้อผิดพลาด'); }
+            if (res.ok) {
+                setShowAssignModal(false);
+                fetchPartners();
+                fetchUsers();
+                alert(`กำหนด ${assignUser.firstName} เป็นผู้ดูแลร้านสำเร็จ`);
+            } else { alert('เกิดข้อผิดพลาด'); }
         } catch (e) { alert('เกิดข้อผิดพลาด'); }
         finally { setSaving(false); }
     };
     const removePartnerRole = async (u: UserItem) => {
-        if (!confirm(`ยกเลิก role PARTNER ของ ${u.firstName} ${u.lastName}?`)) return;
+        const linkedPartner = partners.find(p => p.id === u.partnerId);
+        const storeName = linkedPartner ? `ร้าน "${linkedPartner.name}"` : 'ร้านค้า';
+        if (!confirm(`ยืนยันการปลด ${u.firstName} ${u.lastName} ออกจากการดูแล${storeName}?\n\n*หมายเหตุ: ${storeName} จะไม่ถูกลบและยังคงอยู่ในระบบปกติ สามารถกำหนดผู้ดูแลใหม่ได้ตลอดเวลา`)) return;
+
+        setSaving(true);
         try {
-            const res = await fetch(`${apiBase}/admin/user/${u.id}/role`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ role: 'USER' })
-            });
-            if (res.ok) { fetchUsers(); }
-        } catch (e) { console.error(e); }
+            if (u.partnerId) {
+                await fetch(`${apiBase}/admin/partners/${u.partnerId}/unlink`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } else {
+                await fetch(`${apiBase}/admin/user/${u.id}/role`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ role: 'USER' })
+                });
+            }
+            fetchPartners();
+            fetchUsers();
+            alert(`ปลด ${u.firstName} ${u.lastName} สำเร็จ (${storeName} ยังคงอยู่ในระบบ)`);
+        } catch (e) {
+            console.error(e);
+            alert('เกิดข้อผิดพลาด');
+        } finally {
+            setSaving(false);
+        }
     };
 
     if (!isInitialized || !user) return null;
@@ -370,6 +506,56 @@ export default function AdminPartnersPage() {
                                             </button>
                                         </div>
                                     </div>
+
+                                    {/* Partner Assigned User bar */}
+                                    {(() => {
+                                        const assignedUser = users.find(u => u.partnerId === partner.id);
+                                        return (
+                                            <div className="px-5 py-2.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 text-xs">
+                                                {assignedUser ? (
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <div className="w-6 h-6 rounded-lg bg-violet-100 text-violet-700 font-bold flex items-center justify-center text-[10px]">
+                                                            {(assignedUser.firstName || assignedUser.username || '?').charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <span className="text-slate-500">ผู้ดูแลร้าน:</span>
+                                                        <span className="font-bold text-slate-800">{assignedUser.firstName} {assignedUser.lastName}</span>
+                                                        {assignedUser.username && <span className="text-violet-600 font-mono">(@{assignedUser.username})</span>}
+                                                        {assignedUser.phoneNumber && <span className="text-slate-400">({assignedUser.phoneNumber})</span>}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/70 font-medium">
+                                                        <i className="fa-solid fa-store-slash text-amber-500 text-xs"></i>
+                                                        <span>ยังไม่มีผู้ดูแลร้าน (ร้านค้ายังคงเปิดให้บริการปกติ)</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    {assignedUser ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => openAssignModalForStore(partner)}
+                                                                className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 transition flex items-center gap-1 text-xs"
+                                                            >
+                                                                <i className="fa-solid fa-user-pen text-[10px]"></i> เปลี่ยนผู้ดูแล
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleUnlinkPartner(partner)}
+                                                                className="px-2.5 py-1 rounded-lg bg-red-50 text-red-600 font-bold hover:bg-red-100 transition flex items-center gap-1 text-xs"
+                                                            >
+                                                                <i className="fa-solid fa-user-slash text-[10px]"></i> ปลดผู้ดูแล
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => openAssignModalForStore(partner)}
+                                                            className="px-3 py-1.5 rounded-xl bg-[#64964E] text-white font-bold hover:bg-[#527d40] transition shadow-sm flex items-center gap-1 text-xs active:scale-95"
+                                                        >
+                                                            <i className="fa-solid fa-user-plus text-[10px]"></i> กำหนดผู้ดูแลร้าน
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
 
                                     {/* Rewards List (expanded) */}
                                     {expandedPartner === partner.id && (
@@ -507,6 +693,51 @@ export default function AdminPartnersPage() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Unassigned Stores (ร้านค้าที่ยังไม่มีผู้ดูแล) */}
+                        {(() => {
+                            const unassignedPartners = partners.filter(p => !users.some(u => u.partnerId === p.id));
+                            if (unassignedPartners.length === 0) return null;
+                            return (
+                                <div className="bg-white rounded-3xl border border-amber-200 shadow-sm overflow-hidden">
+                                    <div className="p-5 border-b border-amber-100 bg-amber-50/70 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
+                                                <i className="fa-solid fa-store-slash text-amber-600 text-sm"></i>
+                                            </div>
+                                            <div>
+                                                <h3 className="font-black text-slate-800 text-sm">ร้านค้าที่ยังไม่มีผู้ดูแล ({unassignedPartners.length} ร้าน)</h3>
+                                                <p className="text-slate-500 text-xs">ร้านค้าเหล่านี้ยังคงเปิดให้บริการปกติในระบบ สามารถกำหนดผู้ดูแลใหม่ได้ทันที</p>
+                                            </div>
+                                        </div>
+                                        <span className="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">{unassignedPartners.length} ร้าน</span>
+                                    </div>
+                                    <div className="divide-y divide-slate-100">
+                                        {unassignedPartners.map(p => (
+                                            <div key={p.id} className="flex items-center gap-4 px-5 py-3 hover:bg-slate-50 transition">
+                                                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200">
+                                                    {p.logoUrl ? <img src={getImageUrl(p.logoUrl)} alt="" className="w-full h-full object-cover" /> : <i className="fa-solid fa-store text-slate-400 text-sm"></i>}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-bold text-slate-800 text-sm flex items-center gap-2 flex-wrap">
+                                                        {p.name}
+                                                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${p.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-500'}`}>{p.active ? 'เปิด' : 'ปิด'}</span>
+                                                        <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.2 rounded-full font-medium">{p.category}</span>
+                                                    </div>
+                                                    <div className="text-xs text-slate-400 truncate">{p.description || 'ไม่มีคำอธิบาย'}</div>
+                                                </div>
+                                                <button
+                                                    onClick={() => openAssignModalForStore(p)}
+                                                    className="shrink-0 flex items-center gap-1.5 bg-[#64964E] text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-[#527d40] transition active:scale-95"
+                                                >
+                                                    <i className="fa-solid fa-user-plus text-[10px]"></i> กำหนดผู้ดูแล
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         {/* Assign Partner Role */}
                         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
@@ -666,33 +897,44 @@ export default function AdminPartnersPage() {
                                 </div>
                             </div>
 
-                            {!editingPartner && (
-                                <div className="w-1/2 ml-auto">
-                                    <label className="text-sm text-[#64964E] mb-1 block">กำหนดตัวแทนPartner จาก Username</label>
-                                    <input
-                                        type="text"
-                                        placeholder="ค้นหาชื่อ หรือ Username..."
-                                        value={modalUserFilter}
-                                        onChange={e => setModalUserFilter(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none mb-2 focus:border-[#64964E]"
-                                    />
-                                    <div className="relative">
-                                        <select value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} className="w-full border-none bg-[#64964E] text-white rounded-lg px-4 py-2 text-sm outline-none appearance-none cursor-pointer">
-                                            <option value="" className="bg-[#64964E]">ไม่มี (ไม่กำหนด)</option>
-                                            {regularUsers.filter(u =>
-                                                (u.id && u.id.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
-                                                (u.username && u.username.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
-                                                (u.phoneNumber && u.phoneNumber.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
-                                                (u.firstName && u.firstName.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
-                                                (u.lastName && u.lastName.toLowerCase().includes(modalUserFilter.toLowerCase()))
-                                            ).map(u => (
-                                                <option key={u.id} value={u.id} className="bg-[#64964E]">{u.firstName} {u.lastName} {u.username ? `(@${u.username})` : `(${u.phoneNumber})`}</option>
-                                            ))}
-                                        </select>
-                                        <i className="fa-solid fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none"></i>
-                                    </div>
+                            <div>
+                                <label className="text-sm text-[#64964E] mb-1 block font-medium">
+                                    {editingPartner ? 'ผู้ดูแลร้านค้า (Partner User)' : 'กำหนดผู้ดูแลร้านค้า (ไม่บังคับ สามารถกำหนดภายหลังได้)'}
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="ค้นหาชื่อ หรือ Username เพื่อเลือกผู้ดูแล..."
+                                    value={modalUserFilter}
+                                    onChange={e => setModalUserFilter(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none mb-2 focus:border-[#64964E]"
+                                />
+                                <div className="relative">
+                                    <select value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} className="w-full border-none bg-[#64964E] text-white rounded-lg px-4 py-2 text-sm outline-none appearance-none cursor-pointer">
+                                        <option value="" className="bg-[#64964E]">ไม่มี (ยังไม่กำหนดผู้ดูแล / ปลดผู้ดูแล)</option>
+                                        {/* If editing, show current assigned user */}
+                                        {editingPartner && users.filter(u => u.partnerId === editingPartner.id).map(u => (
+                                            <option key={u.id} value={u.id} className="bg-[#64964E]">
+                                                [ผู้ดูแลปัจจุบัน] {u.firstName} {u.lastName} {u.username ? `(@${u.username})` : `(${u.phoneNumber})`}
+                                            </option>
+                                        ))}
+                                        {/* Other available users */}
+                                        {users.filter(u =>
+                                            (!u.partnerId || (editingPartner && u.partnerId === editingPartner.id)) &&
+                                            u.role !== 'SUPER_ADMIN' &&
+                                            ((u.id && u.id.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
+                                            (u.username && u.username.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
+                                            (u.phoneNumber && u.phoneNumber.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
+                                            (u.firstName && u.firstName.toLowerCase().includes(modalUserFilter.toLowerCase())) ||
+                                            (u.lastName && u.lastName.toLowerCase().includes(modalUserFilter.toLowerCase())))
+                                        ).filter(u => !(editingPartner && u.partnerId === editingPartner.id)).map(u => (
+                                            <option key={u.id} value={u.id} className="bg-[#64964E]">
+                                                {u.firstName} {u.lastName} {u.username ? `(@${u.username})` : `(${u.phoneNumber})`} {u.role === 'ADMIN' ? '(Admin)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <i className="fa-solid fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none"></i>
                                 </div>
-                            )}
+                            </div>
 
                             <label className="flex items-center gap-3 cursor-pointer mt-4">
                                 <div className={`w-10 h-6 rounded-full transition ${partnerForm.active ? 'bg-[#64964E]' : 'bg-slate-300'} relative`} onClick={() => setPartnerForm(p => ({ ...p, active: !p.active }))}>
@@ -844,6 +1086,99 @@ export default function AdminPartnersPage() {
                         <div className="flex gap-3 mt-5">
                             <button onClick={() => setShowAssignModal(false)} className="flex-1 py-3 rounded-xl border-2 border-slate-200 font-bold text-slate-500 hover:bg-slate-50 transition">ยกเลิก</button>
                             <button onClick={saveAssignPartner} disabled={saving || !assignPartnerId} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 text-white font-bold hover:shadow-lg transition disabled:opacity-50">
+                                {saving ? 'กำลังบันทึก...' : 'ยืนยัน'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* === Assign User to Store Modal === */}
+            {showStoreAssignModal && targetStoreForAssign && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+                    <div className="bg-white w-full md:max-w-md rounded-t-3xl md:rounded-3xl p-6 shadow-2xl">
+                        <div className="flex items-center justify-between mb-5">
+                            <div>
+                                <h2 className="font-black text-lg text-slate-800">กำหนดผู้ดูแลร้านค้า</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">ร้าน: <span className="font-bold text-[#64964E]">{targetStoreForAssign.name}</span></p>
+                            </div>
+                            <button onClick={() => setShowStoreAssignModal(false)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center"><i className="fa-solid fa-times text-slate-500"></i></button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="ค้นหาชื่อ หรือ Username..."
+                                    value={storeUserFilter}
+                                    onChange={e => setStoreUserFilter(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none mb-3 focus:border-[#64964E]"
+                                />
+
+                                <label className="text-xs font-bold text-slate-500 mb-2 block">เลือกผู้ใช้ที่ต้องการให้เป็นผู้ดูแลร้าน</label>
+
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {/* Option to clear / unlink */}
+                                    <label className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition ${selectedStoreUserId === '' ? 'border-red-400 bg-red-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                        <input
+                                            type="radio"
+                                            name="storeUser"
+                                            value=""
+                                            checked={selectedStoreUserId === ''}
+                                            onChange={() => setSelectedStoreUserId('')}
+                                            className="accent-red-600"
+                                        />
+                                        <div>
+                                            <div className="font-bold text-red-600 text-sm">ไม่มี (ปลดผู้ดูแลร้าน)</div>
+                                            <div className="text-xs text-slate-400">ร้านค้าจะยังคงเปิดให้บริการปกติ โดยไม่มีผู้ดูแลผูกไว้</div>
+                                        </div>
+                                    </label>
+
+                                    {/* List of eligible users */}
+                                    {users.filter(u =>
+                                        u.role !== 'SUPER_ADMIN' &&
+                                        ((u.id && u.id.toLowerCase().includes(storeUserFilter.toLowerCase())) ||
+                                        (u.username && u.username.toLowerCase().includes(storeUserFilter.toLowerCase())) ||
+                                        (u.phoneNumber && u.phoneNumber.toLowerCase().includes(storeUserFilter.toLowerCase())) ||
+                                        (u.firstName && u.firstName.toLowerCase().includes(storeUserFilter.toLowerCase())) ||
+                                        (u.lastName && u.lastName.toLowerCase().includes(storeUserFilter.toLowerCase())))
+                                    ).map(u => {
+                                        const isCurrent = u.partnerId === targetStoreForAssign.id;
+                                        return (
+                                            <label
+                                                key={u.id}
+                                                className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition ${selectedStoreUserId === u.id ? 'border-[#64964E] bg-green-50' : 'border-slate-200 hover:border-slate-300'}`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="storeUser"
+                                                    value={u.id}
+                                                    checked={selectedStoreUserId === u.id}
+                                                    onChange={() => setSelectedStoreUserId(u.id)}
+                                                    className="accent-[#64964E]"
+                                                />
+                                                <div className="w-8 h-8 rounded-xl bg-violet-100 text-violet-700 font-bold flex items-center justify-center text-xs shrink-0">
+                                                    {(u.firstName || u.username || '?').charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-bold text-slate-800 text-sm flex items-center gap-1.5 flex-wrap">
+                                                        <span>{u.firstName} {u.lastName}</span>
+                                                        {isCurrent && <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full">ผู้ดูแลปัจจุบัน</span>}
+                                                    </div>
+                                                    <div className="text-xs text-slate-400">
+                                                        {u.username ? `@${u.username}` : ''} {u.phoneNumber ? `(${u.phoneNumber})` : ''} {u.role === 'ADMIN' ? '• Role: Admin' : ''}
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-5">
+                            <button onClick={() => setShowStoreAssignModal(false)} className="flex-1 py-3 rounded-xl border-2 border-slate-200 font-bold text-slate-500 hover:bg-slate-50 transition">ยกเลิก</button>
+                            <button onClick={saveAssignUserToStore} disabled={saving} className="flex-1 py-3 rounded-xl bg-[#64964E] text-white font-bold hover:bg-[#527d40] transition disabled:opacity-50">
                                 {saving ? 'กำลังบันทึก...' : 'ยืนยัน'}
                             </button>
                         </div>
