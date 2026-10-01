@@ -22,6 +22,34 @@ const getWasteLabel = (type?: string | null) => {
     }
 };
 
+const getDeviceDepositProfit = (device: any) => {
+    const pointsGiven = Number(device?.totalPointsGiven ?? device?.totalScore ?? 0);
+    const profitPoints = device?.totalProfitPoints !== undefined && device?.totalProfitPoints !== null
+        ? Number(device.totalProfitPoints)
+        : pointsGiven * 0.25;
+    const profitBaht = device?.totalProfitBaht !== undefined && device?.totalProfitBaht !== null
+        ? Number(device.totalProfitBaht)
+        : profitPoints / 100;
+    const actualValuePoints = device?.totalActualValuePoints !== undefined && device?.totalActualValuePoints !== null
+        ? Number(device.totalActualValuePoints)
+        : pointsGiven * 1.25;
+    const actualValueBaht = device?.totalActualValueBaht !== undefined && device?.totalActualValueBaht !== null
+        ? Number(device.totalActualValueBaht)
+        : actualValuePoints / 100;
+    const recycledItems = Number(device?.totalRecycledItems ?? 0);
+    const sessionsCount = Number(device?.totalSessions ?? 0);
+
+    return {
+        pointsGiven,
+        profitPoints,
+        profitBaht,
+        actualValuePoints,
+        actualValueBaht,
+        recycledItems,
+        sessionsCount,
+    };
+};
+
 export default function AdminPage() {
     const router = useRouter();
     const { user, token, isInitialized, apiBase } = useSmartBin();
@@ -494,12 +522,158 @@ export default function AdminPage() {
                     </div>
                 )}
 
+                {/* Smart Bin Financial & 20% Profit Summary Banner */}
+                {(() => {
+                    const totalDepositProfitPts = summary?.totalDepositProfitPoints !== undefined
+                        ? Number(summary.totalDepositProfitPoints)
+                        : devices.reduce((sum, d) => sum + getDeviceDepositProfit(d).profitPoints, 0);
+
+                    const totalDepositProfitThb = summary?.totalDepositProfitBaht !== undefined
+                        ? Number(summary.totalDepositProfitBaht)
+                        : totalDepositProfitPts / 100;
+
+                    const totalDepositPtsGiven = summary?.totalDepositPointsGiven !== undefined
+                        ? Number(summary.totalDepositPointsGiven)
+                        : devices.reduce((sum, d) => sum + getDeviceDepositProfit(d).pointsGiven, 0);
+
+                    const totalDepositActValPts = summary?.totalDepositActualValuePoints !== undefined
+                        ? Number(summary.totalDepositActualValuePoints)
+                        : devices.reduce((sum, d) => sum + getDeviceDepositProfit(d).actualValuePoints, 0);
+
+                    const totalDepositActValThb = summary?.totalDepositActualValueBaht !== undefined
+                        ? Number(summary.totalDepositActualValueBaht)
+                        : totalDepositActValPts / 100;
+
+                    const totalDepositSessions = summary?.totalDepositSessions !== undefined
+                        ? Number(summary.totalDepositSessions)
+                        : devices.reduce((sum, d) => sum + getDeviceDepositProfit(d).sessionsCount, 0);
+
+                    return (
+                        <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden border border-emerald-500/30">
+                            {/* Decorative glowing background accents */}
+                            <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+                            <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-teal-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                            <div className="relative z-10">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between pb-5 mb-5 border-b border-white/10 gap-3">
+                                    <div>
+                                        <div className="flex items-center space-x-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
+                                            <i className="fa-solid fa-chart-pie"></i>
+                                            <span>สรุปภาพรวมรายได้และกำไรจากการหยอดขยะ (Smart Bins Financials)</span>
+                                        </div>
+                                        <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                                            กำไรของระบบจากการหยอดตู้ขยะ
+                                            <span className="text-xs bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 px-2.5 py-0.5 rounded-full font-bold">
+                                                คิดเป็น 20%
+                                            </span>
+                                        </h2>
+                                        <p className="text-xs text-emerald-100/70 mt-1">
+                                            สูตรคำนวณตามโมเดลระบบ: แต้มที่แจกผู้ใช้งานคิดเป็น 80% ของมูลค่าขยะจริง • ระบบได้รับส่วนต่างกำไร 20% ของมูลค่าขยะ (100 แต้ม = 1 บาท)
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <button 
+                                            onClick={() => router.push('/admin/partners')}
+                                            className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition flex items-center gap-1.5 backdrop-blur-sm cursor-pointer"
+                                        >
+                                            <i className="fa-solid fa-store text-amber-300"></i>
+                                            <span>ดูกำไรพาร์ทเนอร์ 10%</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 4 Summary Metric Cards */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {/* Card 1: 20% Platform Profit */}
+                                    <div className="bg-emerald-500/15 backdrop-blur-md rounded-2xl p-4 border border-emerald-400/30 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between text-xs text-emerald-300 font-semibold mb-1">
+                                                <span>กำไรสุทธิรวม (20%)</span>
+                                                <i className="fa-solid fa-coins text-emerald-400"></i>
+                                            </div>
+                                            <div className="text-2xl font-black text-white">
+                                                +{totalDepositProfitPts.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                                <span className="text-xs font-normal text-emerald-300 ml-1">แต้ม</span>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 pt-2 border-t border-emerald-400/20 flex items-center justify-between text-xs font-bold text-emerald-300">
+                                            <span>คิดเป็นเงินบาท:</span>
+                                            <span className="text-white text-sm">≈ ฿{totalDepositProfitThb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 2: 80% Points Given to Users */}
+                                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between text-xs text-slate-300 font-semibold mb-1">
+                                                <span>แต้มแจกผู้ใช้งานรวม (80%)</span>
+                                                <i className="fa-solid fa-gift text-sky-400"></i>
+                                            </div>
+                                            <div className="text-2xl font-black text-sky-300">
+                                                {totalDepositPtsGiven.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                                <span className="text-xs font-normal text-slate-300 ml-1">แต้ม</span>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-xs font-medium text-slate-300">
+                                            <span>มูลค่าแต้มผู้ใช้:</span>
+                                            <span className="text-white font-bold">≈ ฿{(totalDepositPtsGiven / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 3: 100% Actual Value */}
+                                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between text-xs text-slate-300 font-semibold mb-1">
+                                                <span>มูลค่าขยะรีไซเคิลจริง (100%)</span>
+                                                <i className="fa-solid fa-recycle text-emerald-400"></i>
+                                            </div>
+                                            <div className="text-2xl font-black text-white">
+                                                {totalDepositActValPts.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                                <span className="text-xs font-normal text-slate-300 ml-1">แต้ม</span>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-xs font-medium text-slate-300">
+                                            <span>มูลค่าจริงเทียบเท่า:</span>
+                                            <span className="text-emerald-300 font-bold">≈ ฿{totalDepositActValThb.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 4: Machine Coverage */}
+                                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between text-xs text-slate-300 font-semibold mb-1">
+                                                <span>จำนวนตู้ที่เปิดใช้งาน</span>
+                                                <i className="fa-solid fa-trash-can text-amber-400"></i>
+                                            </div>
+                                            <div className="text-2xl font-black text-amber-300">
+                                                {devices.length}
+                                                <span className="text-xs font-normal text-slate-300 ml-1">ตู้</span>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-xs font-medium text-slate-300">
+                                            <span>การทำรายการสะสม:</span>
+                                            <span className="text-white font-bold">{totalDepositSessions.toLocaleString()} ครั้ง</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 {/* Bin Status Section */}
                 {(() => {
                     const offlineCount = devices.filter(d => d.status === 'OFFLINE').length;
                     const fullCount = devices.filter(d => d.isFull || Number(d.fillLevel) >= 95).length;
                     const onlineCount = devices.filter(d => d.status === 'ONLINE').length;
                     const problemDevices = devices.filter(d => d.status === 'OFFLINE' || d.isFull || Number(d.fillLevel) >= 95);
+
+                    const sectionTotalProfitPts = summary?.totalDepositProfitPoints !== undefined
+                        ? Number(summary.totalDepositProfitPoints)
+                        : devices.reduce((sum, d) => sum + getDeviceDepositProfit(d).profitPoints, 0);
+                    const sectionTotalProfitThb = summary?.totalDepositProfitBaht !== undefined
+                        ? Number(summary.totalDepositProfitBaht)
+                        : sectionTotalProfitPts / 100;
 
                     return (
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col mt-8">
@@ -527,6 +701,10 @@ export default function AdminPage() {
                                     </div>
 
                                     {/* Counter Badges */}
+                                    <span className="font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-300 shadow-2xs flex items-center gap-1.5">
+                                        <i className="fa-solid fa-coins text-emerald-600 text-xs"></i>
+                                        กำไรรวม: +{sectionTotalProfitPts.toLocaleString(undefined, { maximumFractionDigits: 0 })} แต้ม (~฿{sectionTotalProfitThb.toFixed(2)})
+                                    </span>
                                     <span className="font-semibold text-slate-600 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs">
                                         {devices.length} ตู้
                                     </span>
@@ -639,6 +817,7 @@ export default function AdminPage() {
                                     })();
 
                                     const fullWasteLabel = device.fullWasteType ? getWasteLabel(device.fullWasteType) : '';
+                                    const devProfit = getDeviceDepositProfit(device);
 
                                     return (
                                         <div 
@@ -712,6 +891,57 @@ export default function AdminPage() {
                                                         </div>
                                                     </div>
                                                 )}
+
+                                                {/* Machine Profit & Financials (20% Profit from deposits) */}
+                                                <div className="mt-1 mb-3.5 p-3 rounded-xl bg-gradient-to-br from-emerald-50 via-teal-50/50 to-emerald-50/30 border border-emerald-200/90 shadow-2xs">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center space-x-1.5 text-emerald-800 font-bold text-xs">
+                                                            <span className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center text-[10px] shadow-2xs">
+                                                                <i className="fa-solid fa-coins"></i>
+                                                            </span>
+                                                            <span>กำไรตู้จากการหยอด (20%)</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100/90 text-emerald-700 border border-emerald-300">
+                                                            ส่วนแบ่ง 20%
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-2 mb-2">
+                                                        <div className="bg-white/95 rounded-lg p-2 border border-emerald-200/80 shadow-2xs">
+                                                            <div className="text-[10px] font-semibold text-slate-500">กำไรสะสม (20%)</div>
+                                                            <div className="text-base font-black text-emerald-600 leading-tight">
+                                                                +{devProfit.profitPoints.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                                                <span className="text-[10px] font-bold text-slate-500 ml-1">แต้ม</span>
+                                                            </div>
+                                                            <div className="text-[11px] font-bold text-emerald-700 mt-0.5">
+                                                                ≈ ฿{devProfit.profitBaht.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="bg-white/95 rounded-lg p-2 border border-slate-200/80 shadow-2xs">
+                                                            <div className="text-[10px] font-semibold text-slate-500">แต้มแจกผู้ใช้ (80%)</div>
+                                                            <div className="text-base font-black text-slate-700 leading-tight">
+                                                                {devProfit.pointsGiven.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                                                <span className="text-[10px] font-bold text-slate-400 ml-1">แต้ม</span>
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-500 mt-0.5">
+                                                                ≈ ฿{(devProfit.pointsGiven / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-2 border-t border-emerald-200/60 flex items-center justify-between text-[11px] text-slate-600">
+                                                        <div className="truncate pr-1">
+                                                            <span className="text-slate-500 text-[10px]">มูลค่าจริง 100%: </span>
+                                                            <span className="font-bold text-slate-700 text-[10px]">
+                                                                {devProfit.actualValuePoints.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} แต้ม (฿{devProfit.actualValueBaht.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-600 font-medium bg-white/80 px-2 py-0.5 rounded border border-emerald-200/60 shrink-0">
+                                                            {devProfit.recycledItems > 0 ? `${devProfit.recycledItems.toLocaleString()} ชิ้น` : '0 ชิ้น'} ({devProfit.sessionsCount} ครั้ง)
+                                                        </div>
+                                                    </div>
+                                                </div>
 
                                                 {/* Fill Level Section */}
                                                 <div className="mt-2 p-4 rounded-xl bg-slate-50 border border-slate-100">

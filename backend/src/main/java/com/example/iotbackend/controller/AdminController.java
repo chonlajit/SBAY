@@ -1,6 +1,7 @@
 package com.example.iotbackend.controller;
 
 import com.example.iotbackend.model.Alert;
+import com.example.iotbackend.model.Device;
 import com.example.iotbackend.model.Transaction;
 import com.example.iotbackend.model.User;
 import com.example.iotbackend.repository.AlertRepository;
@@ -53,6 +54,9 @@ public class AdminController {
 
     @Autowired
     private com.example.iotbackend.repository.AuditLogRepository auditLogRepository;
+
+    @Autowired
+    private com.example.iotbackend.repository.DeviceSessionRepository deviceSessionRepository;
 
     private User getAdminUser(String token) {
         if (token != null && token.startsWith("Bearer ")) {
@@ -176,7 +180,45 @@ public class AdminController {
     @GetMapping("/devices")
     public List<com.example.iotbackend.model.Device> getAllDevices(@RequestHeader("Authorization") String token) {
         validateAdmin(token);
-        return deviceRepository.findAll();
+        List<Device> devices = deviceRepository.findAll();
+        List<com.example.iotbackend.model.DeviceSession> sessions = deviceSessionRepository.findAll();
+
+        for (Device d : devices) {
+            String devId = d.getId();
+            double pointsGiven = 0;
+            long itemsCount = 0;
+            long sessionCount = 0;
+
+            for (com.example.iotbackend.model.DeviceSession s : sessions) {
+                if (devId != null && devId.equalsIgnoreCase(s.getDeviceId())) {
+                    sessionCount++;
+                    if (s.getTotalScore() != null) {
+                        pointsGiven += s.getTotalScore();
+                    }
+                    if (s.getTotalItems() != null) {
+                        itemsCount += s.getTotalItems();
+                    } else if (s.getItems() != null) {
+                        itemsCount += s.getItems().size();
+                    }
+                }
+            }
+
+            // In code, user receives points as 80% of actual value.
+            // actualValue (100%) = pointsGiven / 0.80 = pointsGiven * 1.25
+            // platform profit (20%) = actualValue * 0.20 = pointsGiven * 0.25 (pointsGiven / 4)
+            double profitPoints = pointsGiven * 0.25;
+            double actualValuePoints = pointsGiven * 1.25;
+
+            d.setTotalPointsGiven(Math.round(pointsGiven * 100.0) / 100.0);
+            d.setTotalProfitPoints(Math.round(profitPoints * 100.0) / 100.0);
+            d.setTotalProfitBaht(Math.round((profitPoints / 100.0) * 100.0) / 100.0);
+            d.setTotalActualValuePoints(Math.round(actualValuePoints * 100.0) / 100.0);
+            d.setTotalActualValueBaht(Math.round((actualValuePoints / 100.0) * 100.0) / 100.0);
+            d.setTotalRecycledItems(itemsCount);
+            d.setTotalSessions(sessionCount);
+        }
+
+        return devices;
     }
     
     @PostMapping("/devices/{id}/reset")
@@ -371,6 +413,17 @@ public class AdminController {
             }
         }
 
+        List<com.example.iotbackend.model.DeviceSession> allSessions = deviceSessionRepository.findAll();
+        double totalDepositPointsGiven = 0;
+        long totalDepositItemsCount = 0;
+        for (com.example.iotbackend.model.DeviceSession s : allSessions) {
+            if (s.getTotalScore() != null) totalDepositPointsGiven += s.getTotalScore();
+            if (s.getTotalItems() != null) totalDepositItemsCount += s.getTotalItems();
+            else if (s.getItems() != null) totalDepositItemsCount += s.getItems().size();
+        }
+        double totalDepositProfitPoints = totalDepositPointsGiven * 0.25;
+        double totalDepositActualValuePoints = totalDepositPointsGiven * 1.25;
+
         Map<String, Object> summary = new HashMap<>();
         summary.put("totalUsers", totalUsers);
         summary.put("totalPoints", totalPoints);
@@ -378,6 +431,14 @@ public class AdminController {
         summary.put("totalPointsRedeemed", totalPointsRedeemed);
         summary.put("totalRecycledItems", totalRecycledItems);
         summary.put("wasteStats", wasteStats);
+
+        // Deposit financial stats (80% user, 20% platform profit)
+        summary.put("totalDepositPointsGiven", Math.round(totalDepositPointsGiven * 100.0) / 100.0);
+        summary.put("totalDepositProfitPoints", Math.round(totalDepositProfitPoints * 100.0) / 100.0);
+        summary.put("totalDepositProfitBaht", Math.round((totalDepositProfitPoints / 100.0) * 100.0) / 100.0);
+        summary.put("totalDepositActualValuePoints", Math.round(totalDepositActualValuePoints * 100.0) / 100.0);
+        summary.put("totalDepositActualValueBaht", Math.round((totalDepositActualValuePoints / 100.0) * 100.0) / 100.0);
+        summary.put("totalDepositSessions", (long) allSessions.size());
 
         return summary;
     }

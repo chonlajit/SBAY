@@ -25,6 +25,31 @@ interface Partner {
     category: string;
     active: boolean;
     rewards: PartnerReward[];
+    accumulatedPoints?: number;
+}
+
+interface PartnerStat {
+    partnerId: string;
+    partnerName?: string;
+    totalRedemptions: number;
+    salesPoints: number;
+    salesBaht: number;
+    profitPoints: number;
+    profitBaht: number;
+    partnerEarnedPoints: number;
+    partnerEarnedBaht: number;
+}
+
+interface ProfitSummaryData {
+    totalProfitPoints: number;
+    totalProfitBaht: number;
+    totalSalesPoints: number;
+    totalSalesBaht: number;
+    totalPartnerEarnedPoints: number;
+    totalPartnerEarnedBaht: number;
+    totalRedemptions: number;
+    totalPartners: number;
+    partnerStats: Record<string, PartnerStat>;
 }
 
 interface UserItem {
@@ -106,12 +131,33 @@ export default function AdminPartnersPage() {
     const [selectedStoreUserId, setSelectedStoreUserId] = useState('');
     const [storeUserFilter, setStoreUserFilter] = useState('');
 
+    const [profitSummary, setProfitSummary] = useState<ProfitSummaryData | null>(null);
+    const [loadingSummary, setLoadingSummary] = useState(false);
+
     useEffect(() => {
         const isAdminUser = user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.email === 'sbay.smartcompany@gmail.com');
         if (isInitialized && !isAdminUser) {
             router.push('/');
         }
     }, [user, isInitialized, router]);
+
+    const fetchProfitSummary = useCallback(async () => {
+        if (!apiBase || !token) return;
+        setLoadingSummary(true);
+        try {
+            const res = await fetch(`${apiBase}/admin/partners/profit-summary`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setProfitSummary(data);
+            }
+        } catch (e) {
+            console.error("fetchProfitSummary error:", e);
+        } finally {
+            setLoadingSummary(false);
+        }
+    }, [apiBase, token]);
 
     const fetchPartners = useCallback(async () => {
         if (!apiBase || !token) return;
@@ -139,7 +185,39 @@ export default function AdminPartnersPage() {
         } catch (e) { console.error(e); }
     }, [apiBase, token]);
 
-    useEffect(() => { fetchPartners(); fetchUsers(); }, [fetchPartners, fetchUsers]);
+    useEffect(() => {
+        fetchPartners();
+        fetchUsers();
+        fetchProfitSummary();
+    }, [fetchPartners, fetchUsers, fetchProfitSummary]);
+
+    const getStoreStats = useCallback((partner: Partner): PartnerStat => {
+        if (profitSummary?.partnerStats?.[partner.id]) {
+            return profitSummary.partnerStats[partner.id];
+        }
+        const accum = partner.accumulatedPoints || 0;
+        const salesPoints = accum > 0 ? Math.round((accum / 0.9) * 100) / 100 : 0;
+        const profitPoints = Math.round((salesPoints * 0.10) * 100) / 100;
+        const partnerEarned = accum;
+        return {
+            partnerId: partner.id,
+            partnerName: partner.name,
+            totalRedemptions: 0,
+            salesPoints,
+            salesBaht: Math.round((salesPoints / 100) * 100) / 100,
+            profitPoints,
+            profitBaht: Math.round((profitPoints / 100) * 100) / 100,
+            partnerEarnedPoints: partnerEarned,
+            partnerEarnedBaht: Math.round((partnerEarned / 100) * 100) / 100,
+        };
+    }, [profitSummary]);
+
+    const computedTotalProfitPoints = profitSummary?.totalProfitPoints ?? Math.round(partners.reduce((sum, p) => sum + getStoreStats(p).profitPoints, 0) * 100) / 100;
+    const computedTotalProfitBaht = profitSummary?.totalProfitBaht ?? Math.round((computedTotalProfitPoints / 100) * 100) / 100;
+    const computedTotalSalesPoints = profitSummary?.totalSalesPoints ?? Math.round(partners.reduce((sum, p) => sum + getStoreStats(p).salesPoints, 0) * 100) / 100;
+    const computedTotalSalesBaht = profitSummary?.totalSalesBaht ?? Math.round((computedTotalSalesPoints / 100) * 100) / 100;
+    const computedTotalPartnerEarnedPoints = profitSummary?.totalPartnerEarnedPoints ?? Math.round(partners.reduce((sum, p) => sum + getStoreStats(p).partnerEarnedPoints, 0) * 100) / 100;
+    const computedTotalRedemptions = profitSummary?.totalRedemptions ?? 0;
 
     // === Partner CRUD ===
     const openAddPartner = (type: 'general' | 'student') => {
@@ -457,6 +535,135 @@ export default function AdminPartnersPage() {
                 {/* === Tab: Partners === */}
                 {activeTab === 'partners' && (
                     <>
+                        {/* ======================================================== */}
+                        {/* TOP PROFIT SUMMARY BANNER (รวมกำไร 10% ทุกร้านค้า) */}
+                        {/* ======================================================== */}
+                        <div className="bg-white/95 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-lg border border-white/60 mb-5 relative overflow-hidden">
+                            {/* Decorative background glow */}
+                            <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-400/10 rounded-full blur-2xl pointer-events-none"></div>
+                            <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-amber-400/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                            <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#64964E] to-emerald-600 text-white flex items-center justify-center text-xl shadow-md shrink-0">
+                                        <i className="fa-solid fa-hand-holding-dollar"></i>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <h2 className="font-black text-slate-800 text-lg sm:text-xl">
+                                                สรุปกำไรพาร์ทเนอร์ (10% ของสินค้า)
+                                            </h2>
+                                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                รวมทุกร้านค้า
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            รายได้ค่าแพลตฟอร์ม 10% จากคะแนนสินค้าที่มีการแลกสำเร็จ • อัตราแปลงค่า 100 แต้ม = 1 บาท
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => { fetchPartners(); fetchProfitSummary(); }}
+                                    className="self-start md:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition active:scale-95"
+                                    title="รีเฟรชข้อมูลตัวเลข"
+                                >
+                                    <i className={`fa-solid fa-rotate ${loadingSummary ? 'animate-spin' : ''}`}></i>
+                                    <span>อัปเดตตัวเลข</span>
+                                </button>
+                            </div>
+
+                            {/* Stat Cards Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 relative">
+                                {/* Hero Card: 10% Total Profit */}
+                                <div className="bg-gradient-to-br from-[#64964E] to-emerald-700 text-white rounded-2xl p-4 shadow-md flex flex-col justify-between relative overflow-hidden">
+                                    <div className="absolute top-2 right-2 opacity-15 text-5xl">
+                                        <i className="fa-solid fa-sack-dollar"></i>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center justify-between text-xs font-bold text-emerald-100 mb-1">
+                                            <span>กำไรสุทธิ 10% รวมทุกร้าน</span>
+                                            <span className="bg-amber-400 text-amber-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                                                กำไรระบบ
+                                            </span>
+                                        </div>
+                                        <div className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                                            +{computedTotalProfitPoints.toLocaleString()} <span className="text-sm font-semibold text-emerald-200">แต้ม</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 pt-2 border-t border-white/20 flex items-center justify-between text-xs">
+                                        <span className="text-emerald-100">มูลค่าเทียบเท่า:</span>
+                                        <span className="font-black text-amber-300 text-sm">
+                                            ≈ ฿{computedTotalProfitBaht.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Card 2: Total Sales (GMV 100%) */}
+                                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between hover:border-blue-200 transition">
+                                    <div>
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1">
+                                            <span>ยอดแลกสินค้ารวม (100%)</span>
+                                            <div className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                                                <i className="fa-solid fa-basket-shopping"></i>
+                                            </div>
+                                        </div>
+                                        <div className="text-2xl sm:text-3xl font-black text-slate-800">
+                                            {computedTotalSalesPoints.toLocaleString()} <span className="text-sm font-semibold text-slate-400">แต้ม</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                        <span className="text-slate-400">มูลค่าสินค้ารวม:</span>
+                                        <span className="font-bold text-blue-600">
+                                            ≈ ฿{computedTotalSalesBaht.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Card 3: Partner Earnings (90%) */}
+                                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between hover:border-violet-200 transition">
+                                    <div>
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1">
+                                            <span>รายได้พาร์ทเนอร์รวม (90%)</span>
+                                            <div className="w-6 h-6 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center text-xs">
+                                                <i className="fa-solid fa-store"></i>
+                                            </div>
+                                        </div>
+                                        <div className="text-2xl sm:text-3xl font-black text-violet-700">
+                                            {computedTotalPartnerEarnedPoints.toLocaleString()} <span className="text-sm font-semibold text-slate-400">แต้ม</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                        <span className="text-slate-400">เข้ากระเป๋าร้านค้า:</span>
+                                        <span className="font-bold text-violet-600">
+                                            ≈ ฿{(computedTotalPartnerEarnedPoints / 100).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Card 4: Orders & Active Stores */}
+                                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between hover:border-emerald-200 transition">
+                                    <div>
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1">
+                                            <span>ออเดอร์แลกสำเร็จ / ร้านค้า</span>
+                                            <div className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                                                <i className="fa-solid fa-circle-check"></i>
+                                            </div>
+                                        </div>
+                                        <div className="text-2xl sm:text-3xl font-black text-slate-800">
+                                            {computedTotalRedemptions.toLocaleString()} <span className="text-sm font-semibold text-slate-400">รายการ</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                        <span className="text-slate-400">จำนวนร้านทั้งหมด:</span>
+                                        <span className="font-bold text-slate-700">
+                                            {partners.length} ร้านค้า
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Partner name filter */}
                         <div className="flex items-center gap-2 mb-3">
                             <input
@@ -464,7 +671,7 @@ export default function AdminPartnersPage() {
                                 placeholder="ค้นหาชื่อร้าน..."
                                 value={partnerNameFilter}
                                 onChange={e => setPartnerNameFilter(e.target.value)}
-                                className="px-3 py-1.5 border rounded w-full"
+                                className="px-4 py-2 border border-slate-200 rounded-xl w-full bg-white/90 focus:outline-none focus:ring-2 focus:ring-[#64964E]/40"
                             />
                         </div>
                         {loading ? (
@@ -476,7 +683,9 @@ export default function AdminPartnersPage() {
                                 <p className="text-slate-400 text-sm mt-1">กดปุ่ม &quot;เพิ่มร้าน&quot; เพื่อเริ่มต้น</p>
                             </div>
                         ) : (
-                            partners.filter(p => p.name.toLowerCase().includes(partnerNameFilter.toLowerCase())).map(partner => (
+                            partners.filter(p => p.name.toLowerCase().includes(partnerNameFilter.toLowerCase())).map(partner => {
+                                const shopStat = getStoreStats(partner);
+                                return (
                                 <div key={partner.id} className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
                                     {/* Partner Row */}
                                     <div className="flex items-center gap-4 p-5">
@@ -492,10 +701,35 @@ export default function AdminPartnersPage() {
                                                 <span className="text-xs bg-purple-50 text-purple-600 font-medium px-2 py-0.5 rounded-full">{partner.category}</span>
                                             </div>
                                             <p className="text-slate-400 text-xs truncate mt-0.5">{partner.description}</p>
-                                            <p className="text-slate-500 text-xs mt-1">{partner.rewards?.length || 0} รายการของรางวัล</p>
+                                            
+                                            {/* Store Financial & Rewards Info Bar */}
+                                            <div className="flex items-center gap-2 flex-wrap mt-2">
+                                                {/* 10% Profit Chip */}
+                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/90 text-xs font-bold text-emerald-800 shadow-xs">
+                                                    <i className="fa-solid fa-coins text-amber-500"></i>
+                                                    <span>กำไร 10%: <strong className="text-emerald-700">+{shopStat.profitPoints.toLocaleString()} แต้ม</strong></span>
+                                                    <span className="text-[11px] text-emerald-600 font-semibold">(≈ ฿{shopStat.profitBaht.toFixed(2)})</span>
+                                                </div>
+
+                                                {/* Store 90% Earnings Chip */}
+                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700">
+                                                    <i className="fa-solid fa-store text-violet-500 text-[10px]"></i>
+                                                    <span>ร้านได้ 90%: <strong className="text-violet-700">{shopStat.partnerEarnedPoints.toLocaleString()} แต้ม</strong></span>
+                                                </div>
+
+                                                {/* Rewards count & Redemptions count */}
+                                                <div className="inline-flex items-center gap-2 text-xs text-slate-500">
+                                                    <span><i className="fa-solid fa-gift text-slate-400 mr-1"></i>{partner.rewards?.length || 0} รายการของรางวัล</span>
+                                                    {shopStat.totalRedemptions > 0 && (
+                                                        <span className="text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-md">
+                                                            <i className="fa-solid fa-check mr-1"></i>แลกแล้ว {shopStat.totalRedemptions} ครั้ง
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
-                                            <button onClick={() => setExpandedPartner(expandedPartner === partner.id ? null : partner.id)} className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                                            <button onClick={() => setExpandedPartner(expandedPartner === partner.id ? null : partner.id)} className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition" title="ดูรายละเอียดและของรางวัล">
                                                 <i className={`fa-solid fa-chevron-${expandedPartner === partner.id ? 'up' : 'down'} text-slate-500 text-xs`}></i>
                                             </button>
                                             <button onClick={() => openEditPartner(partner)} className="w-9 h-9 rounded-xl bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition">
@@ -557,12 +791,80 @@ export default function AdminPartnersPage() {
                                         );
                                     })()}
 
-                                    {/* Rewards List (expanded) */}
+                                    {/* Rewards & Store Finance List (expanded) */}
                                     {expandedPartner === partner.id && (
-                                        <div className="border-t border-slate-100 p-4 bg-slate-50">
+                                        <div className="border-t border-slate-100 p-4 sm:p-5 bg-slate-50/70">
+                                            {/* Store Financial Breakdown Card */}
+                                            <div className="mb-5 bg-white rounded-2xl p-4 border border-emerald-100 shadow-xs">
+                                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100 flex-wrap gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#64964E] to-emerald-600 text-white flex items-center justify-center text-xs shadow-xs">
+                                                            <i className="fa-solid fa-chart-line"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-black text-slate-800 text-sm">ข้อมูลยอดขาย & กำไร 10% ของร้าน {partner.name}</h4>
+                                                            <p className="text-[11px] text-slate-400">ระบบหัก 10% เพื่อเป็นค่าแพลตฟอร์ม และโอนเข้ากระเป๋าร้านค้า 90% (100 แต้ม = 1 บาท)</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                                                        ส่วนแบ่ง: แพลตฟอร์ม 10% / ร้านค้า 90%
+                                                    </span>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-3.5 rounded-xl border border-emerald-200">
+                                                        <div className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                                                            <i className="fa-solid fa-sack-dollar text-amber-500"></i> กำไรของระบบ (10%)
+                                                        </div>
+                                                        <div className="text-lg sm:text-xl font-black text-emerald-700 mt-1">
+                                                            +{shopStat.profitPoints.toLocaleString()} <span className="text-xs font-normal">แต้ม</span>
+                                                        </div>
+                                                        <div className="text-xs text-emerald-600 font-bold mt-0.5">
+                                                            ≈ ฿{shopStat.profitBaht.toFixed(2)} บาท
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                                        <div className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                                                            <i className="fa-solid fa-store text-violet-500"></i> รายได้ร้านค้า (90%)
+                                                        </div>
+                                                        <div className="text-lg sm:text-xl font-black text-violet-700 mt-1">
+                                                            {shopStat.partnerEarnedPoints.toLocaleString()} <span className="text-xs font-normal">แต้ม</span>
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 font-semibold mt-0.5">
+                                                            ≈ ฿{shopStat.partnerEarnedBaht.toFixed(2)} บาท
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                                        <div className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                                                            <i className="fa-solid fa-basket-shopping text-blue-500"></i> ยอดแลกสินค้ารวม (100%)
+                                                        </div>
+                                                        <div className="text-lg sm:text-xl font-black text-slate-800 mt-1">
+                                                            {shopStat.salesPoints.toLocaleString()} <span className="text-xs font-normal">แต้ม</span>
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 font-semibold mt-0.5">
+                                                            ≈ ฿{shopStat.salesBaht.toFixed(2)} บาท
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                                        <div className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                                                            <i className="fa-solid fa-circle-check text-teal-500"></i> ออเดอร์แลกสำเร็จ
+                                                        </div>
+                                                        <div className="text-lg sm:text-xl font-black text-teal-700 mt-1">
+                                                            {shopStat.totalRedemptions} <span className="text-xs font-normal">ครั้ง</span>
+                                                        </div>
+                                                        <div className="text-xs text-slate-400 mt-0.5">
+                                                            จาก {partner.rewards?.length || 0} รายการของรางวัล
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <div className="flex items-center justify-between mb-3">
                                                 <h4 className="font-bold text-slate-600 text-sm">รายการของรางวัล</h4>
-                                                <button onClick={() => openAddReward(partner)} className="flex items-center gap-1.5 bg-purple-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl hover:bg-purple-600 transition">
+                                                <button onClick={() => openAddReward(partner)} className="flex items-center gap-1.5 bg-[#64964E] text-white font-bold text-xs px-3 py-1.5 rounded-xl hover:bg-[#527d40] transition">
                                                     <i className="fa-solid fa-plus text-[10px]"></i> เพิ่มของรางวัล
                                                 </button>
                                             </div>
@@ -623,7 +925,8 @@ export default function AdminPartnersPage() {
                                         </div>
                                     )}
                                 </div>
-                            ))
+                            );
+                            })
                         )}
                     </>
                 )}

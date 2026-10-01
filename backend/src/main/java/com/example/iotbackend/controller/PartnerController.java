@@ -106,6 +106,71 @@ public class PartnerController {
         return partnerRepository.findAll();
     }
 
+    /** ดึงข้อมูลสรุปผลกำไร 10% จากสินค้าพาร์ทเนอร์ (ทั้งภาพรวมและรายร้าน) */
+    @GetMapping("/api/admin/partners/profit-summary")
+    public Map<String, Object> getPartnersProfitSummary(@RequestHeader("Authorization") String token) {
+        validateAdmin(token);
+        List<Partner> allPartners = partnerRepository.findAll();
+        List<Redemption> allRedemptions = redemptionRepository.findAll();
+
+        double totalSalesPoints = 0;
+        double totalProfitPoints = 0;
+        double totalPartnerEarnedPoints = 0;
+        long totalRedemptionsCount = 0;
+
+        Map<String, Map<String, Object>> partnerStats = new java.util.HashMap<>();
+
+        for (Partner p : allPartners) {
+            String pid = p.getId();
+            double partnerSales = 0;
+            long pRedemptions = 0;
+
+            for (Redemption r : allRedemptions) {
+                if (pid != null && pid.equals(r.getPartnerId()) && ("APPROVED".equals(r.getStatus()) || "COMPLETED".equals(r.getStatus()))) {
+                    partnerSales += r.getCost();
+                    pRedemptions++;
+                }
+            }
+
+            // Sync with accumulatedPoints (90% earned by partner)
+            double salesFromAccum = (p.getAccumulatedPoints() > 0) ? (p.getAccumulatedPoints() / 0.9) : 0;
+            double effectiveSales = Math.max(partnerSales, salesFromAccum);
+            double profitPoints = effectiveSales * 0.10;
+            double partnerEarned = effectiveSales * 0.90;
+
+            Map<String, Object> stats = new java.util.HashMap<>();
+            stats.put("partnerId", pid);
+            stats.put("partnerName", p.getName());
+            stats.put("totalRedemptions", pRedemptions);
+            stats.put("salesPoints", Math.round(effectiveSales * 100.0) / 100.0);
+            stats.put("salesBaht", Math.round((effectiveSales / 100.0) * 100.0) / 100.0);
+            stats.put("profitPoints", Math.round(profitPoints * 100.0) / 100.0);
+            stats.put("profitBaht", Math.round((profitPoints / 100.0) * 100.0) / 100.0);
+            stats.put("partnerEarnedPoints", Math.round(partnerEarned * 100.0) / 100.0);
+            stats.put("partnerEarnedBaht", Math.round((partnerEarned / 100.0) * 100.0) / 100.0);
+
+            partnerStats.put(pid, stats);
+
+            totalSalesPoints += effectiveSales;
+            totalProfitPoints += profitPoints;
+            totalPartnerEarnedPoints += partnerEarned;
+            totalRedemptionsCount += pRedemptions;
+        }
+
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("totalProfitPoints", Math.round(totalProfitPoints * 100.0) / 100.0);
+        response.put("totalProfitBaht", Math.round((totalProfitPoints / 100.0) * 100.0) / 100.0);
+        response.put("totalSalesPoints", Math.round(totalSalesPoints * 100.0) / 100.0);
+        response.put("totalSalesBaht", Math.round((totalSalesPoints / 100.0) * 100.0) / 100.0);
+        response.put("totalPartnerEarnedPoints", Math.round(totalPartnerEarnedPoints * 100.0) / 100.0);
+        response.put("totalPartnerEarnedBaht", Math.round((totalPartnerEarnedPoints / 100.0) * 100.0) / 100.0);
+        response.put("totalRedemptions", totalRedemptionsCount);
+        response.put("totalPartners", allPartners.size());
+        response.put("partnerStats", partnerStats);
+
+        return response;
+    }
+
     /** เพิ่มร้านใหม่ */
     @PostMapping("/api/admin/partners")
     public Partner createPartner(@RequestHeader("Authorization") String token, @RequestBody Partner partner) {
