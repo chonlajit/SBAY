@@ -71,6 +71,17 @@ export default function AdminPage() {
     const [auditLoading, setAuditLoading] = useState<boolean>(false);
     const [revertingId, setRevertingId] = useState<string | null>(null);
 
+    // Recyclable Waste Pricing per Kilogram
+    const [wastePricing, setWastePricing] = useState<any[]>([]);
+    const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+    const [pricingForm, setPricingForm] = useState<{ [key: string]: number }>({
+        PLASTIC_BOTTLE: 10,
+        ALUMINUM_CAN: 40,
+        BEVERAGE_CARTON: 9,
+    });
+    const [pricingSaving, setPricingSaving] = useState(false);
+    const [pricingMessage, setPricingMessage] = useState<string | null>(null);
+
     const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.email === 'sbay.smartcompany@gmail.com';
 
     const handleRevertAuditLog = async (logId: string, actionName: string) => {
@@ -131,15 +142,16 @@ export default function AdminPage() {
                 fetch(`${apiBase}/admin/alerts`, { headers }),
                 fetch(`${apiBase}/admin/redemptions/pending`, { headers }),
                 fetch(`${apiBase}/admin/devices`, { headers }),
-                fetch(`${apiBase}/admin/partners`, { headers })
+                fetch(`${apiBase}/admin/partners`, { headers }),
+                fetch(`${apiBase}/admin/waste-pricing`, { headers })
             ];
             if (isSuperAdmin) {
                 reqs.push(fetch(`${apiBase}/admin/audit-logs`, { headers }));
             }
 
             const results = await Promise.all(reqs);
-            const [summaryRes, usersRes, alertsRes, redemptionsRes, devicesRes, partnersRes] = results;
-            const auditLogsRes = isSuperAdmin && results.length > 6 ? results[6] : null;
+            const [summaryRes, usersRes, alertsRes, redemptionsRes, devicesRes, partnersRes, pricingRes] = results;
+            const auditLogsRes = isSuperAdmin && results.length > 7 ? results[7] : null;
 
             if (summaryRes.ok && usersRes.ok) {
                 setSummary(await summaryRes.json());
@@ -148,6 +160,17 @@ export default function AdminPage() {
                 if (redemptionsRes.ok) setPendingRedemptions(await redemptionsRes.json());
                 if (devicesRes.ok) setDevices(await devicesRes.json());
                 if (partnersRes && partnersRes.ok) setPartners(await partnersRes.json());
+                if (pricingRes && pricingRes.ok) {
+                    const pData = await pricingRes.json();
+                    setWastePricing(pData);
+                    const form: Record<string, number> = {};
+                    pData.forEach((wt: any) => {
+                        if (wt.type && wt.pricePerKg !== undefined) {
+                            form[wt.type] = Number(wt.pricePerKg);
+                        }
+                    });
+                    setPricingForm(prev => ({ ...prev, ...form }));
+                }
                 if (auditLogsRes && auditLogsRes.ok) setAuditLogs(await auditLogsRes.json());
             } else {
                 if (summaryRes.status === 403 || summaryRes.status === 401) {
@@ -161,6 +184,50 @@ export default function AdminPage() {
             setApiError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ Backend ได้ กรุณาตรวจสอบสถานะการทำงานของระบบ");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSavePricing = async () => {
+        if (!token) return;
+        setPricingSaving(true);
+        setPricingMessage(null);
+
+        try {
+            const payload = {
+                pricing: [
+                    { type: 'PLASTIC_BOTTLE', label: 'ขวดพลาสติก', pricePerKg: Number(pricingForm['PLASTIC_BOTTLE'] ?? 10) },
+                    { type: 'ALUMINUM_CAN', label: 'กระป๋องอลูมิเนียม', pricePerKg: Number(pricingForm['ALUMINUM_CAN'] ?? 40) },
+                    { type: 'BEVERAGE_CARTON', label: 'กล่องเครื่องดื่ม', pricePerKg: Number(pricingForm['BEVERAGE_CARTON'] ?? 9) },
+                ],
+                userPointRate: 0.80
+            };
+
+            const res = await fetch(`${apiBase}/admin/waste-pricing`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setPricingMessage("บันทึกราคาและส่งสัญญาณอัปเดตไปยังตู้ทุกเครื่องเรียบร้อย");
+                if (data.wasteTypes) {
+                    setWastePricing(data.wasteTypes);
+                }
+                setTimeout(() => {
+                    setPricingMessage(null);
+                    setIsPricingModalOpen(false);
+                }, 1800);
+            } else {
+                setPricingMessage(data.message || data.error || "เกิดข้อผิดพลาดในการบันทึกราคา");
+            }
+        } catch (e: any) {
+            setPricingMessage(`เกิดข้อผิดพลาด: ${e.message}`);
+        } finally {
+            setPricingSaving(false);
         }
     };
 
@@ -369,6 +436,27 @@ export default function AdminPage() {
                                 }
                             }
                         });
+
+                        // STOMP WebSocket for real-time waste pricing updates
+                        client?.subscribe('/topic/pricing', (msg) => {
+                            if (msg.body) {
+                                try {
+                                    const update = JSON.parse(msg.body);
+                                    if (update.wasteTypes && Array.isArray(update.wasteTypes)) {
+                                        setWastePricing(update.wasteTypes);
+                                        const form: Record<string, number> = {};
+                                        update.wasteTypes.forEach((wt: any) => {
+                                            if (wt.type && wt.pricePerKg !== undefined) {
+                                                form[wt.type] = Number(wt.pricePerKg);
+                                            }
+                                        });
+                                        setPricingForm(prev => ({ ...prev, ...form }));
+                                    }
+                                } catch (err) {
+                                    console.error('Error parsing pricing WS update', err);
+                                }
+                            }
+                        });
                     },
                     onWebSocketClose: () => {
                         setWsConnected(false);
@@ -487,6 +575,14 @@ export default function AdminPage() {
                                 <i className="fa-solid fa-clock-rotate-left"></i><span>Audit Log ({auditLogs.length})</span>
                             </button>
                         )}
+                        <button 
+                            onClick={() => setIsPricingModalOpen(true)} 
+                            className="flex items-center space-x-2 bg-emerald-500/25 hover:bg-emerald-500/40 border border-emerald-400/50 text-white font-bold px-4 py-2.5 rounded-xl transition backdrop-blur-sm cursor-pointer shadow-sm"
+                            title="กำหนดราคาขายต่อกิโลกรัมสำหรับขยะรีไซเคิลแต่ละประเภท"
+                        >
+                            <i className="fa-solid fa-scale-balanced text-amber-300"></i>
+                            <span>ตั้งราคารับซื้อ (บาท/กก.)</span>
+                        </button>
                         <button onClick={() => router.push('/admin/partners')} className="flex items-center space-x-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-4 py-2.5 rounded-xl transition backdrop-blur-sm">
                             <i className="fa-solid fa-store"></i><span>ร้านพาร์ทเนอร์</span>
                         </button>
@@ -1090,6 +1186,66 @@ export default function AdminPage() {
                             </div>
                         )}
 
+                        {/* Recyclable Pricing Overview Card */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div className="px-5 py-4 border-b border-emerald-100/60 bg-emerald-50/50 flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <i className="fa-solid fa-scale-balanced text-emerald-600 text-sm"></i>
+                                    <h2 className="font-bold text-slate-800 text-sm">ราคารับซื้อขยะ (ราคา/กก.)</h2>
+                                </div>
+                                <button 
+                                    onClick={() => setIsPricingModalOpen(true)}
+                                    className="text-[11px] font-bold text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 border border-emerald-300 px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-pen-to-square"></i>
+                                    <span>แก้ไขราคา</span>
+                                </button>
+                            </div>
+                            <div className="p-4 space-y-2.5">
+                                {[
+                                    { key: 'PLASTIC_BOTTLE', label: 'ขวดพลาสติก', icon: 'fa-bottle-water', defPrice: 10 },
+                                    { key: 'ALUMINUM_CAN', label: 'กระป๋องอลูมิเนียม', icon: 'fa-cube', defPrice: 40 },
+                                    { key: 'BEVERAGE_CARTON', label: 'กล่องเครื่องดื่ม', icon: 'fa-box-archive', defPrice: 9 },
+                                ].map(item => {
+                                    const wt = wastePricing.find((w: any) => w.type === item.key);
+                                    const price = wt?.pricePerKg ?? pricingForm[item.key] ?? item.defPrice;
+                                    const userPts = Math.round(price * 0.80 * 100);
+                                    const scorePerGram = (userPts / 1000).toFixed(2);
+                                    const profitBaht = (price * 0.20).toFixed(2);
+
+                                    return (
+                                        <div key={item.key} className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center justify-between">
+                                            <div className="flex items-center space-x-2.5">
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-100/70 text-emerald-700 flex items-center justify-center text-xs">
+                                                    <i className={`fa-solid ${item.icon}`}></i>
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-xs text-slate-800">{item.label}</div>
+                                                    <div className="text-[10px] text-slate-400 mt-0.5">
+                                                        แจกผู้ใช้ 80%: <strong className="text-emerald-700 font-bold">+{userPts.toLocaleString()} แต้ม/กก.</strong> ({scorePerGram} แต้ม/g)
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-black text-slate-800 text-sm">
+                                                    ฿{Number(price).toFixed(2)} <span className="text-[10px] font-normal text-slate-500">/กก.</span>
+                                                </div>
+                                                <div className="text-[10px] text-emerald-600 font-semibold">
+                                                    กำไรตู้ 20%: +฿{profitBaht}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                                    <span>ซิงก์ราคาไปยังตู้เรียลไทม์</span>
+                                    <span className="text-emerald-700 font-bold flex items-center gap-1">
+                                        <i className="fa-solid fa-wifi text-[9px]"></i> ตู้แคชออฟไลน์ได้
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* System Alerts */}
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-[400px]">
                             <div className="px-5 py-4 border-b border-red-100 bg-red-50 flex items-center space-x-2">
@@ -1470,6 +1626,178 @@ export default function AdminPage() {
                             <button onClick={() => setSelectedUserForPartnerRole(null)} className="flex-1 py-3 rounded-xl border-2 border-slate-200 font-bold text-slate-500 hover:bg-slate-50 transition">ยกเลิก</button>
                             <button onClick={handleSavePartnerRole} disabled={!selectedPartnerId} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 text-white font-bold hover:shadow-lg transition disabled:opacity-50">
                                 บันทึก
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* === Waste Pricing Management Modal === */}
+            {isPricingModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+                    <div className="bg-white w-full md:max-w-xl rounded-t-3xl md:rounded-3xl p-6 shadow-2xl z-50 max-h-[92vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg shadow-2xs">
+                                    <i className="fa-solid fa-scale-balanced"></i>
+                                </div>
+                                <div>
+                                    <h2 className="font-black text-lg text-slate-800">ตั้งราคารับซื้อขยะรีไซเคิลต่อกิโลกรัม</h2>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        กำหนดราคาขายจริงต่อกิโลกรัม • ระบบคำนวณแต้มให้ผู้ใช้ 80% และกำไรตู้ 20%
+                                    </p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => { setIsPricingModalOpen(false); setPricingMessage(null); }} 
+                                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition cursor-pointer"
+                            >
+                                <i className="fa-solid fa-times text-slate-500"></i>
+                            </button>
+                        </div>
+
+                        {/* Status / Feedback message */}
+                        {pricingMessage && (
+                            <div className={`mb-4 p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${
+                                pricingMessage.includes('เรียบร้อย') || pricingMessage.includes('สำเร็จ')
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    : 'bg-red-50 text-red-800 border-red-200'
+                            }`}>
+                                <i className={`fa-solid ${pricingMessage.includes('เรียบร้อย') || pricingMessage.includes('สำเร็จ') ? 'fa-circle-check text-emerald-600' : 'fa-circle-exclamation text-red-600'}`}></i>
+                                <span>{pricingMessage}</span>
+                            </div>
+                        )}
+
+                        {/* Waste Categories Form */}
+                        <div className="space-y-4 mb-5">
+                            {[
+                                { 
+                                    key: 'PLASTIC_BOTTLE', 
+                                    label: 'ขวดพลาสติก (PET Bottle)', 
+                                    icon: 'fa-bottle-water',
+                                    color: 'from-emerald-500 to-teal-500',
+                                    badgeColor: 'bg-emerald-100 text-emerald-800',
+                                    defPrice: 10
+                                },
+                                { 
+                                    key: 'ALUMINUM_CAN', 
+                                    label: 'กระป๋องอลูมิเนียม (Aluminum Can)', 
+                                    icon: 'fa-cube',
+                                    color: 'from-[#527d40] to-[#64964E]',
+                                    badgeColor: 'bg-[#64964E]/15 text-[#527d40]',
+                                    defPrice: 40
+                                },
+                                { 
+                                    key: 'BEVERAGE_CARTON', 
+                                    label: 'กล่องเครื่องดื่ม (Beverage Carton / UHT)', 
+                                    icon: 'fa-box-archive',
+                                    color: 'from-amber-500 to-orange-500',
+                                    badgeColor: 'bg-amber-100 text-amber-800',
+                                    defPrice: 9
+                                },
+                            ].map(item => {
+                                const currentVal = pricingForm[item.key] !== undefined ? pricingForm[item.key] : item.defPrice;
+                                const numVal = Number(currentVal) || 0;
+                                const userPtsPerKg = Math.round(numVal * 0.80 * 100);
+                                const scorePerGram = (userPtsPerKg / 1000).toFixed(4);
+                                const profitBahtPerKg = (numVal * 0.20).toFixed(2);
+                                const profitPtsPerKg = Math.round(numVal * 0.20 * 100);
+
+                                return (
+                                    <div key={item.key} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-slate-300 transition-all shadow-2xs">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 text-xs shadow-2xs">
+                                                    <i className={`fa-solid ${item.icon} text-emerald-600`}></i>
+                                                </div>
+                                                <span className="font-bold text-slate-800 text-sm">{item.label}</span>
+                                            </div>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.badgeColor}`}>
+                                                100 แต้ม = 1 บ.
+                                            </span>
+                                        </div>
+
+                                        {/* Input Price / Kg */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                                            <div className="sm:col-span-5">
+                                                <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                                                    ราคาขายจริงต่อกิโลกรัม:
+                                                </label>
+                                                <div className="relative">
+                                                    <input 
+                                                        type="number"
+                                                        step="0.5"
+                                                        min="0"
+                                                        value={currentVal}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                                            setPricingForm(prev => ({ ...prev, [item.key]: val }));
+                                                        }}
+                                                        className="w-full pl-7 pr-14 py-2 bg-white rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 font-black text-slate-800 text-base outline-none transition"
+                                                        placeholder="0.00"
+                                                    />
+                                                    <span className="absolute left-2.5 top-2.5 text-slate-400 font-bold text-sm">฿</span>
+                                                    <span className="absolute right-3 top-2.5 text-slate-400 text-xs font-semibold">/ กก.</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Calculations Preview Cards */}
+                                            <div className="sm:col-span-7 grid grid-cols-2 gap-2">
+                                                <div className="bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200/80">
+                                                    <div className="text-[10px] font-bold text-emerald-800">แต้มแจกผู้ใช้ (80%)</div>
+                                                    <div className="text-sm font-black text-emerald-700 leading-tight mt-0.5">
+                                                        +{userPtsPerKg.toLocaleString()} <span className="text-[9px] font-normal text-slate-500">แต้ม/กก.</span>
+                                                    </div>
+                                                    <div className="text-[9px] text-slate-500 mt-0.5">
+                                                        ≈ {scorePerGram} แต้ม/กรัม
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-teal-50/70 p-2.5 rounded-xl border border-teal-200/80">
+                                                    <div className="text-[10px] font-bold text-teal-800">กำไรตู้/ระบบ (20%)</div>
+                                                    <div className="text-sm font-black text-teal-700 leading-tight mt-0.5">
+                                                        +฿{profitBahtPerKg} <span className="text-[9px] font-normal text-slate-500">/กก.</span>
+                                                    </div>
+                                                    <div className="text-[9px] text-slate-500 mt-0.5">
+                                                        ≈ +{profitPtsPerKg.toLocaleString()} แต้ม/กก.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Offline Caching & Architecture Notice */}
+                        <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-900 mb-5 space-y-1.5">
+                            <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                                <i className="fa-solid fa-network-wired text-amber-600"></i>
+                                <span>กลไกการซิงก์ราคาและระบบออฟไลน์ (Offline-Resilient Architecture):</span>
+                            </div>
+                            <ul className="list-disc list-inside space-y-1 text-[11px] text-amber-800/90 leading-relaxed">
+                                <li><strong>เมื่อมีอินเทอร์เน็ต:</strong> เครื่องตู้ขยะจะดึงราคาล่าสุดผ่าน <code>GET /api/devices/pricing</code> และอัปเดตแบบเรียลไทม์ผ่าน WebSocket เมื่อกดบันทึก</li>
+                                <li><strong>บันทึกแคชในเครื่อง (Local Cache):</strong> ตู้ขยะจะเซฟราคาลงไฟล์ <code>pricing_cache.json</code> ไว้บนเครื่องอัตโนมัติ</li>
+                                <li><strong>เมื่อเน็ตหลุด / ออฟไลน์:</strong> ตู้จะยังคงคิดแต้มและเปิดรับหยอดขยะได้ตามปกติ โดยดึงราคาล่าสุดที่บันทึกไว้ในแคชมาใช้งานอย่างต่อเนื่อง</li>
+                            </ul>
+                        </div>
+
+                        {/* Modal Action Buttons */}
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => { setIsPricingModalOpen(false); setPricingMessage(null); }}
+                                className="flex-1 py-3 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                            >
+                                ปิด
+                            </button>
+                            <button 
+                                onClick={handleSavePricing}
+                                disabled={pricingSaving}
+                                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold transition shadow-md shadow-emerald-600/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <i className={`fa-solid ${pricingSaving ? 'fa-spinner animate-spin' : 'fa-floppy-disk'}`}></i>
+                                <span>{pricingSaving ? 'กำลังบันทึกและส่งสัญญาณ...' : 'บันทึกราคาและส่งไปยังตู้'}</span>
                             </button>
                         </div>
                     </div>

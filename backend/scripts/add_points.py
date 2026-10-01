@@ -10,11 +10,22 @@ DB_NAME = "iotdb"
 API_URL = "http://localhost:8070/api/sessions"
 MACHINE_ID = "BIN-001"
 
-SCORE_PER_GRAM = {
-    "PLASTIC_BOTTLE": 0.8,
-    "ALUMINUM_CAN": 3.2,
-    "BEVERAGE_CARTON": 0.72
-}
+# Dynamic Pricing Client (fetches from web admin, caches locally for offline use)
+try:
+    from client_pricing import client as pricing_client
+    pricing_client.sync(timeout=2.0)
+    SCORE_PER_GRAM = {
+        "PLASTIC_BOTTLE": pricing_client.get_score_per_gram("PLASTIC_BOTTLE"),
+        "ALUMINUM_CAN": pricing_client.get_score_per_gram("ALUMINUM_CAN"),
+        "BEVERAGE_CARTON": pricing_client.get_score_per_gram("BEVERAGE_CARTON"),
+    }
+except Exception:
+    SCORE_PER_GRAM = {
+        "PLASTIC_BOTTLE": 0.8,
+        "ALUMINUM_CAN": 3.2,
+        "BEVERAGE_CARTON": 0.72
+    }
+
 GRAM_PER_ML = {
     "PLASTIC_BOTTLE": 0.033,
     "ALUMINUM_CAN": 0.033,

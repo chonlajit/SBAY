@@ -12,13 +12,74 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/devices")
+@CrossOrigin(origins = "*")
 public class DeviceController {
 
     @Autowired
     private DeviceRepository deviceRepository;
 
     @Autowired
+    private com.example.iotbackend.repository.WasteTypeRepository wasteTypeRepository;
+
+    @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @GetMapping("/pricing")
+    public ResponseEntity<?> getDevicePricing() {
+        java.util.List<com.example.iotbackend.model.WasteType> wasteTypes = wasteTypeRepository.findAll();
+        
+        Map<String, Object> pricingMap = new java.util.HashMap<>();
+        Map<String, Double> scorePerGramMap = new java.util.HashMap<>();
+        Map<String, Double> pricePerKgMap = new java.util.HashMap<>();
+        Map<String, Double> pointsPerKgMap = new java.util.HashMap<>();
+
+        for (com.example.iotbackend.model.WasteType wt : wasteTypes) {
+            String type = wt.getType();
+            if (type == null) continue;
+            
+            double priceKg = wt.getPricePerKg() != null ? wt.getPricePerKg() : 10.0;
+            double userRate = wt.getUserPointRate() != null ? wt.getUserPointRate() : 0.80;
+            double ptsKg = wt.getPointsPerKg() != null ? wt.getPointsPerKg() : (priceKg * userRate * 100.0);
+            double scoreGram = wt.getScorePerGram() != null ? wt.getScorePerGram() : (ptsKg / 1000.0);
+            double profitKg = wt.getProfitPerKg() != null ? wt.getProfitPerKg() : (priceKg * (1.0 - userRate));
+
+            Map<String, Object> itemDetail = new java.util.HashMap<>();
+            itemDetail.put("type", type);
+            itemDetail.put("label", wt.getLabel() != null ? wt.getLabel() : type);
+            itemDetail.put("pricePerKg", priceKg);
+            itemDetail.put("userPointRate", userRate);
+            itemDetail.put("pointsPerKg", ptsKg);
+            itemDetail.put("scorePerGram", scoreGram);
+            itemDetail.put("profitPerKg", profitKg);
+            itemDetail.put("updatedAt", wt.getUpdatedAt() != null ? wt.getUpdatedAt().toString() : LocalDateTime.now().toString());
+
+            pricingMap.put(type, itemDetail);
+            scorePerGramMap.put(type, scoreGram);
+            pricePerKgMap.put(type, priceKg);
+            pointsPerKgMap.put(type, ptsKg);
+        }
+
+        // Guaranteed fallbacks if database was empty
+        if (!scorePerGramMap.containsKey("PLASTIC_BOTTLE")) scorePerGramMap.put("PLASTIC_BOTTLE", 0.8);
+        if (!scorePerGramMap.containsKey("ALUMINUM_CAN")) scorePerGramMap.put("ALUMINUM_CAN", 3.2);
+        if (!scorePerGramMap.containsKey("BEVERAGE_CARTON")) scorePerGramMap.put("BEVERAGE_CARTON", 0.72);
+
+        if (!pricePerKgMap.containsKey("PLASTIC_BOTTLE")) pricePerKgMap.put("PLASTIC_BOTTLE", 10.0);
+        if (!pricePerKgMap.containsKey("ALUMINUM_CAN")) pricePerKgMap.put("ALUMINUM_CAN", 40.0);
+        if (!pricePerKgMap.containsKey("BEVERAGE_CARTON")) pricePerKgMap.put("BEVERAGE_CARTON", 9.0);
+
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("status", "success");
+        response.put("version", 1);
+        response.put("timestamp", LocalDateTime.now().toString());
+        response.put("userPointRate", 0.80);
+        response.put("pricing", pricingMap);
+        response.put("scorePerGram", scorePerGramMap);
+        response.put("pricePerKg", pricePerKgMap);
+        response.put("pointsPerKg", pointsPerKgMap);
+
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping("/{deviceId}/heartbeat")
     public ResponseEntity<?> heartbeat(

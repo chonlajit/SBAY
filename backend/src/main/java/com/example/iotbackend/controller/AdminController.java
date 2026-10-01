@@ -13,9 +13,11 @@ import com.example.iotbackend.model.Redemption;
 import com.example.iotbackend.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +59,9 @@ public class AdminController {
 
     @Autowired
     private com.example.iotbackend.repository.DeviceSessionRepository deviceSessionRepository;
+
+    @Autowired
+    private com.example.iotbackend.repository.WasteTypeRepository wasteTypeRepository;
 
     private User getAdminUser(String token) {
         if (token != null && token.startsWith("Bearer ")) {
@@ -441,6 +446,129 @@ public class AdminController {
         summary.put("totalDepositSessions", (long) allSessions.size());
 
         return summary;
+    }
+
+    @GetMapping("/waste-pricing")
+    public List<com.example.iotbackend.model.WasteType> getWastePricing(@RequestHeader("Authorization") String token) {
+        validateAdmin(token);
+        return wasteTypeRepository.findAll();
+    }
+
+    @PutMapping("/waste-pricing")
+    public ResponseEntity<?> updateWastePricing(
+            @RequestHeader("Authorization") String token,
+            @RequestBody Map<String, Object> payload,
+            jakarta.servlet.http.HttpServletRequest request) {
+        User admin = validateAdmin(token);
+        String adminId = admin != null ? admin.getId() : "ADMIN";
+        String adminEmail = admin != null ? admin.getEmail() : "ADMIN";
+        String adminName = admin != null ? (admin.getUsername() != null ? admin.getUsername() : admin.getFirstName()) : "Admin";
+
+        double defaultRate = 0.80;
+        if (payload.containsKey("userPointRate") && payload.get("userPointRate") != null) {
+            try {
+                defaultRate = Double.parseDouble(payload.get("userPointRate").toString());
+            } catch (Exception ignored) {}
+        }
+
+        List<com.example.iotbackend.model.WasteType> updatedList = new java.util.ArrayList<>();
+        StringBuilder logDetails = new StringBuilder("อัปเดตราคาขยะต่อกิโลกรัม: ");
+
+        if (payload.containsKey("pricing") && payload.get("pricing") instanceof List) {
+            List<Map<String, Object>> items = (List<Map<String, Object>>) payload.get("pricing");
+            for (Map<String, Object> item : items) {
+                String type = (String) item.get("type");
+                if (type == null) continue;
+                Object priceObj = item.get("pricePerKg");
+                if (priceObj == null) continue;
+                double priceKg = Double.parseDouble(priceObj.toString());
+                double userRate = item.containsKey("userPointRate") && item.get("userPointRate") != null
+                    ? Double.parseDouble(item.get("userPointRate").toString())
+                    : defaultRate;
+
+                com.example.iotbackend.model.WasteType wt = wasteTypeRepository.findByType(type)
+                    .orElse(new com.example.iotbackend.model.WasteType());
+                wt.setType(type);
+                if (item.containsKey("label") && item.get("label") != null) {
+                    wt.setLabel((String) item.get("label"));
+                }
+                wt.setPricePerKg(Math.round(priceKg * 100.0) / 100.0);
+                wt.setUserPointRate(Math.round(userRate * 100.0) / 100.0);
+
+                double pointsKg = priceKg * userRate * 100.0;
+                double scoreGram = pointsKg / 1000.0;
+                double profitKg = priceKg * (1.0 - userRate);
+
+                wt.setPointsPerKg(Math.round(pointsKg * 100.0) / 100.0);
+                wt.setScorePerGram(Math.round(scoreGram * 10000.0) / 10000.0);
+                wt.setProfitPerKg(Math.round(profitKg * 100.0) / 100.0);
+                wt.setProfitPointsPerKg(Math.round(profitKg * 100.0 * 100.0) / 100.0);
+                wt.setUpdatedAt(LocalDateTime.now());
+                wt.setUpdatedBy(adminName + " (" + adminEmail + ")");
+
+                wasteTypeRepository.save(wt);
+                updatedList.add(wt);
+                logDetails.append(type).append("=").append(priceKg).append(" บ./กก. (").append(scoreGram).append(" แต้ม/กรัม) ");
+            }
+        } else {
+            // Direct key-value map fallback
+            for (Map.Entry<String, Object> entry : payload.entrySet()) {
+                if ("userPointRate".equals(entry.getKey()) || "pricing".equals(entry.getKey())) continue;
+                String type = entry.getKey();
+                try {
+                    double priceKg = Double.parseDouble(entry.getValue().toString());
+                    com.example.iotbackend.model.WasteType wt = wasteTypeRepository.findByType(type)
+                        .orElse(new com.example.iotbackend.model.WasteType());
+                    wt.setType(type);
+                    wt.setPricePerKg(Math.round(priceKg * 100.0) / 100.0);
+                    wt.setUserPointRate(defaultRate);
+
+                    double pointsKg = priceKg * defaultRate * 100.0;
+                    double scoreGram = pointsKg / 1000.0;
+                    double profitKg = priceKg * (1.0 - defaultRate);
+
+                    wt.setPointsPerKg(Math.round(pointsKg * 100.0) / 100.0);
+                    wt.setScorePerGram(Math.round(scoreGram * 10000.0) / 10000.0);
+                    wt.setProfitPerKg(Math.round(profitKg * 100.0) / 100.0);
+                    wt.setProfitPointsPerKg(Math.round(profitKg * 100.0 * 100.0) / 100.0);
+                    wt.setUpdatedAt(LocalDateTime.now());
+                    wt.setUpdatedBy(adminName + " (" + adminEmail + ")");
+
+                    wasteTypeRepository.save(wt);
+                    updatedList.add(wt);
+                    logDetails.append(type).append("=").append(priceKg).append(" บ./กก. ");
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // Audit log
+        auditService.logAction(adminId, adminEmail, adminName, "WASTE_PRICING_UPDATE", "PRICING", "WastePricing", logDetails.toString(), request);
+
+        // Build broadcast payload for devices & frontend
+        Map<String, Double> scorePerGramMap = new java.util.HashMap<>();
+        Map<String, Double> pricePerKgMap = new java.util.HashMap<>();
+        for (com.example.iotbackend.model.WasteType wt : wasteTypeRepository.findAll()) {
+            scorePerGramMap.put(wt.getType(), wt.getScorePerGram());
+            pricePerKgMap.put(wt.getType(), wt.getPricePerKg());
+        }
+        Map<String, Object> broadcastData = new java.util.HashMap<>();
+        broadcastData.put("status", "success");
+        broadcastData.put("timestamp", LocalDateTime.now().toString());
+        broadcastData.put("updatedBy", adminName);
+        broadcastData.put("scorePerGram", scorePerGramMap);
+        broadcastData.put("pricePerKg", pricePerKgMap);
+        broadcastData.put("wasteTypes", updatedList);
+
+        messagingTemplate.convertAndSend("/topic/pricing", broadcastData);
+        messagingTemplate.convertAndSend("/topic/devices/pricing", broadcastData);
+        messagingTemplate.convertAndSend("/topic/wastetypes", broadcastData);
+
+        return ResponseEntity.ok(Map.of(
+            "status", "success",
+            "message", "บันทึกราคาและส่งสัญญาณอัปเดตไปยังตู้ทุกเครื่องเรียบร้อย",
+            "wasteTypes", updatedList,
+            "scorePerGram", scorePerGramMap
+        ));
     }
 
     @PostMapping("/reset")
