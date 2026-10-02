@@ -230,6 +230,22 @@ class ApiClient:
             self.is_connected = False
             return False, False
 
+    def fetch_pricing(self, timeout=3):
+        """ดึงราคาขายต่อกิโลกรัมล่าสุดจาก Backend API (/api/devices/pricing)"""
+        try:
+            resp = self.session.get(
+                f"{self.api_base}/devices/pricing",
+                headers={"X-Device-Secret": DEVICE_SECRET},
+                timeout=timeout
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            logger.info("Successfully fetched pricing from Backend API")
+            return data
+        except requests.RequestException as e:
+            logger.debug(f"Failed to fetch pricing from Backend API: {e}")
+            return None
+
     def reset_bin(self, device_id, waste_type=None):
         """ส่งคำสั่งรีเซ็ตปริมาณขยะไปยัง Backend (เรียกผ่าน DeviceController API)"""
         try:

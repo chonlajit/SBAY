@@ -722,6 +722,7 @@ class SmartBinGUI:
                 self.canvas.itemconfigure("phone_mascot", state="normal")
                 self.page = "phone"
                 self._start_mascot_blinking()
+                self._reset_inactivity_timer(GUI_IDLE_TIMEOUT_PHONE)
                 return
 
             t = step_idx / float(total_steps)

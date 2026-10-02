@@ -21,6 +21,7 @@ class HeartbeatService:
         self._thread = None
         self.on_status_change = on_status_change
         self.last_ok = None
+        self._last_pricing_sync = 0
 
     def start(self):
         if not self.running:
@@ -50,6 +51,16 @@ class HeartbeatService:
                     logger.info(f"🟢 Database & Backend connection RESTORED for {self.device_id}")
                 else:
                     logger.warning(f"🔴 Database & Backend connection LOST for {self.device_id}")
+
+            # ซิงก์ราคาและอัปเดตแคชอัตโนมัติ (ทุก 5 นาที หรือเมื่อเน็ตเพิ่งกลับมา)
+            now = time.time()
+            if ok and (now - self._last_pricing_sync > 300 or (self._last_pricing_sync == 0)):
+                try:
+                    from scoring.calculator import ScoreCalculator
+                    ScoreCalculator.sync_pricing(self.api_client.api_base, timeout=3.0)
+                    self._last_pricing_sync = now
+                except Exception as e:
+                    logger.debug(f"Pricing sync failed: {e}")
 
             # แจ้งเตือน GUI เสมอเพื่อให้แน่ใจว่าสถานะบนหน้าจอตรงกับความเป็นจริงตลอดเวลา
             if self.on_status_change and callable(self.on_status_change):
